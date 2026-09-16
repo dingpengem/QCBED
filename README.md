@@ -102,8 +102,14 @@ benchmarks; process startup can make one-process batching faster.
 `compute_legacy_intensity_scaling` implements the three source YNORM branches
 as one global float64 factor. `apply_legacy_intensity_scaling` returns scaled,
 immutable calculated intensities without changing inputs. Unguarded singular
-arithmetic propagates NaN/Inf; no objective or refinement is implemented.
+arithmetic propagates NaN/Inf.
 See [intensity scaling](docs/intensity_scaling.md) for formulas and runtime limitations.
+
+`compute_legacy_objective` reuses YNORM to compute the source's normalized
+weighted root error in beam-major accumulation order, returning immutable
+float64 scalars. Refinement and GRADIENT preprocessing remain unimplemented;
+historical executable equivalence is unverified. See
+[objective evaluation](docs/objective_function.md).
 
 `parse_experimental_intensities` reads the experimental header and separate
 intensity, variance and weight blocks into immutable float64 `(tilt, beam)`
