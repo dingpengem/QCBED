@@ -55,6 +55,13 @@ Nyquist suppression. Internal tilts are reciprocal-basis coefficients, not
 angles. No RMT normalization or wave propagation is included. See
 [propagator conventions](docs/propagator.md) for validation and limitations.
 
+`propagate_one_step` connects a real-space wave, phase grating and reciprocal
+propagator using the explicit Python FFT pair, without an extra RMT factor.
+It returns immutable real-space and post-propagator reciprocal-wave snapshots.
+Complex intermediate comparisons validate this single step against direct DFTs;
+historical CDFT sign/normalization equivalence and sequence orchestration remain
+unresolved or deferred. See [wave propagation](docs/wave_propagation.md).
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional

@@ -40,6 +40,14 @@ from .propagator import (
     propagation_boundary_mask,
     propagation_kernel,
 )
+from .wave_propagation import (
+    WaveStepResult,
+    apply_phase_grating,
+    real_to_reciprocal_wave,
+    apply_propagator,
+    reciprocal_to_real_wave,
+    propagate_one_step,
+)
 
 __all__ = [
     "MeshConfig",
@@ -79,4 +87,10 @@ __all__ = [
     "fractional_slice_shift_phase_radians",
     "propagation_boundary_mask",
     "propagation_kernel",
+    "WaveStepResult",
+    "apply_phase_grating",
+    "real_to_reciprocal_wave",
+    "apply_propagator",
+    "reciprocal_to_real_wave",
+    "propagate_one_step",
 ]
