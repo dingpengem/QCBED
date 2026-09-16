@@ -37,8 +37,14 @@ Absorptive atomic factors and raw complex structure-factor sums are also
 implemented, with explicit phenomenological coefficients, positive applied
 Debye-Waller factors, voltage in kV, and literal legacy absorption-flag
 semantics. Elastic/absorptive combination follows the source sign convention.
-No phase grating or propagation is computed. See [absorption](docs/absorption.md)
+These absorption helpers do not compute propagation. See [absorption](docs/absorption.md)
 for numerical domains, saved-output comparisons and equivalence limitations.
+
+A serial direct-Fourier reference now reconstructs projected potential and
+applies the source PGMAP exponential, with separate DSAP and Nyquist masks.
+The missing readable 1D CDFT prevents validating the legacy FFT path; no FFT
+implementation is introduced. See [phase gratings](docs/phase_grating.md)
+for conventions, tests and the remaining executable-equivalence limitation.
 
 ## Coordinate and atom API
 
