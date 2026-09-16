@@ -11,7 +11,10 @@ filenames. Later refinement, scan, structure-factor, and numerical propagation
 sections remain deferred; the parser does not calculate wavelength or physics.
 
 Standalone electron-wavelength and grid utilities are also implemented.
-Executable Fortran numerical equivalence has not been established.
+`electron_wavelength_angstrom(voltage_kv)` accepts positive finite voltage in
+kV and returns angstroms using float64-compatible arithmetic; convert volts
+explicitly. Exact executable equivalence remains unestablished because
+default-kind Fortran literal rounding may depend on the original compiler flags.
 
 ## Coordinate and atom API
 
