@@ -68,9 +68,14 @@ from .simulation import (
     simulate_one_tilt,
 )
 
-from .tilt_series import TiltSeriesResult, simulate_tilt_series_serial, simulate_tilt_series_batched
+from .tilt_series import (
+    ParallelExecutionMetadata, TiltSeriesResult, simulate_tilt_series_serial, simulate_tilt_series_batched,
+)
+from .parallel import simulate_tilt_series_parallel
 
 __all__ = [
+    "ParallelExecutionMetadata",
+    "simulate_tilt_series_parallel",
     "TiltSeriesResult",
     "simulate_tilt_series_serial",
     "simulate_tilt_series_batched",

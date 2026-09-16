@@ -33,6 +33,28 @@ def _batch_size(value: int) -> int:
 
 
 @dataclass(frozen=True, eq=False)
+class ParallelExecutionMetadata:
+    """Pool limits and distinct worker processes that completed chunk tasks."""
+
+    requested_workers: int
+    worker_limit: int
+    actual_workers: int
+    process_chunk_size: int
+    start_method: Literal["spawn"] = "spawn"
+
+    def __post_init__(self) -> None:
+        for name in ("requested_workers", "worker_limit", "actual_workers", "process_chunk_size"):
+            value = _integer(getattr(self, name), name)
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+            object.__setattr__(self, name, value)
+        if not self.actual_workers <= self.worker_limit <= self.requested_workers:
+            raise ValueError("require actual_workers <= worker_limit <= requested_workers")
+        if not isinstance(self.start_method, str) or self.start_method != "spawn":
+            raise ValueError("start_method must be 'spawn'")
+
+
+@dataclass(frozen=True, eq=False)
 class TiltSeriesResult:
     """Immutable snapshots in request order, with no implicit disk reshape.
 
@@ -44,8 +66,9 @@ class TiltSeriesResult:
     tilts: NDArray[np.float64]
     amplitudes: NDArray[np.complex128]
     beam_indices_hk: BeamIndices
-    execution_mode: Literal["serial", "batched"]
+    execution_mode: Literal["serial", "batched", "parallel"]
     batch_size: int | None = None
+    parallel: ParallelExecutionMetadata | None = None
     intensities: NDArray[np.float64] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -58,14 +81,19 @@ class TiltSeriesResult:
             raise ValueError("amplitudes must have shape (n_tilts, n_beams)")
         intensities = beam_intensities(values.reshape(-1)).reshape(values.shape)
         if not isinstance(self.execution_mode, str):
-            raise ValueError("execution_mode must be 'serial' or 'batched'")
+            raise ValueError("execution_mode must be 'serial', 'batched' or 'parallel'")
         if self.execution_mode == "serial":
             if self.batch_size is not None:
                 raise ValueError("serial execution requires batch_size=None")
-        elif self.execution_mode == "batched":
+        elif self.execution_mode in ("batched", "parallel"):
             object.__setattr__(self, "batch_size", _batch_size(self.batch_size))
         else:
-            raise ValueError("execution_mode must be 'serial' or 'batched'")
+            raise ValueError("execution_mode must be 'serial', 'batched' or 'parallel'")
+        if self.execution_mode == "parallel":
+            if not isinstance(self.parallel, ParallelExecutionMetadata):
+                raise TypeError("parallel execution requires ParallelExecutionMetadata")
+        elif self.parallel is not None:
+            raise ValueError("parallel metadata requires execution_mode='parallel'")
         object.__setattr__(self, "tilts", _snapshot(tilts))
         object.__setattr__(self, "amplitudes", _snapshot(values))
         object.__setattr__(self, "intensities", _snapshot(intensities))

@@ -88,6 +88,14 @@ immutable `(n_tilts,n_beams)` amplitudes/intensities in request order.
 Serial and independent-DFT tests validate the Python convention; historical
 CDFT/executable equivalence remains unresolved. See [tilt series](docs/tilt_series.md).
 
+`simulate_tilt_series_parallel` distributes contiguous tilt chunks to spawned
+CPU processes, each using the validated batched engine with a prepared sample
+loaded once per worker. Process chunk size and internal FFT batch size are
+explicit; result ordering is deterministic. Windows callers need a guarded
+entry point and should set numerical-library thread limits before launch.
+See [CPU parallelism](docs/cpu_parallelism.md) for validation, memory costs and
+benchmarks; process startup can make one-process batching faster.
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
