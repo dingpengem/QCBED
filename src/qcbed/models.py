@@ -1,0 +1,93 @@
+"""Typed configuration models for confirmed QCBED concepts."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import math
+
+
+
+def _require_finite(value: float, name: str) -> float:
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be finite")
+    return value
+
+
+@dataclass(frozen=True)
+class MeshConfig:
+    """Real-space mesh dimensions, expressed as x and y point counts."""
+
+    mesh_x: int
+    mesh_y: int
+
+    def __post_init__(self) -> None:
+        if isinstance(self.mesh_x, bool) or not isinstance(self.mesh_x, int):
+            raise TypeError("mesh_x must be an integer")
+        if isinstance(self.mesh_y, bool) or not isinstance(self.mesh_y, int):
+            raise TypeError("mesh_y must be an integer")
+        if self.mesh_x <= 0 or self.mesh_y <= 0:
+            raise ValueError("mesh_x and mesh_y must be positive")
+
+
+@dataclass(frozen=True)
+class MicroscopeConfig:
+    """Microscope settings with electron energy in kV."""
+
+    energy_kv: float
+
+    def __post_init__(self) -> None:
+        energy_kv = _require_finite(float(self.energy_kv), "energy_kv")
+        if energy_kv <= 0:
+            raise ValueError("energy_kv must be positive")
+        object.__setattr__(self, "energy_kv", energy_kv)
+
+
+@dataclass(frozen=True)
+class SliceGeometry:
+    """Geometry for one slice; all lengths are in angstroms."""
+
+    thickness_angstrom: float
+    x_shift_angstrom: float = 0.0
+    y_shift_angstrom: float = 0.0
+
+    def __post_init__(self) -> None:
+        thickness = _require_finite(float(self.thickness_angstrom), "thickness_angstrom")
+        if thickness <= 0:
+            raise ValueError("thickness_angstrom must be positive")
+        object.__setattr__(self, "thickness_angstrom", thickness)
+        object.__setattr__(self, "x_shift_angstrom", _require_finite(float(self.x_shift_angstrom), "x_shift_angstrom"))
+        object.__setattr__(self, "y_shift_angstrom", _require_finite(float(self.y_shift_angstrom), "y_shift_angstrom"))
+
+
+@dataclass(frozen=True)
+class TiltCoordinate:
+    """One tilt in the legacy internal coordinate convention."""
+
+    first: float
+    second: float
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "first", _require_finite(float(self.first), "first"))
+        object.__setattr__(self, "second", _require_finite(float(self.second), "second"))
+
+
+@dataclass(frozen=True)
+class SimulationConfig:
+    """Validated configuration shared by a future simulation workflow."""
+
+    mesh: MeshConfig
+    microscope: MicroscopeConfig
+    slices: tuple[SliceGeometry, ...]
+    tilts: tuple[TiltCoordinate, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.mesh, MeshConfig):
+            raise TypeError("mesh must be a MeshConfig")
+        if not isinstance(self.microscope, MicroscopeConfig):
+            raise TypeError("microscope must be a MicroscopeConfig")
+        if not self.slices:
+            raise ValueError("slices must not be empty")
+        if any(not isinstance(item, SliceGeometry) for item in self.slices):
+            raise TypeError("slices must contain SliceGeometry values")
+        if any(not isinstance(item, TiltCoordinate) for item in self.tilts):
+            raise TypeError("tilts must contain TiltCoordinate values")
