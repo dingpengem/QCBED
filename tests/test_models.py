@@ -36,3 +36,12 @@ def test_dataclasses_reject_invalid_values() -> None:
         SliceGeometry(thickness_angstrom=-1.0)
     with pytest.raises(ValueError):
         SimulationConfig(MeshConfig(2, 2), MicroscopeConfig(200.0), ())
+
+
+@pytest.mark.parametrize("field, value", [
+    ("cell_a_angstrom", 0), ("cell_b_angstrom", -1),
+    ("lattice_gamma_degrees", 0), ("lattice_gamma_degrees", 180),
+])
+def test_slice_cell_is_nondegenerate(field: str, value: float) -> None:
+    with pytest.raises(ValueError, match=field):
+        SliceGeometry(thickness_angstrom=1, **{field: value})

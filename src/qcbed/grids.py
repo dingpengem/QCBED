@@ -18,6 +18,68 @@ def validate_mesh_dimensions(mesh_x: int, mesh_y: int) -> tuple[int, int]:
     return mesh_x, mesh_y
 
 
+def reciprocal_index_grid(
+    mesh_x: int, mesh_y: int, *, centered: bool = True
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return dimensionless reciprocal indices with shape (mesh_y, mesh_x).
+
+    Fortran ``PROPG`` uses ``H=I-MESHX/2-1`` and ``K=J-MESHY/2-1`` for
+    one-based ``I`` and ``J``. In zero-based NumPy coordinates this is
+    ``H=column-mesh_x//2`` and ``K=row-mesh_y//2``. ``centered=True`` returns
+    that source-indexed order, with zero at ``(mesh_y//2, mesh_x//2)``.
+    ``centered=False`` returns the same integer frequencies in unshifted
+    order, with zero at ``(0, 0)``. Odd centered axes are symmetric about zero;
+    size 5 unshifted order is [0, 1, 2, -2, -1]. This generic ordering is
+    separate from legacy ``oshift``, which requires even dimensions.
+    No FFT frequency scaling or propagator boundary mask is applied.
+    """
+    mesh_x, mesh_y = validate_mesh_dimensions(mesh_x, mesh_y)
+    h_centered = np.arange(mesh_x, dtype=np.float64) - mesh_x // 2
+    k_centered = np.arange(mesh_y, dtype=np.float64) - mesh_y // 2
+    if centered:
+        h_values = h_centered
+        k_values = k_centered
+    else:
+        h_values = np.roll(h_centered, -(mesh_x // 2))
+        k_values = np.roll(k_centered, -(mesh_y // 2))
+    h_grid = np.broadcast_to(h_values, (mesh_y, mesh_x)).copy()
+    k_grid = np.broadcast_to(k_values[:, np.newaxis], (mesh_y, mesh_x)).copy()
+    return h_grid, k_grid
+
+
+def oshift(array: np.ndarray) -> np.ndarray:
+    """Apply the legacy ``OSHIFT`` quadrant swaps to a 2D array.
+
+    The Fortran routine swaps the first and second half of each dimension
+    using one-based PMAP indices. The explicit loops below preserve that
+    operation for even rectangular arrays without introducing a transpose.
+    Odd dimensions cannot be partitioned into equal halves and are rejected.
+    """
+    values = np.asarray(array)
+    if values.ndim != 2:
+        raise ValueError("array must be two-dimensional")
+    mesh_y, mesh_x = values.shape
+    validate_mesh_dimensions(mesh_x, mesh_y)
+    if mesh_x % 2 or mesh_y % 2:
+        raise ValueError("legacy OSHIFT requires even mesh_x and mesh_y")
+    shifted = values.copy()
+    half_x = mesh_x // 2
+    half_y = mesh_y // 2
+    for row in range(half_y):
+        for column in range(half_x):
+            shifted[row, column], shifted[row + half_y, column + half_x] = (
+                shifted[row + half_y, column + half_x],
+                shifted[row, column],
+            )
+    for row in range(half_y, mesh_y):
+        for column in range(half_x):
+            shifted[row, column], shifted[row - half_y, column + half_x] = (
+                shifted[row - half_y, column + half_x],
+                shifted[row, column],
+            )
+    return shifted
+
+
 def pmap_index_to_row_col(
     pmap_index: int, mesh_x: int, mesh_y: int
 ) -> tuple[int, int]:

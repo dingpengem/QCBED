@@ -44,11 +44,11 @@ class MicroscopeConfig:
 
 @dataclass(frozen=True)
 class SliceGeometry:
-    """Geometry for one slice; all lengths are in angstroms."""
+    """Slice lengths are in angstroms; shifts are fractional direct-lattice translations."""
 
     thickness_angstrom: float
-    x_shift_angstrom: float = 0.0
-    y_shift_angstrom: float = 0.0
+    x_shift_fractional: float = 0.0
+    y_shift_fractional: float = 0.0
     cell_a_angstrom: float | None = None
     cell_b_angstrom: float | None = None
     lattice_gamma_degrees: float | None = None
@@ -58,12 +58,18 @@ class SliceGeometry:
         if thickness <= 0:
             raise ValueError("thickness_angstrom must be positive")
         object.__setattr__(self, "thickness_angstrom", thickness)
-        object.__setattr__(self, "x_shift_angstrom", _require_finite(float(self.x_shift_angstrom), "x_shift_angstrom"))
-        object.__setattr__(self, "y_shift_angstrom", _require_finite(float(self.y_shift_angstrom), "y_shift_angstrom"))
+        object.__setattr__(self, "x_shift_fractional", _require_finite(float(self.x_shift_fractional), "x_shift_fractional"))
+        object.__setattr__(self, "y_shift_fractional", _require_finite(float(self.y_shift_fractional), "y_shift_fractional"))
         for name in ("cell_a_angstrom", "cell_b_angstrom", "lattice_gamma_degrees"):
             value = getattr(self, name)
             if value is not None:
                 object.__setattr__(self, name, _require_finite(float(value), name))
+        for name in ("cell_a_angstrom", "cell_b_angstrom"):
+            value = getattr(self, name)
+            if value is not None and value <= 0:
+                raise ValueError(f"{name} must be positive")
+        if self.lattice_gamma_degrees is not None and not 0 < self.lattice_gamma_degrees < 180:
+            raise ValueError("lattice_gamma_degrees must be between 0 and 180 degrees")
 
 
 @dataclass(frozen=True)

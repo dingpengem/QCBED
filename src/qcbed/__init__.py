@@ -8,6 +8,7 @@ from .models import (
     TiltCoordinate,
 )
 from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, parse_for007
+from .electron import electron_wavelength_angstrom
 
 __all__ = [
     "MeshConfig",
@@ -20,4 +21,5 @@ __all__ = [
     "LegacyInputParseError",
     "Species",
     "parse_for007",
+    "electron_wavelength_angstrom",
 ]
