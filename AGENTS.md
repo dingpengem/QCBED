@@ -30,6 +30,13 @@ introduced during the current stage.
 - The legacy Fortran output is the numerical reference.
 - Every translated numerical routine must have an equivalence test.
 - Compare intermediate complex wavefunctions, not only final intensities.
+- Do not copy legacy fixed array capacities into the Python design.
+- Allocate Python arrays dynamically from parsed input dimensions.
+- Do not treat a private predecessor implementation-only declaration as authoritative unless
+  corroborated by current source or reference data. The current private predecessor implementation
+  is a user-supplied related-version declaration reference; see
+  `docs/source_provenance.md`.
+- Do not claim numerical equivalence without executable comparison.
 
 ## Development workflow
 
