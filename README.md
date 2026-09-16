@@ -26,6 +26,13 @@ Immutable 2D lattice and reciprocal grids provide separate dimensionless H/K
 indices, physical vectors and STL in inverse angstroms, using the source's
 convention without a 2*pi factor. See [reciprocal geometry](docs/reciprocal_geometry.md).
 
+`elastic_structure_factors` evaluates the raw complex128 elastic atomic sum
+for fixed S atoms, with explicit applied thermal factors and vacancy fraction.
+It preserves the positive atomic phase and dilated cell-area scaling; slice
+shifts belong to propagation. This is not a complete SFMAP implementation,
+and executable-Fortran equivalence remains unestablished. See
+[structure-factor conventions and validation](docs/structure_factors.md).
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
