@@ -7,6 +7,7 @@ from .models import (
     SliceGeometry,
     TiltCoordinate,
 )
+from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, parse_for007
 
 __all__ = [
     "MeshConfig",
@@ -14,4 +15,9 @@ __all__ = [
     "SimulationConfig",
     "SliceGeometry",
     "TiltCoordinate",
+    "AtomSite",
+    "LegacyInput",
+    "LegacyInputParseError",
+    "Species",
+    "parse_for007",
 ]

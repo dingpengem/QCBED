@@ -4,8 +4,11 @@ Python rewrite of a legacy Fortran multislice QCBED simulation program.
 
 ## Current status
 
-The project is currently in the source-analysis and numerical-validation
-stage. The Python implementation is not yet validated for scientific use.
+The first legacy input-parser stage is implemented. It supports the formatted
+`FOR007.DAT` title and run header, beam voltage and zone axis, mesh and slice
+geometry, species and atom records, and the output and experimental-intensity
+filenames. Later refinement, scan, structure-factor, and numerical propagation
+sections remain deferred; the parser does not calculate wavelength or physics.
 
 ## Directories
 

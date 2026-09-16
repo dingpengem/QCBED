@@ -49,6 +49,9 @@ class SliceGeometry:
     thickness_angstrom: float
     x_shift_angstrom: float = 0.0
     y_shift_angstrom: float = 0.0
+    cell_a_angstrom: float | None = None
+    cell_b_angstrom: float | None = None
+    lattice_gamma_degrees: float | None = None
 
     def __post_init__(self) -> None:
         thickness = _require_finite(float(self.thickness_angstrom), "thickness_angstrom")
@@ -57,6 +60,10 @@ class SliceGeometry:
         object.__setattr__(self, "thickness_angstrom", thickness)
         object.__setattr__(self, "x_shift_angstrom", _require_finite(float(self.x_shift_angstrom), "x_shift_angstrom"))
         object.__setattr__(self, "y_shift_angstrom", _require_finite(float(self.y_shift_angstrom), "y_shift_angstrom"))
+        for name in ("cell_a_angstrom", "cell_b_angstrom", "lattice_gamma_degrees"):
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, _require_finite(float(value), name))
 
 
 @dataclass(frozen=True)
