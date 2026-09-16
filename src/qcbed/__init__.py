@@ -74,8 +74,11 @@ from .tilt_series import (
 from .parallel import simulate_tilt_series_parallel
 from .scan import LegacyScanDefinition, parse_for007_scan, generate_scan_tilts
 from .experimental import ExperimentalIntensityData, parse_experimental_intensities
+from .intensity_scaling import compute_legacy_intensity_scaling, apply_legacy_intensity_scaling
 
 __all__ = [
+    "compute_legacy_intensity_scaling",
+    "apply_legacy_intensity_scaling",
     "ExperimentalIntensityData",
     "parse_experimental_intensities",
     "LegacyScanDefinition",

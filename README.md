@@ -99,6 +99,12 @@ benchmarks; process startup can make one-process batching faster.
 
 ## Coordinate and atom API
 
+`compute_legacy_intensity_scaling` implements the three source YNORM branches
+as one global float64 factor. `apply_legacy_intensity_scaling` returns scaled,
+immutable calculated intensities without changing inputs. Unguarded singular
+arithmetic propagates NaN/Inf; no objective or refinement is implemented.
+See [intensity scaling](docs/intensity_scaling.md) for formulas and runtime limitations.
+
 `parse_experimental_intensities` reads the experimental header and separate
 intensity, variance and weight blocks into immutable float64 `(tilt, beam)`
 arrays. Beam H/K order is supplied explicitly; optional scan validation checks
