@@ -48,6 +48,16 @@ from .wave_propagation import (
     reciprocal_to_real_wave,
     propagate_one_step,
 )
+from .multislice import (
+    MultisliceResult,
+    legacy_slice_sequence_to_zero_based,
+    unit_incident_wave,
+    beam_indices_to_row_col,
+    beam_indices_to_legacy_ib,
+    extract_beam_amplitudes,
+    beam_intensities,
+    simulate_slice_sequence,
+)
 
 __all__ = [
     "MeshConfig",
@@ -93,4 +103,12 @@ __all__ = [
     "apply_propagator",
     "reciprocal_to_real_wave",
     "propagate_one_step",
+    "MultisliceResult",
+    "legacy_slice_sequence_to_zero_based",
+    "unit_incident_wave",
+    "beam_indices_to_row_col",
+    "beam_indices_to_legacy_ib",
+    "extract_beam_amplitudes",
+    "beam_intensities",
+    "simulate_slice_sequence",
 ]

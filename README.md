@@ -59,8 +59,16 @@ angles. No RMT normalization or wave propagation is included. See
 propagator using the explicit Python FFT pair, without an extra RMT factor.
 It returns immutable real-space and post-propagator reciprocal-wave snapshots.
 Complex intermediate comparisons validate this single step against direct DFTs;
-historical CDFT sign/normalization equivalence and sequence orchestration remain
-unresolved or deferred. See [wave propagation](docs/wave_propagation.md).
+historical CDFT sign/normalization equivalence remains unresolved. See
+[wave propagation](docs/wave_propagation.md).
+
+`simulate_slice_sequence` executes precomputed slice gratings and propagators
+for one tilt, using validated zero-based slice IDs and explicit reciprocal
+ordering. It returns an immutable final reciprocal wave, requested complex
+beam amplitudes and raw intensities, preserving beam order and duplicates.
+It omits unused final transforms and uses unit plane-wave illumination by
+default. Parsed-input setup, tilt orchestration and fitted output scaling
+remain deferred. See [multislice sequences](docs/multislice_sequence.md).
 
 ## Coordinate and atom API
 
