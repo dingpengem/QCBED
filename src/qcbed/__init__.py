@@ -72,8 +72,12 @@ from .tilt_series import (
     ParallelExecutionMetadata, TiltSeriesResult, simulate_tilt_series_serial, simulate_tilt_series_batched,
 )
 from .parallel import simulate_tilt_series_parallel
+from .scan import LegacyScanDefinition, parse_for007_scan, generate_scan_tilts
 
 __all__ = [
+    "LegacyScanDefinition",
+    "parse_for007_scan",
+    "generate_scan_tilts",
     "ParallelExecutionMetadata",
     "simulate_tilt_series_parallel",
     "TiltSeriesResult",

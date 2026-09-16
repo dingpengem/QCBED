@@ -7,8 +7,9 @@ Python rewrite of a legacy Fortran multislice QCBED simulation program.
 The first legacy input-parser stage is implemented. It supports the formatted
 `FOR007.DAT` title and run header, beam voltage and zone axis, mesh and slice
 geometry, species and atom records, and the output and experimental-intensity
-filenames. Later refinement, scan, structure-factor, and numerical propagation
-sections remain deferred; the parser does not calculate wavelength or physics.
+filenames. Later refinement and structure-factor sections remain deferred;
+initial scan geometry has a separate parser described below. These parsers
+do not calculate wavelength or physics.
 
 Standalone electron-wavelength and grid utilities are also implemented.
 `electron_wavelength_angstrom(voltage_kv)` accepts positive finite voltage in
@@ -97,6 +98,12 @@ See [CPU parallelism](docs/cpu_parallelism.md) for validation, memory costs and
 benchmarks; process startup can make one-process batching faster.
 
 ## Coordinate and atom API
+
+`parse_for007_scan` reads the initial scan basis/corners and only the
+NUMP/NUML header of the referenced experimental file. `generate_scan_tilts`
+produces float64 undilated H/K pairs in legacy column-fast order for all three
+tilt-series APIs. Singleton dimensions are preserved by parsing but rejected
+by generation because the source divides by zero. See [legacy scan](docs/legacy_scan.md).
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
   direct-lattice translations, used by legacy PROPG as `H*X0 + K*Y0`.

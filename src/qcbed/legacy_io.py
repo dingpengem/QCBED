@@ -274,6 +274,11 @@ def parse_for007(path: str | Path) -> LegacyInput:
     Formatted character records are never passed through the list lexer.
     """
     records = _Records(Path(path))
+    return _parse_for007_records(records)
+
+
+def _parse_for007_records(records: _Records) -> LegacyInput:
+    """Shared prefix reader, leaving its cursor immediately after EXPINT."""
     title_raw = records.next("title")
     read = records.read("beam voltage and zone axis")
     energy = read.real("beam voltage", positive=True)

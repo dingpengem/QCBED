@@ -8,6 +8,11 @@ structure-factor and optimizer/refinement sections of FOR007. Refinement masks
 and coefficients within the supported prefix are validated even when their
 values are not exposed in `LegacyInput`. No physics is evaluated.
 
+The separate `parse_for007_scan` API now reuses this prefix reader and then
+reads initial scan basis/corners plus the NUMP/NUML experimental-file header.
+It does not change `parse_for007` or parse intensities/refinement. See
+[legacy scan](legacy_scan.md) for its explicit scope and singleton restriction.
+
 The primary evidence is `private predecessor implementation`, PROGRAM MULTIS and
 SFMAP. The related-version private predecessor implementation does not define parser string widths,
 capacities or limits. Each row below corresponds to separate source READs;
