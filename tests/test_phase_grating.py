@@ -265,3 +265,41 @@ def test_saved_interaction_constant_only():
     line = next(line for line in lines if "INTERACTION CONSTANT (SIGMA)" in line)
     recorded = float(line.split()[-1])
     assert electron_interaction_constant(200) == pytest.approx(recorded, abs=5e-9, rel=0)
+
+
+@pytest.mark.parametrize("mesh", [(4, 4), (6, 4)])
+@pytest.mark.parametrize("centered", [True, False])
+@pytest.mark.parametrize("cutoff", [0, .025, 1])
+def test_fft_complete_phase_grating_matches_direct(mesh, centered, cutoff):
+    g = grid(mesh, centered)
+    rng = np.random.default_rng(781)
+    e = (rng.normal(size=g.indices.h.shape)+1j*rng.normal(size=g.indices.h.shape)).astype(np.complex128)
+    a = (rng.normal(size=e.shape)+1j*rng.normal(size=e.shape)).astype(np.complex128)
+    original_e, original_a = e.copy(), a.copy()
+    options = dict(voltage_kv=200, dsap_inverse_angstrom=cutoff)
+    direct = phase_grating_from_structure_factors(e, a, g, **options)
+    explicit_direct = phase_grating_from_structure_factors(e, a, g, method="direct", **options)
+    fft = phase_grating_from_structure_factors(e, a, g, method="fft", **options)
+    np.testing.assert_array_equal(direct, explicit_direct)
+    np.testing.assert_allclose(fft, direct, atol=8e-15, rtol=2e-14)
+    np.testing.assert_array_equal(e, original_e)
+    np.testing.assert_array_equal(a, original_a)
+    # Huge coefficients at both excluded Nyquist boundaries must affect neither method.
+    e[~legacy_nyquist_mask(g)] = 1e100
+    np.testing.assert_allclose(phase_grating_from_structure_factors(e, a, g, method="fft", **options),
+                               fft, atol=0, rtol=0)
+
+
+@pytest.mark.parametrize("method", ["FFT", "auto", "", None, True, []])
+def test_invalid_phase_grating_method(method):
+    c = np.zeros((4, 4), dtype=np.complex128)
+    with pytest.raises(ValueError, match="method"):
+        phase_grating_from_structure_factors(c, c, grid(), voltage_kv=200,
+                                             dsap_inverse_angstrom=1, method=method)
+
+
+def test_fft_does_not_bypass_odd_mesh_mask_restriction():
+    g = grid((5, 3))
+    c = np.zeros((3, 5), dtype=np.complex128)
+    with pytest.raises(ValueError, match="even"):
+        phase_grating_from_structure_factors(c, c, g, voltage_kv=200, dsap_inverse_angstrom=1, method="fft")

@@ -22,9 +22,16 @@ from .phase_grating import (
     reciprocal_cutoff_mask,
     legacy_nyquist_mask,
     projected_potential_direct,
+    projected_potential_fft,
     electron_interaction_constant,
     phase_grating_from_potential,
     phase_grating_from_structure_factors,
+)
+from .fft_backend import (
+    centered_to_unshifted,
+    unshifted_to_centered,
+    reciprocal_to_real_sum,
+    real_to_reciprocal_coefficients,
 )
 
 __all__ = [
@@ -52,7 +59,12 @@ __all__ = [
     "reciprocal_cutoff_mask",
     "legacy_nyquist_mask",
     "projected_potential_direct",
+    "projected_potential_fft",
     "electron_interaction_constant",
     "phase_grating_from_potential",
     "phase_grating_from_structure_factors",
+    "centered_to_unshifted",
+    "unshifted_to_centered",
+    "reciprocal_to_real_sum",
+    "real_to_reciprocal_coefficients",
 ]

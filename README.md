@@ -42,9 +42,12 @@ for numerical domains, saved-output comparisons and equivalence limitations.
 
 A serial direct-Fourier reference now reconstructs projected potential and
 applies the source PGMAP exponential, with separate DSAP and Nyquist masks.
-The missing readable 1D CDFT prevents validating the legacy FFT path; no FFT
-implementation is introduced. See [phase gratings](docs/phase_grating.md)
-for conventions, tests and the remaining executable-equivalence limitation.
+An explicit NumPy CPU FFT path is validated against that direct sum, including
+odd/even ordering and the normalized mathematical inverse. Phase-grating
+construction retains `method="direct"` by default; `method="fft"` selects
+acceleration with identical masks. The missing readable 1D CDFT still prevents
+claiming legacy FFT equivalence. See [phase gratings](docs/phase_grating.md)
+and [FFT backend](docs/fft_backend.md) for validation and timing results.
 
 ## Coordinate and atom API
 

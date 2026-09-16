@@ -5,9 +5,10 @@
 The mathematical direct Fourier sum and PGMAP exponential are specified by
 the available source. The exact legacy FFT operation is not fully established
 from readable executable code: CDFT2D calls a missing readable 1D CDFT.
-This module therefore implements **only a serial direct-sum reference**, with
-separate source-backed masks and PGMAP exponentiation. It does not emulate
-CDFT, call NumPy FFT, or claim complete legacy executable equivalence.
+The serial direct-sum reference remains the default, with separate
+source-backed masks and PGMAP exponentiation. An explicit NumPy FFT path is
+now validated against that Python mathematical reference; see fft_backend.md.
+It does not emulate CDFT or claim complete legacy executable equivalence.
 
 Primary evidence is the current readable `.f` code, its mathematical transform
 specification, and saved input/output. private predecessor implementation remains a related-version
@@ -83,8 +84,8 @@ V[row,column] = sum_HK C[H,K]*exp(-2*pi*i*(H*x+K*y))
 There is no 1/(mesh_x*mesh_y) normalization. The mathematical expression
 would be `numpy.fft.fft2(ifftshift(C))` for centered even grids, or
 `numpy.fft.fft2(C)` for already-unshifted coefficients, under NumPy's default
-normalization. This identifies the mathematical candidate only; it is not
-implemented or certified as an equivalent replacement for the legacy FFT.
+normalization. This mapping is now implemented and tested against the Python
+direct reference, but is not certified as a replacement for the legacy FFT.
 Using the default IFFT would reverse the sign and add an unwanted scale.
 
 OSHIFT (`private predecessor implementation`) is called **before** FFT(-1). Its half-grid swaps
@@ -181,14 +182,18 @@ holding atom content and lattice fixed and confirm unchanged gratings.
 reciprocal_cutoff_mask(grid, dsap_inverse_angstrom) -> bool array
 legacy_nyquist_mask(grid) -> bool array
 projected_potential_direct(coefficients, grid) -> complex128 array
+projected_potential_fft(coefficients, grid) -> complex128 array
 electron_interaction_constant(voltage_kv) -> float
 phase_grating_from_potential(projected_potential, *, voltage_kv) -> complex128 array
 phase_grating_from_structure_factors(
-    elastic, absorptive, grid, *, voltage_kv, dsap_inverse_angstrom
+    elastic, absorptive, grid, *, voltage_kv, dsap_inverse_angstrom, method="direct"
 ) -> complex128 array
 ```
 
-All are exported from qcbed. `grid` is the existing ReciprocalVectorGrid;
+The default method remains "direct"; "fft" explicitly selects the NumPy
+backend and unknown method names are rejected. Both paths share combination,
+masking, interaction constant and exponentiation. All are exported from qcbed.
+`grid` is the existing ReciprocalVectorGrid;
 arrays are required to be finite, nonempty 2D NumPy complex128 arrays, with
 shapes matching the grid where supplied. There is no implicit transpose,
 broadcasting or narrowing. Caller arrays and immutable grid data are unchanged.
@@ -213,7 +218,8 @@ coefficient, Friedel pairs, rectangular and odd direct grids, both reciprocal
 orderings, fractional sample endpoints, periodic shifts, both masks, oblique
 metric dependence, existing atomic API composition, dtype and immutability.
 A separate scalar nested-loop reference evaluates every pixel of 4x4, 6x4,
-and 5x3 cases. No test calls a NumPy FFT. The implementation is a serial loop
+and 5x3 cases. Additional tests now compare NumPy FFT with this reference.
+The direct implementation is a serial loop
 over coefficients with broadcast real-space trigonometric arrays, O(M^2)
 work for M pixels; no performance or scalability claim is made.
 

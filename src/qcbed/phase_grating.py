@@ -1,14 +1,16 @@
-"""Direct Fourier reference for the PGMAP path; no legacy FFT emulation."""
+"""Direct and NumPy Fourier paths for PGMAP; no legacy FFT equivalence claim."""
 
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
 
 from .absorption import combine_elastic_absorptive_structure_factors
 from .electron import electron_wavelength_angstrom
+from .fft_backend import reciprocal_to_real_sum
 from .reciprocal import ReciprocalVectorGrid
 from .structure_factors import _finite
 
@@ -83,6 +85,23 @@ def projected_potential_direct(
     return result
 
 
+def projected_potential_fft(
+    coefficients: ComplexGrid, reciprocal_grid: ReciprocalVectorGrid,
+) -> ComplexGrid:
+    """NumPy CPU equivalent of projected_potential_direct, with no masks.
+
+    Negative exponent, unnormalized sum; input ordering comes from the grid.
+    Output uses (row/Ny,col/Nx) spatial samples with no shift or transpose.
+    Validated against the Python direct sum, not the missing legacy CDFT.
+    """
+    grid = _grid(reciprocal_grid)
+    values = _complex_grid(coefficients, "coefficients")
+    if values.shape != grid.indices.h.shape:
+        raise ValueError("coefficients shape must match reciprocal_grid (mesh_y, mesh_x)")
+    ordering = "centered" if grid.indices.centered else "unshifted"
+    return reciprocal_to_real_sum(values, ordering=ordering)
+
+
 def electron_interaction_constant(voltage_kv: float) -> float:
     """Source SIGMA in inverse (volt*angstrom), using derived wavelength.
 
@@ -133,18 +152,24 @@ def phase_grating_from_structure_factors(
     *,
     voltage_kv: float,
     dsap_inverse_angstrom: float,
+    method: Literal["direct", "fft"] = "direct",
 ) -> ComplexGrid:
-    """Compose combination, DSAP/Nyquist masks, direct sum and PGMAP.
+    """Compose combination, shared DSAP/Nyquist masks, Fourier sum and PGMAP.
 
     Requires even meshes for the source-backed boundary mask. Supply arrays
     from the existing elastic/absorptive APIs on the same grid. This is a
-    direct-sum reference, not the unverified legacy FFT/refinement workflow.
+    Python calculation, not the unverified legacy FFT/refinement workflow.
+    method='direct' remains the default oracle; 'fft' explicitly selects
+    the NumPy backend. Both methods share masks and exponentiation.
     """
+    if not isinstance(method, str) or method not in ("direct", "fft"):
+        raise ValueError("method must be 'direct' or 'fft'")
     combined = combine_elastic_absorptive_structure_factors(elastic, absorptive)
     physical_mask = reciprocal_cutoff_mask(reciprocal_grid, dsap_inverse_angstrom)
     boundary_mask = legacy_nyquist_mask(reciprocal_grid)
     if combined.shape != physical_mask.shape:
         raise ValueError("structure-factor shape must match reciprocal_grid")
     selected = np.where(physical_mask & boundary_mask, combined, 0.0j)
-    potential = projected_potential_direct(selected, reciprocal_grid)
+    reconstruct = projected_potential_direct if method == "direct" else projected_potential_fft
+    potential = reconstruct(selected, reciprocal_grid)
     return phase_grating_from_potential(potential, voltage_kv=voltage_kv)
