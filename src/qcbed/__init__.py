@@ -9,6 +9,7 @@ from .models import (
 )
 from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, parse_for007
 from .electron import electron_wavelength_angstrom
+from .scattering import elastic_atomic_scattering_factor
 
 __all__ = [
     "MeshConfig",
@@ -22,4 +23,5 @@ __all__ = [
     "Species",
     "parse_for007",
     "electron_wavelength_angstrom",
+    "elastic_atomic_scattering_factor",
 ]

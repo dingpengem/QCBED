@@ -16,6 +16,12 @@ kV and returns angstroms using float64-compatible arithmetic; convert volts
 explicitly. Exact executable equivalence remains unestablished because
 default-kind Fortran literal rounding may depend on the original compiler flags.
 
+`elastic_atomic_scattering_factor(Z, stl_inverse_angstrom)` implements the
+source-scaled elastic electron factor for neutral atoms Z=1–98 using the
+source's tabulated cubic interpolation and Mott branches. See
+[scattering conventions and validation](docs/scattering.md) for units, bounds,
+and the remaining executable-equivalence limitation.
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
