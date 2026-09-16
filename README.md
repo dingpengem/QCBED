@@ -70,6 +70,17 @@ It omits unused final transforms and uses unit plane-wave illumination by
 default. Parsed-input setup, tilt orchestration and fitted output scaling
 remain deferred. See [multislice sequences](docs/multislice_sequence.md).
 
+`prepare_multislice_sample` now builds reusable immutable gratings from parsed
+fixed S atoms and explicitly supplied applied parameters. `simulate_one_tilt`
+builds per-slice propagators and returns raw beam amplitudes/intensities, using
+the common undilated reciprocal-cell tilt coefficients. Preparation supports
+direct or FFT reconstruction, a common even mesh and matching undilated lateral
+cells, with unity reflection-refinement multipliers explicitly selected.
+The real Al input is exercised at its recorded initial parameters; historical
+CDFT/executable equivalence remains unestablished. See
+[single-tilt simulation](docs/single_tilt_simulation.md) for the required
+configuration, supported scope and validation.
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional

@@ -58,6 +58,15 @@ from .multislice import (
     beam_intensities,
     simulate_slice_sequence,
 )
+from .simulation import (
+    SliceAppliedParameters,
+    SamplePreparationParameters,
+    PreparedSliceType,
+    PreparedMultisliceSample,
+    prepare_multislice_sample,
+    build_tilt_propagators,
+    simulate_one_tilt,
+)
 
 __all__ = [
     "MeshConfig",
@@ -111,4 +120,11 @@ __all__ = [
     "extract_beam_amplitudes",
     "beam_intensities",
     "simulate_slice_sequence",
+    "SliceAppliedParameters",
+    "SamplePreparationParameters",
+    "PreparedSliceType",
+    "PreparedMultisliceSample",
+    "prepare_multislice_sample",
+    "build_tilt_propagators",
+    "simulate_one_tilt",
 ]
