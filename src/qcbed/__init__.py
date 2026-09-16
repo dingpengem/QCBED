@@ -11,6 +11,12 @@ from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, pa
 from .electron import electron_wavelength_angstrom
 from .scattering import elastic_atomic_scattering_factor
 from .structure_factors import elastic_structure_factors
+from .absorption import (
+    AbsorptionCoefficients,
+    absorptive_atomic_scattering_factor,
+    absorptive_structure_factors,
+    combine_elastic_absorptive_structure_factors,
+)
 from .reciprocal import DirectLattice2D, ReciprocalLattice2D, ReciprocalIndexGrid, ReciprocalVectorGrid
 
 __all__ = [
@@ -27,6 +33,10 @@ __all__ = [
     "electron_wavelength_angstrom",
     "elastic_atomic_scattering_factor",
     "elastic_structure_factors",
+    "AbsorptionCoefficients",
+    "absorptive_atomic_scattering_factor",
+    "absorptive_structure_factors",
+    "combine_elastic_absorptive_structure_factors",
     "DirectLattice2D",
     "ReciprocalLattice2D",
     "ReciprocalIndexGrid",

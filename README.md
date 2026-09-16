@@ -33,6 +33,13 @@ shifts belong to propagation. This is not a complete SFMAP implementation,
 and executable-Fortran equivalence remains unestablished. See
 [structure-factor conventions and validation](docs/structure_factors.md).
 
+Absorptive atomic factors and raw complex structure-factor sums are also
+implemented, with explicit phenomenological coefficients, positive applied
+Debye-Waller factors, voltage in kV, and literal legacy absorption-flag
+semantics. Elastic/absorptive combination follows the source sign convention.
+No phase grating or propagation is computed. See [absorption](docs/absorption.md)
+for numerical domains, saved-output comparisons and equivalence limitations.
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
