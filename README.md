@@ -111,6 +111,9 @@ float64 scalars. Refinement and GRADIENT preprocessing remain unimplemented;
 historical executable equivalence is unverified. See
 [objective evaluation](docs/objective_function.md).
 
+The [optimizer architecture audit](docs/optimizer_architecture.md) documents
+legacy sequencing, parameter flow and missing source; optimizers remain unimplemented.
+
 `parse_experimental_intensities` reads the experimental header and separate
 intensity, variance and weight blocks into immutable float64 `(tilt, beam)`
 arrays. Beam H/K order is supplied explicitly; optional scan validation checks
