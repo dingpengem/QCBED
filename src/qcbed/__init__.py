@@ -68,7 +68,12 @@ from .simulation import (
     simulate_one_tilt,
 )
 
+from .tilt_series import TiltSeriesResult, simulate_tilt_series_serial, simulate_tilt_series_batched
+
 __all__ = [
+    "TiltSeriesResult",
+    "simulate_tilt_series_serial",
+    "simulate_tilt_series_batched",
     "MeshConfig",
     "MicroscopeConfig",
     "SimulationConfig",

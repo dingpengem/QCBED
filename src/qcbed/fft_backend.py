@@ -91,3 +91,37 @@ def real_to_reciprocal_coefficients(
         bins = np.fft.ifft2(values, axes=(0, 1), norm="backward")
     _array(bins, "reciprocal coefficients")
     return unshifted_to_centered(bins) if ordering == "centered" else bins.copy(order="C")
+
+
+def _batch_array(value: ComplexGrid, name: str) -> ComplexGrid:
+    if not isinstance(value, np.ndarray) or value.dtype != np.complex128:
+        raise TypeError(f"{name} must be a complex128 NumPy array")
+    if value.ndim != 3 or 0 in value.shape:
+        raise ValueError(f"{name} must have nonempty shape (batch, mesh_y, mesh_x)")
+    if not np.all(np.isfinite(value)):
+        raise ValueError(f"{name} must be finite")
+    return value
+
+
+def batched_reciprocal_to_real_sum(coefficients: ComplexGrid) -> ComplexGrid:
+    """Independent unshifted coefficient sums; negative exponent, no scaling.
+
+    Only the final two axes are transformed. The leading axis labels separate
+    experiments and is never transformed or reduced. No ordering permutation.
+    """
+    values = _batch_array(coefficients, "coefficients")
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.fft.fft2(values, axes=(-2, -1), norm="backward")
+    return _batch_array(result, "real-space sums")
+
+
+def batched_real_to_reciprocal_coefficients(real_space: ComplexGrid) -> ComplexGrid:
+    """Independent positive-exponent transforms divided by mesh_x*mesh_y.
+
+    Returns unshifted bins with shape (batch, mesh_y, mesh_x). There is no
+    division by batch size and no transform along the batch axis.
+    """
+    values = _batch_array(real_space, "real_space")
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.fft.ifft2(values, axes=(-2, -1), norm="backward")
+    return _batch_array(result, "reciprocal coefficients")

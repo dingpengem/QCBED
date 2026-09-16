@@ -67,8 +67,8 @@ for one tilt, using validated zero-based slice IDs and explicit reciprocal
 ordering. It returns an immutable final reciprocal wave, requested complex
 beam amplitudes and raw intensities, preserving beam order and duplicates.
 It omits unused final transforms and uses unit plane-wave illumination by
-default. Parsed-input setup, tilt orchestration and fitted output scaling
-remain deferred. See [multislice sequences](docs/multislice_sequence.md).
+default. Fitted output scaling remains deferred. See
+[multislice sequences](docs/multislice_sequence.md).
 
 `prepare_multislice_sample` now builds reusable immutable gratings from parsed
 fixed S atoms and explicitly supplied applied parameters. `simulate_one_tilt`
@@ -80,6 +80,13 @@ The real Al input is exercised at its recorded initial parameters; historical
 CDFT/executable equivalence remains unestablished. See
 [single-tilt simulation](docs/single_tilt_simulation.md) for the required
 configuration, supported scope and validation.
+
+`simulate_tilt_series_serial` and `simulate_tilt_series_batched` execute
+explicit float64 `(n_tilts,2)` arrays of undilated reciprocal-cell H/K
+coefficients. The chunked NumPy path transforms only spatial axes and returns
+immutable `(n_tilts,n_beams)` amplitudes/intensities in request order.
+Serial and independent-DFT tests validate the Python convention; historical
+CDFT/executable equivalence remains unresolved. See [tilt series](docs/tilt_series.md).
 
 ## Coordinate and atom API
 
