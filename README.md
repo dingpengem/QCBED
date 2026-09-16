@@ -99,6 +99,13 @@ benchmarks; process startup can make one-process batching faster.
 
 ## Coordinate and atom API
 
+`parse_experimental_intensities` reads the experimental header and separate
+intensity, variance and weight blocks into immutable float64 `(tilt, beam)`
+arrays. Beam H/K order is supplied explicitly; optional scan validation checks
+both dimensions. File values are preserved without scaling or weighting.
+See [experimental intensity parsing](docs/experimental_intensity.md) for the
+source mapping and unresolved preprocessing/GRADIENT semantics.
+
 `parse_for007_scan` reads the initial scan basis/corners and only the
 NUMP/NUML header of the referenced experimental file. `generate_scan_tilts`
 produces float64 undilated H/K pairs in legacy column-fast order for all three
