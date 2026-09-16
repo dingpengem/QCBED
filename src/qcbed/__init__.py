@@ -33,6 +33,13 @@ from .fft_backend import (
     reciprocal_to_real_sum,
     real_to_reciprocal_coefficients,
 )
+from .propagator import (
+    PropagationParameters,
+    propagation_phase_radians,
+    fractional_slice_shift_phase_radians,
+    propagation_boundary_mask,
+    propagation_kernel,
+)
 
 __all__ = [
     "MeshConfig",
@@ -67,4 +74,9 @@ __all__ = [
     "unshifted_to_centered",
     "reciprocal_to_real_sum",
     "real_to_reciprocal_coefficients",
+    "PropagationParameters",
+    "propagation_phase_radians",
+    "fractional_slice_shift_phase_radians",
+    "propagation_boundary_mask",
+    "propagation_kernel",
 ]

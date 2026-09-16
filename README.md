@@ -49,6 +49,12 @@ acceleration with identical masks. The missing readable 1D CDFT still prevents
 claiming legacy FFT equivalence. See [phase gratings](docs/phase_grating.md)
 and [FFT backend](docs/fft_backend.md) for validation and timing results.
 
+The standalone PROPG kernel now provides source-backed propagation and
+fractional slice-shift phases, explicit reciprocal ordering and separate
+Nyquist suppression. Internal tilts are reciprocal-basis coefficients, not
+angles. No RMT normalization or wave propagation is included. See
+[propagator conventions](docs/propagator.md) for validation and limitations.
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
