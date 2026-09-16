@@ -22,6 +22,10 @@ source's tabulated cubic interpolation and Mott branches. See
 [scattering conventions and validation](docs/scattering.md) for units, bounds,
 and the remaining executable-equivalence limitation.
 
+Immutable 2D lattice and reciprocal grids provide separate dimensionless H/K
+indices, physical vectors and STL in inverse angstroms, using the source's
+convention without a 2*pi factor. See [reciprocal geometry](docs/reciprocal_geometry.md).
+
 ## Coordinate and atom API
 
 - `SliceGeometry.x_shift_fractional` and `y_shift_fractional` are fractional
