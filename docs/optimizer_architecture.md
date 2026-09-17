@@ -24,7 +24,7 @@ capacity or exact COMMON layout should become a Python design constraint.
 
 The restored private predecessor implementation is readable. private predecessor implementation, private predecessor implementation,
 private predecessor implementation, private predecessor implementation, private predecessor implementation and private predecessor implementation begin with ELF magic, not Fortran
-text. There is no readable AMOEBA optimizer definition: private predecessor implementation defines
+text. The readable AMOEBA definition is in private predecessor implementationprivate predecessor implementation defines
 ONEIT instead. private predecessor implementation contains FFT source; private predecessor implementation contains ATOMICSCATFACT.
 No readable RANDNUMGEN, RANDO, NRANDO or URANDO definition was found.
 ELF symbol tables do define rando_, nrando_ and urando_ in private predecessor implementation and
@@ -40,7 +40,7 @@ flowchart TD
     D[PROGRAM MULTIS] --> PACK[ARRANGEPARS: physical state to P]
     PACK --> SELECT[Method dispatch and LOOPS]
     SELECT --> AN[ANNEAL: matching callback interface; RNG ABI unresolved]
-    SELECT --> AM[AMOEBA: unavailable body]
+    SELECT --> AM[AMOEBA: recovered simplex body]
     SELECT --> PA[PARAMIN: unavailable body]
     SELECT --> SP[SIMPARA: random perturbation and parabolic search]
     AM --> O[ONEIT: inverse SCAL transform]
@@ -333,35 +333,31 @@ lists this document and the user's already replaced private predecessor implemen
 remained unchanged. Nothing was staged or committed. Earlier validation notes
 outside this section describe the preceding audit, not this run.
 
-## AMOEBA: simplex interface, unavailable update algorithm
+## AMOEBA: source-derived simplex implementation
 
-private predecessor implementationconstructs a simplex explicitly. For each active physical
-starting value p, it sets `SCAL(1)=1/(D2-D1)/p`, `SCAL(2)=D1*p`, then maps
-the current best value to q=(p_best-SCAL(2))*SCAL(1). Thus D1*p and D2*p map
-to 0 and 1; there is no visible clipping of q to that interval. SCAL is set
-outside the repetition loop and is not recomputed for each new best point.
-Equal D1/D2 would divide by zero without a visible guard.
+The complete readable body is recovered in `private predecessor implementation`.
+`run_legacy_amoeba` now translates this modified Numerical Recipes Nelder-Mead
+algorithm in float64, with `build_legacy_simplex` mirroring the driver.
+See [AMOEBA optimizer](amoeba_optimizer.md) for exact source ranges, ranking,
+coefficients, branch rules, coordinate mapping, stopping and validation.
 
-The NPAR+1 rows initially copy q; row i+1 then adds PLAMDA(i) to coordinate i.
-Every vertex is evaluated with ONEIT. P(NPAR+1)=0.5 is also assigned, but the
-visible vertex construction copies only 1..NPAR: no extra refined coordinate
-or meaning for that slot can be inferred.
+All five driver calls use ONEIT with legacy-simplex coordinates. Reflection,
+expansion, contraction and shrink coefficients are 1, 2, 0.5 and 0.5.
+Expansion is compared against the old best, not reflection. NUMF excludes
+initial simplex evaluations and its limit is checked with strict `>` only at
+loop heads. FTOL controls relative objective spread; CHIMIN separately tests
+the mean of best and worst. There is no final best-vertex swap.
 
-Private implementation excerpt omitted from shared documentation.
+The callback's retained best can differ from the final simplex best; both
+are exposed explicitly. The driver restores PARMIN through UPDPARS,
+ARRANGEPARS and UPDATE after return. Python does not implement that multi-stage
+driver or mutate the baseline refinement state.
 
-This proves simplex-based minimizer intent and a callback `REAL*8 ONEIT(PT)`
-with an array argument, not Nelder-Mead reflection/expansion/contraction rules
-or deterministic behavior. FTOL, MAXFSIMP and CHIMIN are passed, NUMF is printed;
-the convergence equation and exact budget semantics are unavailable. The local
-minimizer classification is an interface-level interpretation of a simplex
-around the current best point, not verification of its missing body. Calls
-are directly in the driver, standalone or in the explicit hybrids above;
-there is no readable evidence of ANNEAL calling AMOEBA.
-
-There is also a source interface concern: local SIMP is declared (2001,2000)
-and YP(2000) at line 30, but the call passes 1001,1000. Without AMOEBA's dummy
-array declarations, leading-dimension compatibility cannot be established.
-Do not copy these capacities into Python.
+The recovered P(MP,NP) declaration confirms the leading-dimension mismatch:
+driver SIMP(2001,2000) is passed with MP=1001,NP=1000. Python uses dynamic
+(N+1,N) arrays and guards the ONEIT-supported 1..1000 parameter domain; it does
+not reproduce unsafe historical memory interpretation. Executable equivalence
+remains unverified. ANNEAL does not call AMOEBA.
 
 ## PARAMIN: minimizer interface, not parameter packing
 
@@ -528,7 +524,7 @@ these potential historical defects is repaired or implemented in this task.
 | Search name | Passed callback | Same CHISQCAL? | Limits |
 | --- | --- | --- | --- |
 | Current ANNEAL | GOF=ONEITPARA | yes, at the source callback interface | calls at 21,47,93,102; RNG ABI and dimension compatibility not fully established |
-| AMOEBA | ONEIT | yes | affine coordinates; internal simplex rules unavailable |
+| AMOEBA | ONEIT | yes | affine coordinates; source-derived Python implementation, see amoeba_optimizer.md |
 | PARAMIN | ONEITPARA | yes, at callback interface | search body unavailable |
 | SIMPARA | GOF=ONEITPARA | yes, calls at 93,231,234,277,395 | readable search, missing RNG bodies |
 | RANDNUMGEN filename | defines ONEITPARA | yes | no separate RANDNUMGEN routine |

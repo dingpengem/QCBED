@@ -116,7 +116,12 @@ legacy sequencing, parameter flow and missing source. Source-derived
 `run_legacy_anneal` now provides seeded float64 adaptive Gaussian search through
 the existing trial evaluator. It accepts improvements and ties, with no uphill
 acceptance. Historical executable/RNG equivalence is unverified; see
-[ANNEAL optimizer](docs/anneal_optimizer.md). Other optimizers remain unimplemented.
+[ANNEAL optimizer](docs/anneal_optimizer.md).
+`build_legacy_simplex` and `run_legacy_amoeba` implement the recovered modified
+Nelder-Mead algorithm through legacy-simplex trial evaluation, with explicit
+final-simplex and evaluated-best diagnostics. See [AMOEBA optimizer](docs/amoeba_optimizer.md)
+for source-specific stopping rules and unresolved historical stride/equivalence
+limitations. Other optimizers and the multi-stage driver remain unimplemented.
 
 Refinement parameter layouts, packing/unpacking and explicit physical/simplex
 trial evaluation are implemented. Trials reuse the serial numerical kernels
