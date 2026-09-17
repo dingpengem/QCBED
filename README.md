@@ -114,6 +114,12 @@ historical executable equivalence is unverified. See
 The [optimizer architecture audit](docs/optimizer_architecture.md) documents
 legacy sequencing, parameter flow and missing source; optimizers remain unimplemented.
 
+Refinement parameter layouts, packing/unpacking and explicit physical/simplex
+trial evaluation are implemented. Trials reuse the serial numerical kernels
+for vacancy-free S-atom samples without surface corrections; unresolved states
+are rejected. See [refinement parameters](docs/refinement_parameters.md) for
+the 18-entry reference layout, supported behavior and equivalence limitations.
+
 `parse_experimental_intensities` reads the experimental header and separate
 intensity, variance and weight blocks into immutable float64 `(tilt, beam)`
 arrays. Beam H/K order is supplied explicitly; optional scan validation checks

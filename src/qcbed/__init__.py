@@ -76,8 +76,26 @@ from .scan import LegacyScanDefinition, parse_for007_scan, generate_scan_tilts
 from .experimental import ExperimentalIntensityData, parse_experimental_intensities
 from .intensity_scaling import compute_legacy_intensity_scaling, apply_legacy_intensity_scaling
 from .objective import LegacyObjectiveResult, compute_legacy_objective
+from .refinement import (
+    RefinementRegion, RefinementReflection, RefinementState,
+    RefinementParameterSpec, RefinementParameterLayout,
+    build_refinement_parameter_layout, pack_refinement_parameters, apply_refinement_parameters,
+)
+from .refinement_io import parse_refinement_state
+from .refinement_trial import RefinementTrialResult, evaluate_refinement_trial
 
 __all__ = [
+    "RefinementRegion",
+    "RefinementReflection",
+    "RefinementState",
+    "RefinementParameterSpec",
+    "RefinementParameterLayout",
+    "build_refinement_parameter_layout",
+    "pack_refinement_parameters",
+    "apply_refinement_parameters",
+    "parse_refinement_state",
+    "RefinementTrialResult",
+    "evaluate_refinement_trial",
     "LegacyObjectiveResult",
     "compute_legacy_objective",
     "compute_legacy_intensity_scaling",

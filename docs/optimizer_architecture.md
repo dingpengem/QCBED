@@ -18,14 +18,17 @@ capacity or exact COMMON layout should become a Python design constraint.
 | private predecessor implementation| CHISQCAL: shared objective |
 | private predecessor implementation| UPDPARS: unpack parameters and update derived physical state |
 | private predecessor implementation| ONEITPARA: physical-coordinate objective callback |
+| private predecessor implementation| Replacement COMMON-based ANNEAL; driver signature matches, RNG ABI and capacity compatibility unresolved |
 | private predecessor implementation| SIMPARA: stochastic simultaneous parabolic optimizer |
 | private predecessor implementation| separate gas-atom randomization in SFMAP |
 
-All `.f` files were classified by content. private predecessor implementation, private predecessor implementation, private predecessor implementation,
+The restored private predecessor implementation is readable. private predecessor implementation, private predecessor implementation,
 private predecessor implementation, private predecessor implementation, private predecessor implementation and private predecessor implementation begin with ELF magic, not Fortran
 text. There is no readable AMOEBA optimizer definition: private predecessor implementation defines
 ONEIT instead. private predecessor implementation contains FFT source; private predecessor implementation contains ATOMICSCATFACT.
 No readable RANDNUMGEN, RANDO, NRANDO or URANDO definition was found.
+ELF symbol tables do define rando_, nrando_ and urando_ in private predecessor implementation and
+private predecessor implementation; symbol presence does not establish their argument/return kinds.
 The supplied Makefile is also an ELF artifact, so it cannot establish the
 historical build/link selection. Binary symbols or filenames do not recover
 algorithm bodies. References below are relative to private predecessor sources unless noted.
@@ -36,7 +39,7 @@ algorithm bodies. References below are relative to private predecessor sources u
 flowchart TD
     D[PROGRAM MULTIS] --> PACK[ARRANGEPARS: physical state to P]
     PACK --> SELECT[Method dispatch and LOOPS]
-    SELECT --> AN[ANNEAL: unavailable body]
+    SELECT --> AN[ANNEAL: matching callback interface; RNG ABI unresolved]
     SELECT --> AM[AMOEBA: unavailable body]
     SELECT --> PA[PARAMIN: unavailable body]
     SELECT --> SP[SIMPARA: random perturbation and parabolic search]
@@ -96,17 +99,236 @@ unconditional final local polish, global-then-local pipeline, or fallback for
 an unrecognized positive-LOOPS METHOD. Internal restarts of unavailable
 optimizers are unknown.
 
-## ANNEAL: what is and is not established
+## Replacement ANNEAL: narrow interface, RNG and capacity audit
 
-The driver calls `ANNEAL(ONEITPARA,MAXFSIMP)` and labels it annealing in output.
-It supplies no explicit vector argument: P is established in shared state,
-and PARMIN is consumed afterward. MAXTEMP, MINTEMP and COOLRATE are read by
-the driver, but their use inside ANNEAL is unproven. The readable statements
-do not establish simulated-annealing mechanics, global-search capability,
-Metropolis acceptance, proposal distribution, temperature initialization or
-schedule, bounds enforcement, stopping formula, internal best-state storage,
-or any call to AMOEBA. Do not transfer SIMPARA's known mechanics to ANNEAL.
-Only the driver's annealing designation and callback/state interface are known.
+**Classification: interface-compatible but dependency/ABI compatibility
+unresolved.** No full ANNEAL algorithm audit or optimizer implementation is
+performed here. This section supersedes earlier compatibility conclusions.
+Only this compatibility section was updated in the present task.
+
+### Content discovery and evidence scope
+
+Artifact extensions are unreliable. Inspecting files beyond `.f` found:
+
+| Path | Actual content relevant to compatibility |
+| --- | --- |
+| private predecessor implementation| Readable REAL*8 URANDO, NRANDO and RANDO definitions |
+| private predecessor implementation| Readable PARAMIN declarations and RANDO call |
+| private predecessor implementation| Readable AMOEBA signature and array dimensions |
+| private predecessor implementation| Readable ANNEAL, byte-identical to current private predecessor implementation |
+| private predecessor implementation | Readable include, byte-identical to supplied private predecessor implementation |
+| private predecessor implementation / private predecessor implementation | Readable UPDATE / GRADIENT, not compiled objects |
+
+These are **text source discoveries, not machine-code reverse engineering**.
+Earlier statements elsewhere in this document about absent RNG definitions
+or unavailable PARAMIN/AMOEBA bodies reflected the `.f` inventory and are
+superseded by this content inventory. Their algorithms are not re-audited in
+this narrowly scoped update. A text `.o` is not proof of what was linked.
+The RNG header describes single precision, but its explicit REAL*8 definitions
+are stronger evidence. Source content takes priority over comments/extensions.
+
+Current private predecessor implementation SHA256 is
+`7905B6D659D2B7EDA135FFBD737C042C5FF6154C2A34DB099102045A9EFD3B51`, also matching
+private predecessor implementation. That is positive same-tree evidence, not historical build proof.
+The previous module-based replacement's symbols and conclusions do not apply.
+
+### Driver and callback interface
+
+private predecessor implementationdefines ANNEAL(GOF,MAXITS). GOF is REAL*8 and EXTERNAL (7,11);
+MAXITS is INTEGER*8 (6). All five current calls are
+ANNEAL(ONEITPARA,MAXFSIMP): private predecessor implementation(ANNE),707 (PAAN),766 (ANPA),
+1376 (SIAN),1441 (ANSI). Argument number, order and roles agree.
+ONEITPARA is REAL*8/external in the driver (30,35), with REAL*8 PT(1000)
+in private predecessor implementation. MAXFSIMP is INTEGER*8 in the shared include. This last
+kind/layout evidence is for the supplied related-version include, not a
+certification of the historical executable.
+
+There are no module dependencies or explicit RNG INTERFACE blocks. All relevant
+caller RNG declarations are EXTERNAL type declarations: they state expected
+return type, not checked dummy-argument kinds. private predecessor implementation does not declare
+RANDO/NRANDO/URANDO or override these local declarations. Its shared P/PARMIN
+REAL*8 types do not prevent REAL(...) conversion to default real in ANNEAL.
+
+ANNEAL calls UPDPARS at 16,42,88,97; ARRANGEPARS at 17,43,89,98; and GOF at
+21,47,93,102. GOF is the driver's ONEITPARA, which reaches CHISQCAL at
+private predecessor implementationand returns CSQ at 250. Its physical-vector representation
+matches the pack/unpack routines. No direct ONEIT call, PBEST/chibest state,
+qcbedms_var, utils_mod or cmp_ftol remains in this version.
+
+### Complete readable RNG type inventory
+
+Here `default REAL` deliberately does **not** mean a proven byte size.
+REAL*8 denotes the explicit eight-byte legacy declaration. DBLE of a result
+does not repair a wrong external return declaration.
+
+| Caller and line(s) | Routine / return expected by caller | Actual arguments in order |
+| --- | --- | --- |
+| private predecessor implementationidentical private predecessor implementation | NRANDO, default REAL | 3: INTEGER*8 SEED; default REAL from REAL(PARMIN(M)); default REAL from REAL(PARMIN(M)*TEMP(M)) |
+| same declarations | RANDO, default REAL | no call in these routines |
+| private predecessor implementation(SIMPARA) | RANDO, REAL*8 | 1: INTEGER*8 SEED |
+| private predecessor implementation| NRANDO, REAL*8 | 3: INTEGER*8 SEED; default-real literal 0.0; REAL*8 PERTSIZE(J) |
+| private predecessor implementation| URANDO, REAL*8 | declared only, no call |
+| private predecessor implementation(SFMAP) | RANDO, REAL*8 | 1: INTEGER*8 KER |
+| private predecessor implementation(PARAMIN) | RANDO, default REAL | 1: INTEGER*8 SEED; return wrapped in DBLE |
+| private predecessor implementation(URANDO) | RANDO, REAL*8 | 1: INTEGER*8 local SEED |
+| private predecessor implementation(NRANDO) | RANDO, REAL*8 | 1: INTEGER*8 local SEED, two textual call sites |
+
+The definitions in private predecessor implementation specify:
+
+- URANDO(GRAIN,CENTRAL,SIG), lines 13-24: REAL*8 return; INTEGER*8 GRAIN;
+  REAL*8 CENTRAL,SIG.
+- NRANDO(GRAIN,CENTRAL,SIG), lines 26-50: same argument/return kinds.
+- RANDO(POW), lines 52-77: REAL*8 return; INTEGER*8 POW.
+
+No other readable RNG call sites were found across the content-classified
+`.f` and `.o` files. No URANDO call was found. PARAMIN's binary-named `.f`
+references NRANDO too, but that does not establish a readable argument list
+or reconcile it with the text PARAMIN in private predecessor implementation.
+
+RANDO also depends on timing helpers (private predecessor implementation): TIME() has no arguments
+and is declared INTEGER*8; ETIME(ET) and DTIME(DT) have default-REAL returns
+and one default-REAL length-two array argument, with EXTERNAL declarations.
+Their compiler/runtime implementations and interfaces are not supplied as
+readable source. This is an additional runtime-kind contract, not a new RNG
+or proof that the surrounding compiler used any particular defaults.
+
+### Build and binary metadata evidence
+
+Repository file inventory and precision-option searches included text,
+artifact bytes, hidden project files outside .git, and supplied reference
+scripts/docs. No recorded -r8, -real-size 64, -fdefault-real-8,
+-freal-4-real-8, /autodouble, -autodouble, -xtypemap, -dbl, /real_size,
+FFLAGS/FCFLAGS or equivalent documented default-real promotion was found.
+The file named Makefile is ELF, not build instructions. No usable compiler
+project/batch configuration was found. reference_data/pacbedr.slurm loads
+an Intel module and runs executables; it does not compile them or specify
+precision options. The padqcbed log contains Intel-runtime-style errors from
+distcorr, which cannot establish qcbedms precision settings.
+
+Safe ELF64 section/symbol-table inspection of private predecessor sources artifacts found
+rando_, nrando_, urando_ defined as function symbols in private predecessor implementation and private predecessor implementation,
+with symbol sizes 480,1184,512 bytes respectively. These sizes describe code,
+not return values or arguments. private predecessor implementation has undefined rando_/nrando_ symbols;
+private predecessor implementation has undefined nrando_; private predecessor implementation/private predecessor implementation have undefined rando_.
+No debug-type or recorded-command-line sections were present in the inspected
+ELF artifacts. private predecessor implementation has a .comment string identifying GCC 8.3.1 (Red Hat),
+which neither records Fortran default-kind flags nor binds the artifact to
+this source. No machine instructions were decoded and no artifact was run.
+
+Therefore readable RNG source signatures are now known, but matching those
+signatures to the supplied compiled definitions and historical caller options
+is **not proven**. Default REAL=8 is **not established**. The same symbol names
+and code sizes are insufficient evidence for a return/argument ABI contract.
+
+### Conditional mixed-kind risk
+
+Under a compiler/build where default REAL is four bytes and REAL*8 is eight:
+
+- ANNEAL expects a four-byte NRANDO result while the readable implementation
+  returns eight bytes. The caller may interpret the wrong width/format of the
+  return register or return storage. DBLE then promotes the misinterpreted
+  value; it is not a cross-procedure conversion of the real eight-byte result.
+- Both ANNEAL center and scale actuals are four-byte temporaries while the
+  readable NRANDO expects eight-byte values. With normal by-reference Fortran
+  calling, the callee reads the wrong width through each address, potentially
+  consuming adjacent bytes and producing arbitrary values/nonfinite results.
+- SIMPARA's NRANDO result and scale match REAL*8, but its literal 0.0 center
+  is still default REAL: that argument has the same conditional mismatch.
+- PARAMIN's default-REAL RANDO return conflicts with the readable REAL*8 return;
+  its INTEGER*8 seed matches. SFMAP and internal RNG-to-RNG calls match the
+  visible REAL*8 and INTEGER*8 signatures.
+
+The exact stack/register effect depends on compiler/target ABI. A pointee-kind
+mismatch need not move argument pointer slots, and two real return kinds may
+use the same register with different widths. It remains unsafe either way;
+no particular crash or numerical error is guaranteed. Wrong center, scale or
+return interpretation can corrupt random proposal values. Uniform default-real
+promotion could reconcile the listed real mismatches, but must be demonstrated
+for caller and callee and checked against runtime helpers, not assumed.
+
+### Active-parameter count and capacity audit
+
+NPAR is the actual packed active count (private predecessor implementation), reset to zero
+and incremented for selected masks. ANNEAL loops over that count; MAXITS and
+other optimizer iteration counters do not cap it. CHISMIN is a REAL*8 scalar
+fit value, not a parameter array or count. UPDPARS' COUNT comparison at
+private predecessor implementationonly reports mapping-count disagreement, not overflow.
+
+| Storage / routine | Visible capacity and count contract |
+| --- | --- |
+| ANNEAL, private predecessor implementation| TEMPVAR,TEMP,TEMPTEMP each 1000; indexes 1..NPAR |
+| Shared include, private predecessor implementation| PARAMNUM=2000; P,PARMIN and associated bounds/scales sized from it; NPAR INTEGER*8; CHISMIN scalar in CHISQ |
+| ONEIT/ONEITPARA/UPDPARS | PT(1000), and ONEIT STOREPT(1000) |
+| PARAMIN, private predecessor implementation| TEMPVAR,BOT,TOP,PARAMORDER,PARAMSWITCH each 1000; shared NPAR |
+| SIMPARA, private predecessor implementation| parameter/work arrays 2000; NPARAM receives driver NPAR |
+| AMOEBA, private predecessor implementation| NMAX=2000 work vectors; P(MP,NP),Y(MP); NDIM active count and MPTS=NDIM+1 |
+| Driver, private predecessor implementationand repeated simplex branches | SIMP(2001,2000),YP(2000); passes MP=1001,NP=1000,NDIM=NPAR |
+
+The include capacities are exact for the supplied declaration file, not
+verified historical limits. private predecessor implementation is byte-identical to that file, which
+corroborates present-tree content but not original provenance.
+
+No explicit NPAR<=1000 guard was found in the driver, ARRANGEPARS, mapping,
+ANNEAL or the readable optimizer declarations/control checks. NPAR>1000
+indexes past ANNEAL's local arrays and also exceeds several callback/PARAMIN
+arrays. NPAR>2000 exceeds the supplied shared arrays during packing itself.
+The driver writes P(NPAR+1) on simplex paths, so filling every shared slot
+also makes that extra write unsafe. The reference FOR007.DAT and
+STARTINGFOR007.DAT have 18 active parameters; FOR0013.DAT:989,3652 confirms 18.
+Those examples fit the limits but neither enforce safety nor test ANNEAL.
+
+For fixed input sizes, let R=NREGIONS, T=NTYPE, A=sum_s NBALL(s), and
+F=sum_r NRF(r). From the packing statements, the all-active upper envelope is
+
+```text
+NPAR <= 8 + 3*R + 3*T + R*T + 2*A + 2*F
+```
+
+The eight comprise energy, dilation and six scan coordinates; regions supply
+one depth plus at most two vacancy coefficients; absorption supplies three
+per species; DW supplies one per region/species; atoms supply two positions;
+reflections supply two factors. Absorption/record/mask choices can reduce this.
+This is a combinatorial envelope, not a validated allocation bound: readable
+input-dependent loops do not enforce a universal active-count maximum.
+Even using only the related include's R=1000,T=10,SL=2500,ATOMS=10,NUMHKL=50
+would give an illustrative envelope 163038, far beyond 2000; this does not
+claim such an input could safely run. More simply, 501 selected region depths
+plus 501 selected DW values already require 1002 slots. Current fixtures alone
+cannot exclude such overflows.
+
+The newly found AMOEBA dummy dimensions make the driver concern concrete:
+passing SIMP(2001,2000) as P(1001,1000) gives a different column stride for
+multiple columns under ordinary Fortran storage association. It is not cured
+by NPAR<=1000. Driver literals 1001/1000 are default integers whereas dummy
+MP/NP are INTEGER*8; default-integer promotion/build settings are also unknown.
+These are existing compatibility issues, not a reason to redesign optimizers
+in this task. No Python array should copy these fixed capacities.
+
+### Version conclusion and next evidence needed
+
+The signature, callbacks, COMMON names, pack/unpack path and exact duplicate
+in private predecessor implementation support the current source architecture. There is no evidence
+requiring the classification 'likely from a different source version'. Under
+default REAL=4, however, the caller contracts conflict with the newly found
+REAL*8 RNG source. Since actual build kinds/link selection remain unknown,
+the classification is **interface-compatible but dependency/ABI compatibility
+unresolved**, not strongly compatible or unconditionally incompatible.
+
+Next obtain original compiler commands/default-kind settings and establish
+which RNG definitions were linked, including timing-helper contracts. Confirm
+the intended active-count domain and address capacity/leading-dimension issues
+as explicit follow-up decisions. The source signatures no longer need to be
+recovered: they are readable in private predecessor implementation. Only after resolving compatibility
+should the full ANNEAL algorithm audit proceed. Metropolis/global-search,
+cooling, stopping and best-state logic are deliberately not certified here.
+
+Narrow-audit validation: **1357 tests passed in 37.57 s**, using exactly
+`C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe`.
+This is Python regression validation, not an RNG ABI test. The requested
+`git diff --cached --check` passed with no staged changes. Final status still
+lists this document and the user's already replaced private predecessor implementation; its SHA256
+remained unchanged. Nothing was staged or committed. Earlier validation notes
+outside this section describe the preceding audit, not this run.
 
 ## AMOEBA: simplex interface, unavailable update algorithm
 
@@ -200,7 +422,8 @@ Executable behavior:
   Recompute PERTSIZE, set C0=CBEST. Return NFUNC=TOTSTEPS at 430.
 
 This proves randomized exploration with parabolic proposals and temperature
-adaptation. It is the only readable stochastic search component; global
+adaptation. Its stochastic search mechanics are audited here; replacement ANNEAL remains
+subject to its compatibility gate. Global
 optimality, a conventional global-optimizer classification or escape through
 uphill acceptance is not established. Direction restarts stay at the current
 best point, not a newly randomized starting vector. No other optimizer is
@@ -233,9 +456,10 @@ Source concerns to resolve before translation:
 There is no readable routine named RANDNUMGEN or call to it. private predecessor implementation
 contains ONEITPARA, which maps a trial vector, runs diffraction and evaluates
 CHISQCAL; it does not generate random starting vectors, perturb parameters or
-implement random-restart search. It participates in SPAR and ANNEAL only as
-the passed objective callback. RANDO and NRANDO are actual random utility
-references in SIMPARA; URANDO is declared external but never called there.
+implement random-restart search. The driver passes it as GOF to both SPAR and the current ANNEAL.
+Both now have matching callback signatures; ANNEAL dependency ABI remains unresolved. RANDO and NRANDO are actual random utility
+references in SIMPARA; current ANNEAL calls NRANDO and only declares RANDO.
+URANDO is declared external but never called in SIMPARA.
 Their reproducible sequences and distribution conventions are unavailable.
 SFMAP separately uses RANDO for G-record x/y/starting occupancy (1840-1854);
 that physical gas randomization is not an optimizer restart.
@@ -300,7 +524,7 @@ these potential historical defects is repaired or implemented in this task.
 
 | Search name | Passed callback | Same CHISQCAL? | Limits |
 | --- | --- | --- | --- |
-| ANNEAL | ONEITPARA | yes, at callback interface | internal calls unavailable |
+| Current ANNEAL | GOF=ONEITPARA | yes, at the source callback interface | calls at 21,47,93,102; RNG ABI and dimension compatibility not fully established |
 | AMOEBA | ONEIT | yes | affine coordinates; internal simplex rules unavailable |
 | PARAMIN | ONEITPARA | yes, at callback interface | search body unavailable |
 | SIMPARA | GOF=ONEITPARA | yes, calls at 93,231,234,277,395 | readable search, missing RNG bodies |
@@ -333,9 +557,12 @@ across all other paths and UPDATE effects remain unresolved.
    forward and scalar APIs, keeping physical and simplex coordinates distinct.
    Resolve GRADIENT and stateful callback behavior before claiming legacy
    end-to-end equivalence. A restricted GRADIENTOPT=0 mode must be explicit.
-3. Recover original RNG and missing optimizer/build source, or obtain executable
-   comparison evidence. SIMPARA is the best-supported algorithm candidate but
-   its uninitialized state and callback interactions require decisions first.
+3. Resolve current ANNEAL's NRANDO/RANDO interface and compiler-kind/build
+   evidence, and confirm its <=1000 active-parameter domain against the intended
+   driver inputs. The callback signature now matches; no module-state adapter
+   is indicated. Only after this compatibility gate, perform the replacement's
+   algorithm audit. Recover other missing optimizer source or executable
+   comparison evidence; SIMPARA remains a candidate with its own state issues.
    Do not substitute generic simulated annealing, SciPy Nelder-Mead or a
    guessed coordinate minimizer under a legacy-equivalence label.
 4. Validate individual chosen optimizers and only then implement the documented
@@ -346,8 +573,15 @@ across all other paths and UPDATE effects remain unresolved.
 No production code, public APIs or behavioral tests are added by this audit.
 There is no Python optimizer metadata that warrants a static invariant test.
 
-Validation: the complete suite passed **1357 tests in 44.96 s**, using exactly
-`C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe`.
-`git diff --check` passed. Only this document and the README audit link changed;
-source, reference data, Python modules and tests were unchanged. Nothing was
-staged or committed.
+This replacement audit changes this document only, preserving the other
+optimizer conclusions. Both the document and the manually replaced private predecessor implementation
+were already modified at the initial status check; the protected source was
+not edited. No optimizer implementation or new public API was added.
+
+Validation used exactly
+`C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe`:
+**1357 tests passed in 21.98 s**. These are Python regressions, not a Fortran
+compatibility test. `git diff --cached --check` passed with no staged changes.
+Final status lists the modified architecture document and the user's manually
+replaced private predecessor implementation. Its SHA256 was unchanged during this audit. No source was
+edited to satisfy whitespace checks; nothing was staged or committed.
