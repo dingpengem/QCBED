@@ -125,7 +125,11 @@ limitations. `run_legacy_paramin` adds source-derived coordinate parabolic
 search through physical trial evaluation, with adaptive relative ranges and
 fixed or seeded random traversal. See [PARAMIN optimizer](docs/paramin_optimizer.md)
 for its fallback, stopping and historical-equivalence limitations.
-SIMPARA and the multi-stage driver remain unimplemented.
+`run_legacy_simpara` adds simultaneous stochastic parabolic proposals with
+source direction and temperature adaptation. Its startup direction/counter
+are explicitly zero-initialized by agreement; historical executable equivalence
+is unverified. See [SIMPARA optimizer](docs/simpara_optimizer.md).
+The multi-stage driver remains unimplemented.
 
 Refinement parameter layouts, packing/unpacking and explicit physical/simplex
 trial evaluation are implemented. Trials reuse the serial numerical kernels

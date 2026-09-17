@@ -381,7 +381,12 @@ Historical clock-based RANDO ABI and executable equivalence remain unresolved.
 The existing driver sequencing table remains applicable; Python sequencing
 and multi-stage refinement remain unimplemented.
 
-## SIMPARA: the readable stochastic optimizer
+## SIMPARA: implemented source-derived stochastic optimizer
+
+`run_legacy_simpara` now implements this path in float64. See
+[SIMPARA optimizer](simpara_optimizer.md) for the complete audit, approved
+zero-initialized startup policy, callback aliasing, RNG choices and tests.
+Historical executable equivalence remains unverified.
 
 The sole call is private predecessor implementationin SPAR:
 
@@ -402,9 +407,11 @@ Executable behavior:
   copy CENTRAL. Continue while TOTSTEPS<=MAXITS and temperature>=LOTEMP*COOLING.
 - 125-145: POPT=1 draws a permutation by repeated RANDO(SEED) selection with
   duplicate rejection; POPT=0 uses listed order. Other values leave the order
-  unspecified. Exact RANDO distribution/seed mutation is unavailable.
+  unspecified. Python uses explicit seeded uniforms; historical clock-dependent
+  seed mutation is not reproduced.
 - 169-225: construct perturbations using NRANDO(SEED,0.0,PERTSIZE). The comments
-  call this normal random noise; the RNG body is missing. Improvement selects
+  call this normal random noise; readable private predecessor implementationsupplies the polar
+  transform reused by the Python implementation. Improvement selects
   signs aligned with OUTVAR-CENTRAL. Other cycles alternate direction rules,
   including a rejection loop until an absolute sign-direction dot product is
   <=1.50. UNITVEC is approximately a sign vector, not a Euclidean unit vector;
@@ -440,10 +447,11 @@ LOTEMP*COOLING, not simply LOTEMP. HITEMP is an initial value, not an enforced
 ceiling. The comment requires 0<COOLING<1, but no executable validation enforces
 it. There is no generic LOW/HIGH bound interface.
 
-Source concerns to resolve before translation:
+Source concerns and explicit Python resolutions:
 
 - UNITVEC is read at 171 before any visible initialization; SINCECHANGE can be
-  read at 189 before assignment. Do not silently assume zero-initialized locals.
+  read at 189 before assignment. The user explicitly approved zero initialization
+  of both in Python; this does not establish historical startup behavior.
 - NPARAM=0 would reach MOD(CYCLE,NPARAM); no explicit positive-count guard.
 - The NEWVAR/NEWVAR check at 255 rejects zero as well as invalid arithmetic.
   The upper cap 10000 at 265-266 applies only within the positive-curvature
@@ -452,7 +460,8 @@ Source concerns to resolve before translation:
   INVAR and OUTVAR are the driver's P and PARMIN, also accessed by the callback.
   In particular trial callbacks can overwrite PARMIN before SIMPARA performs
   its own comparison; CBEST and CHISMIN have separate update rules (strict <
-  versus <=). A future pure callback must not silently erase these effects.
+  versus <=). The Python optimizer explicitly reproduces these callback writes and relevant
+  PT mutations without mutating the caller's baseline state.
 
 ## RANDNUMGEN and random utilities
 
@@ -530,7 +539,7 @@ these potential historical defects is repaired or implemented in this task.
 | Current ANNEAL | GOF=ONEITPARA | yes, at the source callback interface | calls at 21,47,93,102; RNG ABI and dimension compatibility not fully established |
 | AMOEBA | ONEIT | yes | affine coordinates; source-derived Python implementation, see amoeba_optimizer.md |
 | PARAMIN | ONEITPARA | yes | source-derived physical coordinate search, see paramin_optimizer.md |
-| SIMPARA | GOF=ONEITPARA | yes, calls at 93,231,234,277,395 | readable search, missing RNG bodies |
+| SIMPARA | GOF=ONEITPARA | yes, calls at 93,231,234,277,395 | source-derived implementation with explicit startup and RNG policy |
 | RANDNUMGEN filename | defines ONEITPARA | yes | no separate RANDNUMGEN routine |
 
 ONEIT calls CHISQCAL at private predecessor implementationand returns CSQ at 261; ONEITPARA does so
