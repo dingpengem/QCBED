@@ -41,7 +41,7 @@ flowchart TD
     PACK --> SELECT[Method dispatch and LOOPS]
     SELECT --> AN[ANNEAL: matching callback interface; RNG ABI unresolved]
     SELECT --> AM[AMOEBA: recovered simplex body]
-    SELECT --> PA[PARAMIN: unavailable body]
+    SELECT --> PA[PARAMIN: recovered coordinate search]
     SELECT --> SP[SIMPARA: random perturbation and parabolic search]
     AM --> O[ONEIT: inverse SCAL transform]
     AN --> OP[ONEITPARA: physical coordinates]
@@ -359,23 +359,27 @@ driver SIMP(2001,2000) is passed with MP=1001,NP=1000. Python uses dynamic
 not reproduce unsafe historical memory interpretation. Executable equivalence
 remains unverified. ANNEAL does not call AMOEBA.
 
-## PARAMIN: minimizer interface, not parameter packing
+## PARAMIN: source-derived coordinate parabolic optimizer
 
-The driver fills HIGH(i)=D1(i), LOW(i)=D2(i), then calls
-`PARAMIN(LOW,HIGH,ONEITPARA,FTOL)` (e.g. 954-962). It labels this parabolic
-optimization and consumes PARMIN afterward. This proves it occupies a search
-stage, not the ARRANGEPARS/UPDPARS mapping role. It receives two bound-like
-arrays and a physical-coordinate callback; there is no explicit starting
-vector or output-vector argument. Whether LOW/HIGH are absolute limits,
-relative multipliers or bracketing offsets inside PARAMIN is unresolved.
-The raw reference pairs are 1.05,0.95, supporting their use as relative
-factors in the *visible simplex mapping*, not proving PARAMIN's interpretation.
+The complete readable body in `private predecessor implementation` is now translated by
+`run_legacy_paramin`. See [PARAMIN optimizer](paramin_optimizer.md) for the
+literal interpolation, branch rules, range adaptation, counters and tests.
+All five driver calls pass LOW=D2, HIGH=D1 and ONEITPARA, so the active vector
+is physical and the ranges are relative factors, not absolute bounds.
 
-Coordinate-wise parabolic minimization, local/global behavior, random ordering,
-AMOEBA delegation, enforcement of bounds and FTOL convergence remain unproven.
-PARAOPT controls the driver's printed random/listed-order message, but PARAMIN's
-actual consumption is hidden. MAXFPARA and MINCH are read/assigned yet their
-stopping roles cannot be recovered from executable statements in this body.
+PARAMIN visits one active coordinate at a time, in packed order or a random
+order produced by duplicate rejection. Each visit evaluates two relative
+samples and a parabolic/fallback point. Callback bookkeeping accepts ties;
+local BEST updates are strict improvements. Each cycle ends with a retained
+point reevaluation and CHISMIN reset. Stopping uses mean old relative range
+and the inclusive MAXFPARA cycle test, not objective convergence or MINCH.
+There is no call to AMOEBA or another optimizer within PARAMIN.
+
+Python uses dynamic arrays with an explicit 1..1000 active-count guard,
+float64 arithmetic and private seeded PCG64 for optional random traversal.
+Historical clock-based RANDO ABI and executable equivalence remain unresolved.
+The existing driver sequencing table remains applicable; Python sequencing
+and multi-stage refinement remain unimplemented.
 
 ## SIMPARA: the readable stochastic optimizer
 
@@ -509,7 +513,7 @@ performs three UPDPARS/slice-sequence passes, then restores scaled PT.
 ONEITPARA (private predecessor implementationonward) takes physical PT directly and does not
 perform this save/affine-restore operation. Both callbacks are stateful and
 recompute physics before the objective. Mapping does not occur in SIMPARA;
-mapping inside unavailable PARAMIN cannot be asserted.
+PARAMIN uses the physical mapping documented in paramin_optimizer.md.
 
 Other visible mapping hazards warrant a dedicated next audit: UPDPARS tests
 RTYPE(I) after the region loop within a slice loop (private predecessor implementation), where
@@ -525,7 +529,7 @@ these potential historical defects is repaired or implemented in this task.
 | --- | --- | --- | --- |
 | Current ANNEAL | GOF=ONEITPARA | yes, at the source callback interface | calls at 21,47,93,102; RNG ABI and dimension compatibility not fully established |
 | AMOEBA | ONEIT | yes | affine coordinates; source-derived Python implementation, see amoeba_optimizer.md |
-| PARAMIN | ONEITPARA | yes, at callback interface | search body unavailable |
+| PARAMIN | ONEITPARA | yes | source-derived physical coordinate search, see paramin_optimizer.md |
 | SIMPARA | GOF=ONEITPARA | yes, calls at 93,231,234,277,395 | readable search, missing RNG bodies |
 | RANDNUMGEN filename | defines ONEITPARA | yes | no separate RANDNUMGEN routine |
 

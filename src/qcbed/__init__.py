@@ -11,6 +11,7 @@ from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, pa
 from .electron import electron_wavelength_angstrom
 from .anneal import LegacyAnnealResult, run_legacy_anneal
 from .amoeba import LegacyAmoebaResult, build_legacy_simplex, run_legacy_amoeba
+from .paramin import LegacyParaminResult, run_legacy_paramin
 from .scattering import elastic_atomic_scattering_factor
 from .structure_factors import elastic_structure_factors
 from .absorption import (
@@ -128,6 +129,8 @@ __all__ = [
     "LegacyAmoebaResult",
     "build_legacy_simplex",
     "run_legacy_amoeba",
+    "LegacyParaminResult",
+    "run_legacy_paramin",
     "elastic_atomic_scattering_factor",
     "elastic_structure_factors",
     "AbsorptionCoefficients",

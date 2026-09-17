@@ -121,7 +121,11 @@ acceptance. Historical executable/RNG equivalence is unverified; see
 Nelder-Mead algorithm through legacy-simplex trial evaluation, with explicit
 final-simplex and evaluated-best diagnostics. See [AMOEBA optimizer](docs/amoeba_optimizer.md)
 for source-specific stopping rules and unresolved historical stride/equivalence
-limitations. Other optimizers and the multi-stage driver remain unimplemented.
+limitations. `run_legacy_paramin` adds source-derived coordinate parabolic
+search through physical trial evaluation, with adaptive relative ranges and
+fixed or seeded random traversal. See [PARAMIN optimizer](docs/paramin_optimizer.md)
+for its fallback, stopping and historical-equivalence limitations.
+SIMPARA and the multi-stage driver remain unimplemented.
 
 Refinement parameter layouts, packing/unpacking and explicit physical/simplex
 trial evaluation are implemented. Trials reuse the serial numerical kernels
