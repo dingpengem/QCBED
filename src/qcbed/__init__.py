@@ -101,7 +101,12 @@ from .refinement_trial import RefinementTrialResult, evaluate_refinement_trial
 
 from .execution import ForwardExecutionConfig
 
+from .full_runner import FullRefinementConfig, FullRefinementRun, run_full_refinement, load_refinement_checkpoint
+from .refinement_driver import LegacyRefinementRestart
+
 __all__ = [
+    "FullRefinementConfig", "FullRefinementRun", "run_full_refinement", "load_refinement_checkpoint",
+    "LegacyRefinementRestart",
     "ForwardExecutionConfig",
     "MaskedObjectiveResult", "compute_masked_objective", "compute_selected_objective",
     "RefinementProgressRecord", "RefinementSnapshot", "LocalOptimizationRunResult", "run_local_optimization",

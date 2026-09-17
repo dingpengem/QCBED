@@ -104,7 +104,7 @@ class RefinementTrialResult:
 def evaluate_refinement_trial(
     state: RefinementState, trial_vector: np.ndarray, experimental: ExperimentalIntensityData, *,
     coordinate_mode="physical", phase_grating_method="fft", objective_mode="legacy",
-    evaluation_callback=None, execution=None,
+    evaluation_callback=None, execution=None, before_evaluation=None,
 ) -> RefinementTrialResult:
     """Map a fresh trial, rebuild physics, run selected tilts, compute YNORM/objective.
 
@@ -119,6 +119,8 @@ def evaluate_refinement_trial(
         raise TypeError("experimental must be ExperimentalIntensityData")
     if objective_mode not in ("legacy", "masked"):
         raise ValueError("objective_mode must be 'legacy' or 'masked'")
+    if before_evaluation is not None:
+        before_evaluation()
     mapped = apply_refinement_parameters(state, trial_vector, coordinate_mode=coordinate_mode)
     scan = mapped.scan
     if (scan.scan_rows, scan.scan_columns) != (experimental.scan_rows, experimental.scan_columns):

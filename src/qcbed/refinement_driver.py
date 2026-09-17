@@ -108,6 +108,28 @@ class LegacyRefinementResult:
         object.__setattr__(self,"stage_history",tuple(self.stage_history))
 
 
+@dataclass(frozen=True, eq=False)
+class LegacyRefinementRestart:
+    """Stage-boundary physical vector; does not contain optimizer internals.
+
+    Keep the original baseline state/config: simplex scaling and seeds depend
+    on it. loop_index is one-based, stage_position zero-based.
+    """
+    loop_index: int
+    stage_position: int
+    vector: np.ndarray
+
+    def __post_init__(self):
+        for name, minimum in (("loop_index", 1), ("stage_position", 0)):
+            v = getattr(self, name)
+            if isinstance(v, (bool, np.bool_)) or not isinstance(v, Integral) or v < minimum:
+                raise ValueError(f"{name} must be an integer >= {minimum}")
+        v = self.vector
+        if not isinstance(v, np.ndarray) or v.dtype != np.float64 or v.ndim != 1 or not np.all(np.isfinite(v)):
+            raise ValueError("restart vector must be finite one-dimensional float64")
+        object.__setattr__(self, "vector", _snapshot(v))
+
+
 def parse_legacy_refinement(path, *, seed, experimental_header_path=None):
     """Return (RefinementState, LegacyRefinementConfig) from source records."""
     state, controls, records, record = _parse_refinement_input(
@@ -121,7 +143,8 @@ def parse_legacy_refinement(path, *, seed, experimental_header_path=None):
 
 def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *,
                           phase_grating_method="fft", objective_mode="legacy",
-                          progress_callback=None) -> LegacyRefinementResult:
+                          progress_callback=None, restart=None, stage_start_callback=None,
+                          before_evaluation=None) -> LegacyRefinementResult:
     """Run complete selected sequences, carrying PARMIN through UPDPARS/packing.
 
     Baseline state (and hence AMOEBA SCAL) stays anchored across all stages.
@@ -139,19 +162,31 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
         raise ValueError("PLAMDA count must match active parameter count")
     initial = pack_refinement_parameters(state)
     current = initial.copy()
+    start_loop, start_position = 1, 0
+    if restart is not None:
+        if not isinstance(restart, LegacyRefinementRestart):
+            raise TypeError("restart must be LegacyRefinementRestart")
+        if config.loops <= 0 or restart.loop_index > config.loops or restart.stage_position >= len(config.stages):
+            raise ValueError("restart cursor is outside configured stages")
+        if restart.vector.shape != initial.shape:
+            raise ValueError("restart vector must match active parameter layout")
+        current = restart.vector.copy()
+        start_loop, start_position = restart.loop_index, restart.stage_position
     history = []
     evaluations = 0
     first_score = None
     selected = config.stages if config.loops > 0 else (None,)
-    for loop in range(1,max(config.loops,1)+1):
+    for loop in range(start_loop,max(config.loops,1)+1):
         for position,name in enumerate(selected):
-            stage_index=len(history)+1
+            if loop == start_loop and position < start_position:
+                continue
+            stage_index=(loop-1)*len(selected)+position+1
             def observe(trial):
                 if progress_callback is not None:
                     progress_callback("evaluation",stage_index,name or "EVALUATION",loop,trial)
             pre = evaluate_refinement_trial(state,current,experimental,
                 coordinate_mode="physical",phase_grating_method=phase_grating_method,
-                objective_mode=objective_mode,execution=config.execution,evaluation_callback=observe if progress_callback else None)
+                objective_mode=objective_mode,execution=config.execution,before_evaluation=before_evaluation,evaluation_callback=observe if progress_callback else None)
             evaluations += 1
             score = np.float64(pre.objective)
             if not np.isfinite(score) or score > 1e20:
@@ -164,10 +199,12 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
             if first_score is None:
                 first_score = score
             start = retained.copy()
+            if stage_start_callback is not None:
+                stage_start_callback(LegacyRefinementRestart(loop, position, start), pre)
             incoming_score = score
             stage_seed = None
             common = dict(phase_grating_method=phase_grating_method,objective_mode=objective_mode,
-                          execution=config.execution,
+                          execution=config.execution,before_evaluation=before_evaluation,
                           evaluation_callback=observe if progress_callback else None)
             if name in ("ANNEAL","SIMPARA"):
                 stage_seed = int(np.random.SeedSequence([config.seed,loop,position]).generate_state(1,dtype=np.uint64)[0])

@@ -236,3 +236,14 @@ set `LegacyRefinementConfig.execution` to
 `dataclasses.replace`). Serial remains the default reference path and objective
 defaults are unchanged. See [local optimization](docs/local_optimization.md#forward-execution)
 for the API and [performance measurements](docs/cpu_performance_benchmark.md#integrated-refinement-trial-backend).
+
+## Durable full-refinement runner
+
+Run `examples/run_full_refinement.py --quick` for a short real-data pipeline
+check, or `--dry-run` to inspect configuration without optimization. Edit the
+settings at the top before running without flags. Use
+`examples/run_full_refinement.py --resume <run_directory>` to restart from a
+saved retained stage boundary. Defaults use masked objective and batched NumPy
+(64 tilts); checkpoints do not claim exact mid-optimizer continuation.
+See [full refinement](docs/full_refinement.md) for exact interpreter commands,
+budgets, previews, output files and restart limitations.
