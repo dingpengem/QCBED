@@ -134,7 +134,7 @@ commented out, J=J does nothing, and it neither normalizes nor changes PMAP.
 The surrounding PMAP/TOTALINT normalization is also commented out.
 
 MT=Nx*Ny and RMT=1/MT (`private predecessor implementation`). The Python real-to-reciprocal
-ifft2 already divides by MT; reciprocal-to-real fft2 is unnormalized. No
+fft2(norm="forward") divides by MT; reciprocal-to-real ifft2(norm="forward") is unnormalized. No
 extra RMT or fitted intensity scale is applied. For lossless multipliers,
 sum |final reciprocal|^2 = sum |incident real wave|^2 / MT. Thus unit incident
 illumination has total reciprocal intensity one. Absorptive gratings and

@@ -87,14 +87,26 @@ def test_option_type(option):
 def test_all_table_entries_preserve_source_order_and_sentinels():
     # Verify all copied data against readable source, including unused X-ray
     # rows and negative sentinels. This is a provenance check, not execution.
-    source = (Path(__file__).parents[1] / "legacy_fortran" / "fftsg.f").read_text()
+    root = Path(__file__).parents[1] / "legacy_fortran"
+    providers = []
+    for path in root.rglob("*"):
+        if path.suffix.lower() not in (".f", ".for", ".ftn"):
+            continue
+        data = path.read_bytes()
+        assert b"\0" not in data, f"binary content in source: {path}"
+        source = data.decode("utf-8-sig")
+        if re.search(r"^\s*(?:REAL\*8\s+)?FUNCTION\s+ATOMICSCATFACT\s*\(", source, re.I | re.M):
+            providers.append((path, source))
+    assert len(providers) == 1, f"Expected one current ATOMICSCATFACT provider: {[p for p, _ in providers]}"
+    _, source = providers[0]
     for source_name, table in [("EFARRAY", scattering._EF), ("XFARRAY", scattering._XF)]:
-        rows = re.findall(rf"{source_name}\((\d+),:\)\s*=\s*\(/(.*?)/\)", source, re.S)
+        rows = re.findall(rf"{source_name}\s*\(\s*(\d+)\s*,\s*:\s*\)\s*=\s*\(/(.*?)/\)", source, re.S | re.I)
         assert len(rows) == len(table) == 98
+        assert sorted(int(z) for z, _ in rows) == list(range(1, 99))
         for z, body in rows:
             expected = tuple(float(v) for v in body.replace('*', '').split(','))
             assert len(expected) == 62
             assert table[int(z)-1] == expected
     for source_name, table in [("STLARRAY", scattering._STL), ("EMARRAY", scattering._METHOD)]:
-        body = re.search(rf"{source_name}(?:\(:\))?\s*=\s*\(/(.*?)/\)", source, re.S)[1]
+        body = re.search(rf"{source_name}\s*(?:\(\s*:\s*\))?\s*=\s*\(/(.*?)/\)", source, re.S | re.I)[1]
         assert table == tuple(float(v) for v in body.replace('*', '').split(','))

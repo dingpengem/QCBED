@@ -1,5 +1,19 @@
 # CBED output and end-to-end validation
 
+> Clean-import provenance update: the [canonical source inventory](legacy_source_inventory.md)
+> supersedes source-location, binary-only, duplicate and missing-provider claims below.
+> Driver: private predecessor implementation; ONEIT: private predecessor implementation; ONEITPARA: private predecessor implementation; optimizers now
+> occupy their matching .f files; RNG: private predecessor implementation; ATOMICSCATFACT:
+> private predecessor implementation (all tables confirmed). The four recently corrected core
+> file bodies are unchanged. Historical test results below remain historical.
+
+
+> FFT convention update (2026-09-16): historical measurements below used the
+> earlier wave signs. The corrected full reference run and before/after results
+> are recorded in [FFT sign correction](fft_sign_correction.md). Numerical
+> output is comparable for this Al case, but that symmetry does not establish
+> correct signs for general asymmetric models. Objective formulas are unchanged.
+
 An explicitly selected non-legacy `objective_mode="masked"` now permits local
 optimization of the reference dataset without changing legacy arithmetic.
 See [masked objective](masked_objective.md) and [local runner](local_optimization.md).

@@ -46,27 +46,27 @@ sequence lookup. Final-slice transform elision belongs to future sequencing.
 FFT packs PMAP(I+(J-1)*MESHX) into complex pairs without a transpose, shift,
 conjugation or scaling (`private predecessor implementation`). CDFT2D and CDFT2D_SUB pass ISIGN
 to both axis transforms (`private predecessor implementation`), with no wrapper scale.
-The called readable 1D CDFT is missing. Its mathematical specification
-(`private predecessor implementation`) assigns negative exponent to -1 and positive to +1,
-both unnormalized. Thus the documented historical physical-domain signs
-are the **opposite** of the Python pair required for this stage. This is a
-known specification difference, not something resolved by changing RMT.
-No H/K relabeling, conjugation, or sign repair is silently introduced.
+The restored CDFT dispatch (`private predecessor implementation`) and butterflies
+(`private predecessor implementation`) establish negative exponent for -1 and positive for +1,
+both unnormalized. The 2D executable statements pass that sign along both
+axes. Python now follows those wave-domain signs without changing beam labels.
+See [correction validation](fft_sign_correction.md) for downstream results.
 
-The explicit Python convention, reusing fft_backend, is:
+The source-backed wave convention is:
 
 ```text
 u = real_wave * phase_grating
-c[H,K] = (1/M) sum_r,c u[r,c] exp(+2*pi*i*(H*c/Nx + K*r/Ny))
-s[H,K] = c[H,K] * propagator[H,K]       # returned sampling intermediate
-v[r,c] = sum_H,K s[H,K] exp(-2*pi*i*(H*c/Nx + K*r/Ny))
+c[H,K] = (1/M) sum_r,c u[r,c] exp(-2*pi*i*(H*c/Nx + K*r/Ny))
+s[H,K] = c[H,K] * propagator[H,K]
+v[r,c] = sum_H,K s[H,K] exp(+2*pi*i*(H*c/Nx + K*r/Ny))
 M = Nx*Ny
 ```
 
-Real -> reciprocal uses np.fft.ifft2(norm="backward"), and reciprocal ->
-real uses np.fft.fft2(norm="backward"). A negative-exponent spatial plane
-wave maps to the positive signed H/K bin. A uniform wave maps to a unit DC
-coefficient; the complete round trip returns the wave without a mesh factor.
+Real -> reciprocal uses np.fft.fft2(norm="forward"), and reciprocal ->
+real uses np.fft.ifft2(norm="forward"). A positive-exponent spatial plane
+wave maps to the positive signed H/K bin. The round trip has unit scaling.
+Potential construction separately remains a negative-exponent unnormalized
+sum; the generic potential/inverse helpers have not changed.
 
 The driver sets MT=MESHX*MESHY and RMT=1/DBLE(MT)
 (`private predecessor implementation`). RMT compensates the unnormalized pair described in

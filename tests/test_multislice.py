@@ -154,7 +154,7 @@ def test_source_propagation_phase_sampled_and_no_rmt():
     grid = ReciprocalVectorGrid(ReciprocalLattice2D(DirectLattice2D(2, 4, 90)), ReciprocalIndexGrid(4, 4))
     kernel = propagation_kernel(grid, PropagationParameters(.025, 2), ordering="unshifted")
     # Explicit grating creates the H=+1 mode from unit illumination.
-    grating = np.array([[1, -1j, -1, 1j]]*4)
+    grating = np.array([[1, 1j, -1, -1j]]*4)
     result = run([grating], [kernel], (0,), beams=((1, 0), (0, 0), (1, 0)))
     expected = .9992290362424846+.03925981571423079j
     np.testing.assert_allclose(result.amplitudes, [expected, 0, expected], atol=3e-16, rtol=0)
@@ -164,7 +164,7 @@ def test_source_propagation_phase_sampled_and_no_rmt():
 def nested_transform(values, *, to_reciprocal):
     ny, nx = values.shape
     out = np.zeros_like(values)
-    sign = 1 if to_reciprocal else -1
+    sign = -1 if to_reciprocal else 1  # FFT(-1) / N, then FFT(+1)
     scale = nx*ny if to_reciprocal else 1
     for r in range(ny):
         for c in range(nx):

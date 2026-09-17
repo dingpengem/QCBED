@@ -81,10 +81,10 @@ def test_no_cross_talk(ordering):
     np.testing.assert_array_equal(before.tilts[1], [.3, .4])
 
 
-def dft(values, positive):
+def dft(values, to_reciprocal):
     ny, nx = values.shape
-    return np.array([[sum(values[j, i]*cmath.exp((1 if positive else -1)*2j*math.pi*
-        (i*c/nx+j*r/ny)) for j in range(ny) for i in range(nx))/(nx*ny if positive else 1)
+    return np.array([[sum(values[j, i]*cmath.exp((-1 if to_reciprocal else 1)*2j*math.pi*
+        (i*c/nx+j*r/ny)) for j in range(ny) for i in range(nx))/(nx*ny if to_reciprocal else 1)
         for c in range(nx)] for r in range(ny)], dtype=np.complex128)
 
 
@@ -143,8 +143,8 @@ def test_intermediate_complex_waves_against_nested_dft(monkeypatch):
     tilts = TILTS[[0, 3, 5]]
     expected = [independent_tiny(h, k, return_states=True) for h, k in tilts]
     calls = [0, 0]
-    for name, which in (("batched_real_to_reciprocal_coefficients", 0),
-                         ("batched_reciprocal_to_real_sum", 1)):
+    for name, which in (("batched_wave_real_to_reciprocal", 0),
+                         ("batched_wave_reciprocal_to_real", 1)):
         original = getattr(module, name)
         def transform(values, _original=original, _which=which):
             reference = np.stack([states[_which][calls[_which]] for states in expected])
@@ -219,8 +219,8 @@ def test_chunk_lifetime_caching_and_no_final_inverse(monkeypatch):
     counts = dict(mask=0, kernel=0, forward=0, inverse=0)
     references = []
     for name, key in (("propagation_boundary_mask", "mask"), ("propagation_kernel", "kernel"),
-        ("batched_real_to_reciprocal_coefficients", "forward"),
-        ("batched_reciprocal_to_real_sum", "inverse")):
+        ("batched_wave_real_to_reciprocal", "forward"),
+        ("batched_wave_reciprocal_to_real", "inverse")):
         original = getattr(module, name)
         def wrapper(*args, _original=original, _key=key, **kwargs):
             counts[_key] += 1
@@ -245,7 +245,7 @@ def test_batched_backend_against_independent_dft():
     values = (np.arange(36).reshape(3, 3, 4)/13 + 1j*np.arange(36)[::-1].reshape(3, 3, 4)/17).astype(np.complex128)
     for function, positive in ((batched_real_to_reciprocal_coefficients, True),
                                 (batched_reciprocal_to_real_sum, False)):
-        expected = np.stack([dft(v, positive) for v in values])
+        expected = np.stack([dft(v.conj(), positive).conj() for v in values])
         np.testing.assert_allclose(function(values), expected, atol=4e-14, rtol=0)
     np.testing.assert_allclose(batched_reciprocal_to_real_sum(
         batched_real_to_reciprocal_coefficients(values)), values, atol=1e-15, rtol=0)

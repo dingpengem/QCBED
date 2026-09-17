@@ -1,4 +1,4 @@
-"""One grating/propagator step in the explicit Python Fourier convention."""
+"""One grating/propagator step using the readable source's wave Fourier signs."""
 
 from dataclasses import dataclass
 
@@ -6,7 +6,7 @@ import numpy as np
 
 from .fft_backend import (
     ComplexGrid, Ordering, _array, _ordering,
-    real_to_reciprocal_coefficients, reciprocal_to_real_sum,
+    wave_real_to_reciprocal, wave_reciprocal_to_real,
 )
 
 
@@ -33,8 +33,8 @@ def apply_phase_grating(real_wave: ComplexGrid, phase_grating: ComplexGrid) -> C
 
 
 def real_to_reciprocal_wave(real_wave: ComplexGrid, *, ordering: Ordering) -> ComplexGrid:
-    """Positive-exponent transform divided by Nx*Ny; ordering labels output bins."""
-    return real_to_reciprocal_coefficients(real_wave, ordering=ordering)
+    """Source negative-exponent transform / (Nx*Ny); ordering labels bins."""
+    return wave_real_to_reciprocal(real_wave, ordering=ordering)
 
 
 def apply_propagator(
@@ -47,8 +47,8 @@ def apply_propagator(
 
 
 def reciprocal_to_real_wave(reciprocal_wave: ComplexGrid, *, ordering: Ordering) -> ComplexGrid:
-    """Unnormalized negative-exponent sum; real-space output is never shifted."""
-    return reciprocal_to_real_sum(reciprocal_wave, ordering=ordering)
+    """Source unnormalized positive-exponent sum; no real-space shift."""
+    return wave_reciprocal_to_real(reciprocal_wave, ordering=ordering)
 
 
 @dataclass(frozen=True)

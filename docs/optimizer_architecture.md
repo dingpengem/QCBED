@@ -1,5 +1,13 @@
 # Legacy refinement architecture audit
 
+> Clean-import provenance update: the [canonical source inventory](legacy_source_inventory.md)
+> supersedes source-location, binary-only, duplicate and missing-provider claims below.
+> Driver: private predecessor implementation; ONEIT: private predecessor implementation; ONEITPARA: private predecessor implementation; optimizers now
+> occupy their matching .f files; RNG: private predecessor implementation; ATOMICSCATFACT:
+> private predecessor implementation (all tables confirmed). The four recently corrected core
+> file bodies are unchanged. Historical test results below remain historical.
+
+
 ## Evidence and limits
 
 The source-derived multi-stage driver is now implemented as

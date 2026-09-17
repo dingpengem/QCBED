@@ -42,9 +42,9 @@ def test_uniform_phase_and_absorption(shape, ordering, amplitude):
 @pytest.mark.parametrize("ordering", ["centered", "unshifted"])
 def test_signed_modes_rectangular_axes_and_sampling_after_propagator(h, k, ordering):
     # x has 4 samples, y has 8: explicit fourth/eighth roots, no FFT oracle.
-    roots_x = [1, -1j, -1, 1j]
+    roots_x = [1, 1j, -1, -1j]
     q = math.sqrt(.5)
-    roots_y = [1, q-1j*q, -1j, -q-1j*q, -1, -q+1j*q, 1j, q+1j*q]
+    roots_y = [1, q+1j*q, 1j, -q+1j*q, -1, -q-1j*q, -1j, q-1j*q]
     wave = np.array([[roots_x[(h*c) % 4]*roots_y[(k*r) % 8]
                       for c in range(4)] for r in range(8)], dtype=np.complex128)
     expected = np.zeros((8, 4), dtype=np.complex128)
@@ -73,13 +73,13 @@ def nested_step(wave, grating, kernel, ordering):
             total = 0j
             for r in range(ny):
                 for c in range(nx):
-                    total += wave[r, c]*grating[r, c]*cmath.exp(2j*math.pi*(h*c/nx+k*r/ny))
+                    total += wave[r, c]*grating[r, c]*cmath.exp(-2j*math.pi*(h*c/nx+k*r/ny))
             sampled[j, i] = total/(nx*ny)*kernel[j, i]
     for r in range(ny):
         for c in range(nx):
             for j, k in enumerate(ks):
                 for i, h in enumerate(hs):
-                    out[r, c] += sampled[j, i]*cmath.exp(-2j*math.pi*(h*c/nx+k*r/ny))
+                    out[r, c] += sampled[j, i]*cmath.exp(2j*math.pi*(h*c/nx+k*r/ny))
     return out, sampled
 
 
@@ -147,7 +147,7 @@ def test_existing_propagator_boundaries_and_odd_support(shape, boundary, orderin
 def test_nonzero_source_propagator_on_one_beam():
     grid = ReciprocalVectorGrid(ReciprocalLattice2D(DirectLattice2D(2, 4, 90)), ReciprocalIndexGrid(4, 4))
     kernel = propagation_kernel(grid, PropagationParameters(.025, 2), ordering="unshifted")
-    wave = np.array([[1, -1j, -1, 1j]]*4, dtype=np.complex128)
+    wave = np.array([[1, 1j, -1, -1j]]*4, dtype=np.complex128)
     result = step(wave, np.ones_like(wave), kernel)
     expected = .9992290362424846+.03925981571423079j
     assert result.reciprocal_wave[0, 1] == pytest.approx(expected, abs=3e-16, rel=0)

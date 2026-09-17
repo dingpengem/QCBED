@@ -65,7 +65,7 @@ def projected_potential_direct(
     combined source-scaled elastic+i*absorptive coefficient grid. Applies
     no masks, no extra cell-area/thickness factor and no output shift.
     This serial reference follows the mathematical CDFT2D specification;
-    the missing readable 1D CDFT prevents claiming exact legacy equivalence.
+    historical executable equivalence still requires original build validation.
     """
     grid = _grid(reciprocal_grid)
     values = _complex_grid(coefficients, "coefficients")
@@ -92,7 +92,7 @@ def projected_potential_fft(
 
     Negative exponent, unnormalized sum; input ordering comes from the grid.
     Output uses (row/Ny,col/Nx) spatial samples with no shift or transpose.
-    Validated against the Python direct sum, not the missing legacy CDFT.
+    Validated against the Python direct sum, not a compiled historical CDFT executable.
     """
     grid = _grid(reciprocal_grid)
     values = _complex_grid(coefficients, "coefficients")

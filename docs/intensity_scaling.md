@@ -1,5 +1,13 @@
 # Legacy global intensity scaling (YNORM)
 
+> Clean-import provenance update: the [canonical source inventory](legacy_source_inventory.md)
+> supersedes source-location, binary-only, duplicate and missing-provider claims below.
+> Driver: private predecessor implementation; ONEIT: private predecessor implementation; ONEITPARA: private predecessor implementation; optimizers now
+> occupy their matching .f files; RNG: private predecessor implementation; ATOMICSCATFACT:
+> private predecessor implementation (all tables confirmed). The four recently corrected core
+> file bodies are unchanged. Historical test results below remain historical.
+
+
 ## Source and data flow
 
 `private predecessor implementation`, inside CHISQCAL, contains three YNORM branches.
@@ -136,3 +144,14 @@ modified, and no files were staged or committed.
 
 No fitting pipeline, chi-square, residual aggregation, optimization, new
 parser/refinement fields, or forward-physics changes are included.
+
+## Corrected-source reconciliation
+
+The restored `private predecessor implementation` and `private predecessor implementation` confirm that only calculated BEAM
+values undergo optional GRADIENT, before YNORM/objective evaluation. Input
+experimental intensity, variance and weight are unchanged. Legacy divisions
+retain their IEEE zero-variance behavior; masked mode remains a separate
+non-legacy policy. ONEIT takes simplex coordinates and applies inverse SCAL;
+ONEITPARA takes physical coordinates. See the
+[four-source reconciliation](four_source_reconciliation.md) for selective
+UPDPARS best-state writeback, source lines and validation results.

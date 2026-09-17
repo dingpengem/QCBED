@@ -46,7 +46,7 @@ applies the source PGMAP exponential, with separate DSAP and Nyquist masks.
 An explicit NumPy CPU FFT path is validated against that direct sum, including
 odd/even ordering and the normalized mathematical inverse. Phase-grating
 construction retains `method="direct"` by default; `method="fft"` selects
-acceleration with identical masks. The missing readable 1D CDFT still prevents
+acceleration with identical masks. Unverified historical build/linkage still prevents
 claiming legacy FFT equivalence. See [phase gratings](docs/phase_grating.md)
 and [FFT backend](docs/fft_backend.md) for validation and timing results.
 
@@ -221,3 +221,9 @@ or historical executable equivalence is claimed. See
 - NumPy/SciPy serial reference implementation
 - CPU process-based parallelism over independent incident tilts
 - future optional GPU backend
+
+Wave propagation now follows the restored readable FFT signs: negative
+exponent divided by the mesh size into reciprocal space, positive exponent
+without normalization on return. Potential construction is unchanged.
+See [FFT correction validation](docs/fft_sign_correction.md), including the
+historical-output comparison and unresolved scattering-source provenance.

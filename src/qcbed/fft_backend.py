@@ -1,4 +1,4 @@
-"""NumPy CPU transforms of the Python Fourier specification, not legacy CDFT."""
+"""Distinct NumPy potential and source-backed wave transforms; no build equivalence."""
 
 from typing import Literal
 
@@ -125,3 +125,39 @@ def batched_real_to_reciprocal_coefficients(real_space: ComplexGrid) -> ComplexG
     with np.errstate(over="ignore", invalid="ignore"):
         result = np.fft.ifft2(values, axes=(-2, -1), norm="backward")
     return _batch_array(result, "reciprocal coefficients")
+
+
+def wave_real_to_reciprocal(values: ComplexGrid, *, ordering: Ordering) -> ComplexGrid:
+    """Source FFT(-1) followed by RMT: negative exponent divided by Nx*Ny."""
+    _ordering(ordering)
+    values = _array(values, "real_space")
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.fft.fft2(values, axes=(0, 1), norm="forward")
+    _array(result, "reciprocal wave")
+    return unshifted_to_centered(result) if ordering == "centered" else result.copy(order="C")
+
+
+def wave_reciprocal_to_real(values: ComplexGrid, *, ordering: Ordering) -> ComplexGrid:
+    """Source FFT(+1): positive exponent without normalization."""
+    _ordering(ordering)
+    values = _array(values, "reciprocal_wave")
+    bins = centered_to_unshifted(values) if ordering == "centered" else values
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.fft.ifft2(bins, axes=(0, 1), norm="forward")
+    return _array(result, "real wave").copy(order="C")
+
+
+def batched_wave_real_to_reciprocal(values: ComplexGrid) -> ComplexGrid:
+    """Independent source FFT(-1)/N transforms in unshifted bins."""
+    values = _batch_array(values, "real waves")
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.fft.fft2(values, axes=(-2, -1), norm="forward")
+    return _batch_array(result, "reciprocal waves")
+
+
+def batched_wave_reciprocal_to_real(values: ComplexGrid) -> ComplexGrid:
+    """Independent source FFT(+1) transforms; no batch-axis transform."""
+    values = _batch_array(values, "reciprocal waves")
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = np.fft.ifft2(values, axes=(-2, -1), norm="forward")
+    return _batch_array(result, "real waves")

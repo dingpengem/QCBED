@@ -1,4 +1,4 @@
-"""Source-scaled elastic electron atomic factors from fftsg.f:ATOMICSCATFACT.
+"""Source-scaled elastic electron atomic factors from atomicscatfact.f:ATOMICSCATFACT.
 
 STL is sin(theta)/lambda = |g|/2 in inverse angstroms. Only OPTION=2
 is exposed; see docs/scattering.md for scaling, interpolation and provenance.

@@ -7,8 +7,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .fft_backend import (
-    _batch_array, batched_real_to_reciprocal_coefficients,
-    batched_reciprocal_to_real_sum,
+    _batch_array, batched_wave_real_to_reciprocal,
+    batched_wave_reciprocal_to_real,
 )
 from .multislice import BeamIndices, _beams, _integer, _snapshot, beam_intensities
 from .propagator import propagation_boundary_mask, propagation_kernel
@@ -141,12 +141,12 @@ def _chunk(prepared, tilts, mask, permutation, beam_rows, beam_cols):
     for occurrence, index in enumerate(sequence):
         if occurrence:
             wave = wave * prepared.slice_types[index].phase_grating
-        reciprocal = batched_real_to_reciprocal_coefficients(wave)
+        reciprocal = batched_wave_real_to_reciprocal(wave)
         reciprocal *= kernels[index]
         _batch_array(reciprocal, "propagated reciprocal waves")
         if occurrence == len(sequence)-1:
             return reciprocal[:, beam_rows, beam_cols].copy()
-        wave = batched_reciprocal_to_real_sum(reciprocal)
+        wave = batched_wave_reciprocal_to_real(reciprocal)
     raise AssertionError("prepared sequence is empty")
 
 

@@ -5,7 +5,7 @@
 **Category B:** source-backed independent-tilt control flow, validated in the
 established Python Fourier convention. Category A executable equivalence is
 not established; this is not a category C unresolved active-definition case.
-The absent readable historical 1D CDFT and original compiler/literal behavior
+The unverified original linkage and compiler/literal behavior
 still prevent claiming agreement with the original executable. private predecessor implementation
 is only a related-version declaration reference. No include-only capacity
 or COMMON layout is needed by this module.
@@ -99,8 +99,8 @@ Duplicate tilts and duplicate beams retain their positions. Intensities are
 The serial correctness reference calls `simulate_one_tilt` once per row.
 The batched path keeps separate waves of shape `(B,mesh_y,mesh_x)` and uses
 dedicated backend transforms with axes **(-2,-1)**. Reciprocal coefficients
-are the positive-exponent DFT divided by mesh_x*mesh_y; real-space sums use
-the unnormalized negative-exponent transform. There is no batch-size scaling,
+are the negative-exponent DFT divided by mesh_x*mesh_y; real-space sums use
+the unnormalized positive-exponent transform. There is no batch-size scaling,
 extra RMT factor, intensity fitting or normalization to unit total intensity.
 Only nonfinal occurrences transform back to real space.
 

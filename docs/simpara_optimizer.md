@@ -1,5 +1,13 @@
 # Source-derived SIMPARA
 
+> Clean-import provenance update: the [canonical source inventory](legacy_source_inventory.md)
+> supersedes source-location, binary-only, duplicate and missing-provider claims below.
+> Driver: private predecessor implementation; ONEIT: private predecessor implementation; ONEITPARA: private predecessor implementation; optimizers now
+> occupy their matching .f files; RNG: private predecessor implementation; ATOMICSCATFACT:
+> private predecessor implementation (all tables confirmed). The four recently corrected core
+> file bodies are unchanged. Historical test results below remain historical.
+
+
 `run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
 max_evaluations, high_temperature, low_temperature, cooling, seed,
 random_order=False, phase_grating_method="fft")` returns immutable

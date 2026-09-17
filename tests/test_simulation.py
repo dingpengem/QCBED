@@ -79,13 +79,13 @@ def test_raw_absorption_semantics_and_independent_dc(raw, enabled):
     np.testing.assert_allclose(simulate(prepared).amplitudes, [expected, 0, 0, 0], atol=4e-16, rtol=0)
 
 
-def nested_dft(values, inverse):
+def nested_dft(values, to_reciprocal):
     ny, nx = values.shape
     result = np.zeros_like(values)
     for r in range(ny):
         for c in range(nx):
-            result[r, c] = sum(values[j, i]*cmath.exp((1 if inverse else -1)*2j*math.pi*(i*c/nx+j*r/ny))
-                               for j in range(ny) for i in range(nx))/(nx*ny if inverse else 1)
+            result[r, c] = sum(values[j, i]*cmath.exp((-1 if to_reciprocal else 1)*2j*math.pi*(i*c/nx+j*r/ny))
+                               for j in range(ny) for i in range(nx))/(nx*ny if to_reciprocal else 1)
     return result
 
 

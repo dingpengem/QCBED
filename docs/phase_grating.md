@@ -4,7 +4,7 @@
 
 The mathematical direct Fourier sum and PGMAP exponential are specified by
 the available source. The exact legacy FFT operation is not fully established
-from readable executable code: CDFT2D calls a missing readable 1D CDFT.
+for the historical executable; readable CDFT now confirms the stated signs.
 The serial direct-sum reference remains the default, with separate
 source-backed masks and PGMAP exponentiation. An explicit NumPy FFT path is
 now validated against that Python mathematical reference; see fft_backend.md.
@@ -65,13 +65,10 @@ no normalization. The mathematical specification at `private predecessor impleme
 explicitly associates -1 with a negative-exponent sum and says the inverse
 pair requires an extra 1/(n1*n2) multiplication.
 
-However, no readable definition of CDFT or MAKEWT was found. The supplied
-private predecessor implementation contains ATOMICSCATFACT, despite private predecessor implementation naming private predecessor implementation as its
-required 1D FFT package. Other source-looking files and even Makefile include
-binary artifacts. We cannot inspect the actual 1D butterflies, sign dispatch,
-bit reversal or internal scaling, or establish original object linkage.
-The above is a derivation of packing and the **documented mathematical
-operation**, not proof that the historical executable fulfills that contract.
+The restored private predecessor implementation now supplies CDFT/MAKEWT and executable butterflies.
+Its negative-exponent, unnormalized behavior agrees with this potential
+construction. Original linkage, compiler options and historical executable
+agreement remain unverified. See [FFT correction](fft_sign_correction.md).
 
 For the direct reference, after interpreting centered H/K:
 

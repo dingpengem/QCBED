@@ -2,12 +2,21 @@
 
 ## Definition and call path
 
-The only readable definition of `ATOMICSCATFACT(ATNUM,STL,OPTION)` is in
-`private predecessor implementation`, lines 1–1638. All readable `.f` files were searched.
-Despite its filename, `private predecessor implementation` defines SIMPARA, not ATOMICSCATFACT.
-Some other `.f` files are binary artifacts; they do not supply readable
-competing definitions. Object/executable linkage has not been reconstructed.
-There is no conflicting readable active definition.
+Current readable-source provenance is **confirmed by the clean import**.
+The unique `ATOMICSCATFACT(ATNUM,STL,OPTION)` definition is now in
+`private predecessor implementation`; its result is declared REAL*8 at
+44-48. All current readable source files were inventoried by declared routine
+name, including files with multiple program units. The earlier missing-source
+conclusion described the previous working tree and is superseded.
+
+All 12,152 EFARRAY/XFARRAY entries, 62 STL coordinates and 98 method selectors
+match Python exactly, including order and negative sentinels. Selection,
+reflection, endpoint handling, cubic coefficients and OPTION=2 scaling also
+match. See [the canonical inventory](legacy_source_inventory.md) for exact
+source ranges, call signatures and remaining compiler/ABI limitations.
+The provenance test discovers the unique definition rather than assuming a
+filename. Numerical code and hard-coded expected values are unchanged.
+Source agreement does not establish executable-Fortran equivalence.
 
 The source call path is:
 
@@ -64,7 +73,7 @@ The function contains tabulated data, not a Gaussian coefficient fit:
 - EFARRAY and XFARRAY: 98 rows of 62 electron and X-ray values.
 - EMARRAY: 98 method selectors (1: direct RHF, 2: Mott conversion, 3: hydrogen HF).
 
-All values were copied literally from current readable `private predecessor implementation`, including
+All values were copied literally from the previously translated source, now confirmed in current `private predecessor implementation`, including
 negative sentinels: -1 denotes missing entries and -2 denotes entries rejected
 by the source authors. Both are excluded from interpolation. Source comments
 attribute the data to International Tables for Crystallography, chapters 4.3

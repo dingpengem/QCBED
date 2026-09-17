@@ -1,5 +1,13 @@
 # Legacy refinement driver
 
+> Clean-import provenance update: the [canonical source inventory](legacy_source_inventory.md)
+> supersedes source-location, binary-only, duplicate and missing-provider claims below.
+> Driver: private predecessor implementation; ONEIT: private predecessor implementation; ONEITPARA: private predecessor implementation; optimizers now
+> occupy their matching .f files; RNG: private predecessor implementation; ATOMICSCATFACT:
+> private predecessor implementation (all tables confirmed). The four recently corrected core
+> file bodies are unchanged. Historical test results below remain historical.
+
+
 `parse_legacy_refinement(path, *, seed, experimental_header_path=None)` returns
 the existing `RefinementState` and immutable `LegacyRefinementConfig`.
 `run_legacy_refinement(state, experimental, config, *, phase_grating_method="fft")`
@@ -56,7 +64,7 @@ physical state and prepare P for the next stage (e.g. 550–552, 667–669,
 | ANNEAL | physical / ONEITPARA | result.best_vector, best_objective |
 | PARAMIN | physical / ONEITPARA | result.best_vector, best_objective |
 | SIMPARA | physical / ONEITPARA | result.best_vector, best_objective, including implemented callback alias policy |
-| AMOEBA | legacy_simplex / ONEIT | best_evaluated_vector/objective, converted back to raw physical coordinates |
+| AMOEBA | legacy_simplex / ONEIT | best_evaluated_vector/objective, converted to physical coordinates with selective UPDPARS writeback |
 
 For AMOEBA, the lowest final simplex vertex is insufficient: a better evaluated
 reflection may have been discarded by the simplex algorithm. Furthermore its
@@ -67,8 +75,12 @@ callback retention within a stage, not an added global-best archive.
 
 Retained PARMIN and next-stage P remain distinct. Existing scalar UPDPARS
 mapping and packing reconstruct P from the retained vector; packing can apply
-the source near-zero floor. History and final_vector preserve the raw retained
-physical coordinates. Thus a retained zero can appear as +1e-10 in the next
+the source near-zero floor. History and final_vector preserve retained physical
+coordinates after the selective UPDPARS writeback: vacancy, absorption and
+Debye–Waller entries can be projected in place, while voltage/depth signs are
+not overwritten merely because the model uses their absolute values.
+This follows restored ONEIT:214–221; see [reconciliation](four_source_reconciliation.md).
+Thus a retained zero can appear as +1e-10 in the next
 stage's input without rewriting the recorded PARMIN value.
 
 The baseline is never replaced: inactive input values remain fixed and SCAL

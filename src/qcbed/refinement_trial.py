@@ -70,7 +70,7 @@ def _prepare_trial(state, *, original_voltage):
 
 
 def _gradient(values, rows, columns):
-    """Readable randnumgen.o: zero-padded eight-neighbor mean minus center."""
+    """gradients.f:13–48: zero-padded eight-neighbor mean minus center."""
     images = values.reshape(rows, columns, -1)
     p = np.pad(images, ((1, 1), (1, 1), (0, 0)))
     # Match literal source addition order; axes here are row, column, beam.

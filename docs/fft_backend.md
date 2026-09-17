@@ -156,8 +156,8 @@ The readable `private predecessor implementation` OSHIFT, `private predecessor i
 `private predecessor implementation` CDFT2D and `private predecessor implementation` CDFT2D_SUB were inspected.
 The wrappers preserve H-fastest packing, pass the same sign through both
 axes and contain no normalization. Their mathematical specification agrees
-with the direct sum, but the called 1D CDFT and original linkage remain
-missing from readable source. private predecessor implementation is only a related-version declaration
+with the direct sum, and the restored 1D CDFT now corroborates its sign. Original linkage remains
+unverified. private predecessor implementation is only a related-version declaration
 reference. This work validates the NumPy implementation against the **Python
 mathematical specification**, not the historical CDFT executable. The source
 audit's category B limitation remains unchanged.
@@ -166,3 +166,10 @@ No saved complex phase-grating pixels were identified in the preceding audit;
 there is no new historical FFT comparison. Existing saved structure-factor
 and rounded SIGMA checks remain in the complete suite. Wave propagation,
 PROPG, multislice, probes, detectors, tilt scanning and refinement are deferred.
+
+## Source-backed wave transforms (2026-09-16)
+
+Dedicated wave helpers use negative exponent / N and positive exponent with
+no normalization, for both single grids and batches. Generic potential sums
+and their inverse retain their original contracts. See
+[FFT sign correction](fft_sign_correction.md) for source evidence and validation.

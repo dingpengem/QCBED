@@ -190,6 +190,13 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
                 if result.best_evaluated_objective <= score:
                     retained = _physical_vector(layout,result.best_evaluated_vector,"legacy_simplex")
                     score = result.best_evaluated_objective
+                    # ONEIT restores simplex PT, constructs physical PARMIN,
+                    # then UPDPARS(PARMIN) writes selected projected entries.
+                    # Depth/voltage fold the model only; do not repack/floor P.
+                    mapped = apply_refinement_parameters(state, retained)
+                    for i,(category,_,value) in enumerate(_entries(mapped)):
+                        if category in ("constant_vacancy","vacancy_coefficient","absorption","debye_waller"):
+                            retained[i] = value
             if name is not None:
                 if name != "AMOEBA":
                     retained,score = result.best_vector.copy(),result.best_objective

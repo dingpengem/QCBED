@@ -161,8 +161,8 @@ modulus up to rounding; source-suppressed coefficients are exactly 0+0i.
 The caller later performs `PMAP=RMT*PMAP*PRARRAY` after FFT(-1), and follows
 with FFT(+1) (`private predecessor implementation`, `private predecessor implementation`). This is a separate
 transform-pair normalization, consistent with the readable CDFT2D mathematical
-specification; it is not physical attenuation in PRARRAY. The missing readable
-1D CDFT still prevents validating the exact historical transform implementation.
+specification; it is not physical attenuation in PRARRAY. The readable 1D CDFT now establishes the signs; original build/linkage and
+exact historical executable equivalence remain unverified.
 
 Python's reciprocal_to_real_sum is unnormalized and its mathematical inverse
 already divides by Nx*Ny. RMT must not be embedded in this kernel or added
