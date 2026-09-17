@@ -197,6 +197,18 @@ limits of compatibility with the Fortran runtime.
 
 ## Current target
 
+To run a deliberately short local optimization with explicit non-legacy masked
+objective and pattern checkpoints:
+
+```powershell
+Set-Location C:\data\QCBED
+& "C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe" examples/run_local_optimization.py
+```
+
+The script prints a new output directory with checkpoint PNGs, progress JSONL
+and a final HTML report. See [local optimization](docs/local_optimization.md)
+for editable settings, evaluation-versus-iteration semantics and limitations.
+
 CBED validation now includes source-derived `out.dat` I/O, immutable comparison
 maps, per-beam residual diagnostics and self-contained HTML reports. Install
 the optional `visualization` extra for Matplotlib. The example

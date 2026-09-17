@@ -9,6 +9,9 @@ from .models import (
 )
 from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, parse_for007
 from .electron import electron_wavelength_angstrom
+from .masked_objective import MaskedObjectiveResult, compute_masked_objective, compute_selected_objective
+from .local_runner import (RefinementProgressRecord, RefinementSnapshot,
+                           LocalOptimizationRunResult, run_local_optimization)
 from .output_io import (SimulatedCbedData, LegacySimulatedOutput, reshape_scan_map,
                         write_legacy_out_dat, parse_legacy_out_dat)
 from .validation import CbedComparison, RefinementValidation, validate_refinement
@@ -97,6 +100,8 @@ from .refinement_io import parse_refinement_state
 from .refinement_trial import RefinementTrialResult, evaluate_refinement_trial
 
 __all__ = [
+    "MaskedObjectiveResult", "compute_masked_objective", "compute_selected_objective",
+    "RefinementProgressRecord", "RefinementSnapshot", "LocalOptimizationRunResult", "run_local_optimization",
     "SimulatedCbedData", "LegacySimulatedOutput", "reshape_scan_map",
     "write_legacy_out_dat", "parse_legacy_out_dat", "CbedComparison",
     "RefinementValidation", "validate_refinement", "plot_cbed_comparison",

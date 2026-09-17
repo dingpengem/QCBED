@@ -117,7 +117,8 @@ def parse_legacy_refinement(path, *, seed, experimental_header_path=None):
 
 
 def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *,
-                          phase_grating_method="fft") -> LegacyRefinementResult:
+                          phase_grating_method="fft", objective_mode="legacy",
+                          progress_callback=None) -> LegacyRefinementResult:
     """Run complete selected sequences, carrying PARMIN through UPDPARS/packing.
 
     Baseline state (and hence AMOEBA SCAL) stays anchored across all stages.
@@ -125,6 +126,8 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
     """
     if not isinstance(config,LegacyRefinementConfig):
         raise TypeError("config must be LegacyRefinementConfig")
+    if objective_mode not in ("legacy", "masked"):
+        raise ValueError("objective_mode must be 'legacy' or 'masked'")
     layout = build_refinement_parameter_layout(state)
     n = len(layout.parameters)
     if n > 1000 or (config.loops > 0 and n == 0):
@@ -139,8 +142,13 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
     selected = config.stages if config.loops > 0 else (None,)
     for loop in range(1,max(config.loops,1)+1):
         for position,name in enumerate(selected):
+            stage_index=len(history)+1
+            def observe(trial):
+                if progress_callback is not None:
+                    progress_callback("evaluation",stage_index,name or "EVALUATION",loop,trial)
             pre = evaluate_refinement_trial(state,current,experimental,
-                coordinate_mode="physical",phase_grating_method=phase_grating_method)
+                coordinate_mode="physical",phase_grating_method=phase_grating_method,
+                objective_mode=objective_mode,evaluation_callback=observe if progress_callback else None)
             evaluations += 1
             score = np.float64(pre.objective)
             if not np.isfinite(score) or score > 1e20:
@@ -155,7 +163,8 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
             start = retained.copy()
             incoming_score = score
             stage_seed = None
-            common = dict(phase_grating_method=phase_grating_method)
+            common = dict(phase_grating_method=phase_grating_method,objective_mode=objective_mode,
+                          evaluation_callback=observe if progress_callback else None)
             if name in ("ANNEAL","SIMPARA"):
                 stage_seed = int(np.random.SeedSequence([config.seed,loop,position]).generate_state(1,dtype=np.uint64)[0])
             if name == "ANNEAL":
@@ -187,6 +196,8 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
                 evaluations += result.evaluations
                 history.append(LegacyRefinementStage(name,loop,start,incoming_score,
                     retained,score,result,stage_seed))
+                if progress_callback is not None:
+                    progress_callback("stage",stage_index,name,loop,history[-1])
             final_state = apply_refinement_parameters(state,retained)
             # Source P and PARMIN differ: only P is packed/floored for next stage.
             current = pack_refinement_parameters(final_state)

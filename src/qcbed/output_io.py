@@ -57,10 +57,13 @@ class SimulatedCbedData:
     ynorm: float
     gradient_option: int
     objective: float
+    objective_mode: str = "legacy"
     scaled_intensity: np.ndarray = field(init=False)
     tilts: np.ndarray = field(init=False)
 
     def __post_init__(self):
+        if self.objective_mode not in ("legacy", "masked"):
+            raise ValueError("objective_mode must be 'legacy' or 'masked'")
         if not isinstance(self.scan,LegacyScanDefinition):
             raise TypeError("scan must be LegacyScanDefinition")
         beams = _beams(self.beam_indices_hk)

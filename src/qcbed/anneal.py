@@ -110,7 +110,8 @@ def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
 
 def run_legacy_anneal(state, initial_vector, experimental, *, max_iterations,
                       seed, maximum_temperature, minimum_temperature, cooling_rate,
-                      phase_grating_method="fft") -> LegacyAnnealResult:
+                      phase_grating_method="fft", objective_mode="legacy",
+                      evaluation_callback=None) -> LegacyAnnealResult:
     """Run source-derived ANNEAL in physical coordinates, with no hidden RNG.
 
     max_iterations preserves MAXITS literally: the source permits MAXITS+1
@@ -134,7 +135,8 @@ def run_legacy_anneal(state, initial_vector, experimental, *, max_iterations,
 
     def evaluate(vector):
         return evaluate_refinement_trial(state, vector, experimental,
-            coordinate_mode="physical", phase_grating_method=phase_grating_method).objective
+            coordinate_mode="physical", phase_grating_method=phase_grating_method,
+            objective_mode=objective_mode, evaluation_callback=evaluation_callback).objective
 
     return _run(initial, project, evaluate, max_iterations=max_iterations,
         maximum_temperature=maximum_temperature, minimum_temperature=minimum_temperature,

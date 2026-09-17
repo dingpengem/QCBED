@@ -1,5 +1,12 @@
 # CBED output and end-to-end validation
 
+An explicitly selected non-legacy `objective_mode="masked"` now permits local
+optimization of the reference dataset without changing legacy arithmetic.
+See [masked objective](masked_objective.md) and [local runner](local_optimization.md).
+The NaN/blocker discussion below continues to apply to the default legacy mode.
+Reports prominently name the selected mode; masked reports compute per-beam
+contributions using only the same nonzero-weight set as YNORM and the objective.
+
 ## Executable source evidence
 
 The readable executable statements are authoritative. No conclusion below
@@ -73,7 +80,7 @@ coordinates can differ from initial coordinates: acquisition indices remain
 aligned and the report states this, without interpolation.
 
 `plot_cbed_comparison` produces four panels for a selected beam, lower origin,
-with one shared min/max for experimental/initial/final and a symmetric diverging
+with one shared visible-point min/max for experimental/initial/final and a symmetric diverging
 residual scale. Constant panels get an explicit nonzero color interval solely
 for rendering. No independent normalization hides poor fits. Pixel axes are
 scan column/row with their fractional H/K step vectors: a general oblique scan
@@ -85,7 +92,9 @@ Per-beam diagnostics accumulate, in source tilt order,
 `denominator_b = sum(w*experimental*experimental/variance)`.
 The objective is `sqrt(sum(numerator_b)/sum(denominator_b))`, subject to
 floating-point differences from regrouping source sequential accumulation.
-Unweighted RMS is a separately labeled convenience statistic, not the objective.
+Unweighted RMS is a separately labeled convenience statistic, not the objective;
+its default uses only nonzero-weight display points. All-point and masked-only
+RMS are also available, with NaN for an empty subset.
 Zero weight does not mask zero variance in the executable equations.
 
 ## Driver validation and reports
@@ -151,3 +160,109 @@ The run produced all nine beam comparisons and an unchanged final diagnostic
 map, not a refined solution. The focused tests passed (14); the complete suite
 passed (1525) using
 `C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe`.
+
+## Weight audit and explicit display masking
+
+The existing model fields are `intensities`, `variances`, and `weights` (plural),
+immutable float64 arrays in `(tilt, beam)` order. The names in the input block
+do not imply an objective skip policy.
+
+All readable uses of experimental `WEIGHTS` were audited:
+
+* `private predecessor implementation` reads variance then weight rows, without transforming
+  either. It sums `TOTWEIGHTS` and prints "The total number of experimental
+  data points being fitted is". This supports a point-inclusion interpretation
+  for binary weights, but imposes no binary restriction on general weights.
+* `private predecessor implementation` multiplies weight into both least-squares YNORM sums before
+  division by variance. Lines 758-770 multiply weight into equal-count sums
+  without using variance. Lines 772-782 multiply weight into objective terms
+  before division by variance. **There is no weight-zero test or skip branch.**
+* The readable `GRADIENT` definition is in the misleadingly named
+  `private predecessor implementation`, called by `private predecessor implementation` and
+  `private predecessor implementation`. Its executable assignments modify temporary maps
+  and calculated `BEAM` only. It does not modify weights or variance, or repair
+  zero variance. Other weight mentions in `private predecessor implementation` are declarations only.
+* `private predecessor implementation` and `private predecessor implementation` write every row/column of each
+  beam, without consulting weights. No readable legacy display-mask routine
+  was found. No source rule requires zero-weight points to have zero variance.
+
+Thus weight is effectively a binary point mask **in the supplied dataset**,
+supported by the fitted-point count and actual 0/1 values. General source
+arithmetic supports multiplicative weights; it does not establish guarded
+exclusion of masked points or prescribe legacy masked visualization.
+
+### Measured reference statistics
+
+| Quantity | Count |
+| --- | ---: |
+| Total points (1521 times 9) | 13689 |
+| Zero variance | 117 |
+| Zero weight | 6140 |
+| Zero variance AND zero weight | 117 |
+| Zero variance AND nonzero weight | 0 |
+| Nonzero variance AND zero weight | 6023 |
+| Nonzero weight / displayed points | 7549 |
+
+Unique weights are exactly `{0.0, 1.0}`. There are no fractional, negative,
+NaN or infinite weights. Masks are not identical across beams.
+
+| Beam H,K | Masked | Valid display | Zero variance | Overlap |
+| --- | ---: | ---: | ---: | ---: |
+| 0,0 | 682 | 839 | 0 | 0 |
+| 1,1 | 685 | 836 | 0 | 0 |
+| 1,-1 | 681 | 840 | 0 | 0 |
+| -1,-1 | 683 | 838 | 0 | 0 |
+| -1,1 | 684 | 837 | 0 | 0 |
+| 2,0 | 682 | 839 | 0 | 0 |
+| 0,-2 | 681 | 840 | 78 | 78 |
+| -2,0 | 681 | 840 | 39 | 39 |
+| 0,2 | 681 | 840 | 0 | 0 |
+
+In the reference dataset, zero variance coincides with zero display weight/mask.
+More precisely, the zero-variance set is a strict subset of the masked set:
+beam `(0,-2)` has zeros at rows 0 and 1 across all 39 columns; beam `(-2,0)`
+has zeros at column 0 across all 39 rows (zero-based acquisition indices).
+No nonzero-weight zero-variance locations exist. This spatial observation does
+not prove how the experimental preprocessing generated the zeros.
+
+### Python display and diagnostics policy
+
+`display_mask.valid_display_mask(experimental)` returns immutable booleans
+`weights != 0`. Fractional and negative nonzero weights remain visible; they
+are not thresholded, rounded, or multiplied into displayed intensities.
+`experimental_mask_statistics` provides totals, per-beam counts, unique weights
+and detailed locations of any visible zero-variance points.
+
+`plot_cbed_comparison(..., mask_zero_weight=True)` applies the same per-beam
+mask to experimental, initial, final and residual panels. Grey masked pixels
+are Matplotlib masked-array entries, not zero intensities. Shared color limits
+use only visible values; no independent panel normalization is applied. An
+all-masked beam remains grey with fallback plotting bounds. Use
+`mask_zero_weight=False` for an explicitly labeled unmasked debugging view.
+Stored raw/scaled/residual arrays and output files are unchanged.
+
+`CbedComparison.rms_by_beam` now excludes weight-zero pixels by default;
+`rms_all_by_beam` and `rms_masked_by_beam` expose the other subsets. These are
+unweighted convenience summaries only. Source objective contributions still
+use every point, so zero-variance contributions remain nonfinite. An empty RMS
+subset is NaN rather than a fabricated zero.
+
+`plot_weight_diagnostics` displays unmodified weight, zero-variance indicator,
+and combined zero-weight/zero-variance indicator using exact column-fast map
+ordering and lower origin. The HTML report includes these three spatial maps
+for every beam, total/per-beam mask counts, subset RMS, and explicit separation
+of display policy from objective arithmetic. It lists beam H/K, tilt index,
+row/column and intensity/variance/weight if visible zero-variance points exist.
+
+Updated report: `tmp/end_to_end_validation/report.html`, regenerated by the
+existing full-size evaluation-only example. The legacy objective remains NaN;
+neither display masking nor GRADIENT resolves the arithmetic blocker. The next
+step is to recover/audit the experimental preprocessing or matching historical
+executable's handling of masked zero variances. Any proposed skip or variance
+repair would require separate evidence and an explicitly approved numerical
+policy; it must not be inferred solely from binary weights or these pictures.
+
+Mask-update validation: 20 focused tests and 1531 complete-suite tests passed
+using the exact qcbed-python interpreter above. The full-size report was
+regenerated with 22 embedded figures; YNORM, source objective status, unchanged
+baseline, and zero output round-trip error agree with the preceding run.

@@ -7,7 +7,7 @@ import numpy as np
 from .absorption import AbsorptionCoefficients, absorptive_structure_factors
 from .experimental import ExperimentalIntensityData
 from .multislice import _snapshot, simulate_slice_sequence
-from .objective import compute_legacy_objective
+from .masked_objective import compute_selected_objective
 from .phase_grating import phase_grating_from_structure_factors
 from .refinement import RefinementState, apply_refinement_parameters
 from .scan import generate_scan_tilts
@@ -92,6 +92,7 @@ class RefinementTrialResult:
     calculated_intensities: np.ndarray  # before GRADIENT
     objective_intensities: np.ndarray  # after optional GRADIENT, before YNORM
     amplitudes: np.ndarray
+    objective_mode: str = "legacy"
 
     def __post_init__(self):
         for name in ("calculated_intensities", "objective_intensities", "amplitudes"):
@@ -100,7 +101,8 @@ class RefinementTrialResult:
 
 def evaluate_refinement_trial(
     state: RefinementState, trial_vector: np.ndarray, experimental: ExperimentalIntensityData, *,
-    coordinate_mode="physical", phase_grating_method="fft",
+    coordinate_mode="physical", phase_grating_method="fft", objective_mode="legacy",
+    evaluation_callback=None,
 ) -> RefinementTrialResult:
     """Map a fresh trial, rebuild physics, run serial tilts, compute YNORM/objective.
 
@@ -110,6 +112,8 @@ def evaluate_refinement_trial(
     """
     if not isinstance(experimental, ExperimentalIntensityData):
         raise TypeError("experimental must be ExperimentalIntensityData")
+    if objective_mode not in ("legacy", "masked"):
+        raise ValueError("objective_mode must be 'legacy' or 'masked'")
     mapped = apply_refinement_parameters(state, trial_vector, coordinate_mode=coordinate_mode)
     scan = mapped.scan
     if (scan.scan_rows, scan.scan_columns) != (experimental.scan_rows, experimental.scan_columns):
@@ -145,5 +149,10 @@ def evaluate_refinement_trial(
             beam_indices_hk=experimental.beam_indices_hk, reciprocal_ordering="centered", propagator_ordering="centered")
         amplitudes[i], intensities[i] = result.amplitudes, result.intensities
     objective_values = _gradient(intensities, scan.scan_rows, scan.scan_columns) if experimental.gradient_option == 1 else intensities
-    result = compute_legacy_objective(objective_values, experimental, iref=mapped.iref)
-    return RefinementTrialResult(result.objective, result.scaling, mapped, intensities, objective_values, amplitudes)
+    result = compute_selected_objective(objective_values, experimental, iref=mapped.iref,
+                                        objective_mode=objective_mode)
+    trial = RefinementTrialResult(result.objective, result.scaling, mapped, intensities,
+                                   objective_values, amplitudes, objective_mode)
+    if evaluation_callback is not None:
+        evaluation_callback(trial)
+    return trial

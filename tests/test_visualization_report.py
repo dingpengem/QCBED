@@ -49,6 +49,9 @@ def test_report_all_beams_and_stage_level_figures(tmp_path):
     html=path.read_text(encoding="utf-8")
     assert '&lt;unsafe &amp; input&gt;' in html and 'data:image/png;base64,' in html
     assert "Initial YNORM" in html and "Numerator" in html and "ANNEAL" in html and "AMOEBA" in html
+    assert "Display masking is separate from legacy objective arithmetic" in html
+    assert "n_zero_variance_and_zero_weight" in html and "RMS: valid display" in html
+    assert "weight, zero variance and overlap maps" in html
     for beam in validation.comparison.experimental.beam_indices_hk:
         assert f"Beam {beam}" in html
     # Separate two-beam fixture verifies no beam is dropped from the gallery.

@@ -156,7 +156,8 @@ def _run(simplex, evaluate, *, ftol, max_evaluations, fmin):
 
 
 def run_legacy_amoeba(state, initial_simplex, experimental, *, ftol,
-                      max_evaluations, fmin, phase_grating_method="fft") -> LegacyAmoebaResult:
+                      max_evaluations, fmin, phase_grating_method="fft", objective_mode="legacy",
+                      evaluation_callback=None) -> LegacyAmoebaResult:
     """Run one source AMOEBA stage; initial_simplex is in legacy_simplex coordinates.
 
     max_evaluations is the soft source MXF limit excluding initial vertices.
@@ -179,7 +180,8 @@ def run_legacy_amoeba(state, initial_simplex, experimental, *, ftol,
 
     def evaluate(vector):
         return evaluate_refinement_trial(state, vector, experimental,
-            coordinate_mode="legacy_simplex", phase_grating_method=phase_grating_method).objective
+            coordinate_mode="legacy_simplex", phase_grating_method=phase_grating_method,
+            objective_mode=objective_mode, evaluation_callback=evaluation_callback).objective
 
     with np.errstate(over="raise", invalid="raise", divide="raise"):
         return _run(initial_simplex, evaluate, ftol=ftol,
