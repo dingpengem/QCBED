@@ -43,6 +43,8 @@ def generate_refinement_validation_report(path, validation, *, layout, config,
            'Undefined objective values are retained as NaN, never repaired by masking or altering variance.</p>' if result.loop_count==0 else
            '<p>Python refinement validation; this is not a historical production reproduction.</p>',
            table(("Run field","Value"),[("Reference input",reference_input_name),("Mode",config.method),
+               ("Execution backend",config.execution.execution_backend),
+               ("Batch size",config.execution.batch_size),("Process workers","not used"),
                ("LOOPS",config.loops),("Seed",config.seed),("Stage sequence",config.stages),
                ("Included points",masks['n_total']-masks['n_zero_weight']),
                ("Masked points",masks['n_zero_weight']),

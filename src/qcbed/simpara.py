@@ -163,7 +163,7 @@ def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
 def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
                        max_evaluations, high_temperature, low_temperature, cooling,
                        seed, random_order=False, phase_grating_method="fft", objective_mode="legacy",
-                       evaluation_callback=None) -> LegacySimparaResult:
+                       evaluation_callback=None, execution=None) -> LegacySimparaResult:
     """One driver-compatible physical-coordinate SIMPARA invocation.
 
     uncertainties are absolute physical widths, not D1/D2 factors. Startup
@@ -192,7 +192,7 @@ def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
     def evaluate(vector):
         result = evaluate_refinement_trial(state, vector, experimental,
             coordinate_mode="physical", phase_grating_method=phase_grating_method,
-            objective_mode=objective_mode, evaluation_callback=evaluation_callback)
+            objective_mode=objective_mode, execution=execution, evaluation_callback=evaluation_callback)
         # UPDPARS writes PT only for these categories. Reuse mapped values;
         # do not repack all coordinates or apply ARRANGEPARS' near-zero floor.
         for i, (category, _, value) in enumerate(_entries(result.physical_state)):

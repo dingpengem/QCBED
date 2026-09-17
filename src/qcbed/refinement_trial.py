@@ -1,10 +1,12 @@
 """Supported source-backed trial assembly; no optimizer or mutable best state."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
 from .absorption import AbsorptionCoefficients, absorptive_structure_factors
+from .execution import _execution
+from .tilt_series import simulate_tilt_series_batched
 from .experimental import ExperimentalIntensityData
 from .multislice import _snapshot, simulate_slice_sequence
 from .masked_objective import compute_selected_objective
@@ -102,14 +104,17 @@ class RefinementTrialResult:
 def evaluate_refinement_trial(
     state: RefinementState, trial_vector: np.ndarray, experimental: ExperimentalIntensityData, *,
     coordinate_mode="physical", phase_grating_method="fft", objective_mode="legacy",
-    evaluation_callback=None,
+    evaluation_callback=None, execution=None,
 ) -> RefinementTrialResult:
-    """Map a fresh trial, rebuild physics, run serial tilts, compute YNORM/objective.
+    """Map a fresh trial, rebuild physics, run selected tilts, compute YNORM/objective.
 
     Supports S atoms, zero vacancy and no surface correction; rejects unresolved
     physical updates explicitly. All source reflection symmetries are supported.
     The objective API computes/applies YNORM exactly once. No best-state updates.
+    execution=None retains the scalar reference path; ForwardExecutionConfig
+    selects the existing batched NumPy engine without changing objective policy.
     """
+    execution = _execution(execution)
     if not isinstance(experimental, ExperimentalIntensityData):
         raise TypeError("experimental must be ExperimentalIntensityData")
     if objective_mode not in ("legacy", "masked"):
@@ -141,13 +146,22 @@ def evaluate_refinement_trial(
         gratings.append(phase_grating_from_structure_factors(elastic*es, absorptive*ab, grid,
             voltage_kv=mapped.model.energy_kv, dsap_inverse_angstrom=mapped.dsap, method=phase_grating_method))
     tilts = generate_scan_tilts(scan)
-    amplitudes = np.empty((len(tilts), len(experimental.beam_indices_hk)), dtype=np.complex128)
-    intensities = np.empty(amplitudes.shape, dtype=np.float64)
-    for i, (h, k) in enumerate(tilts):
-        kernels = build_tilt_propagators(base, tilt_h_undilated_fractional=h, tilt_k_undilated_fractional=k)
-        result = simulate_slice_sequence(tuple(gratings), kernels, sequence,
-            beam_indices_hk=experimental.beam_indices_hk, reciprocal_ordering="centered", propagator_ordering="centered")
-        amplitudes[i], intensities[i] = result.amplitudes, result.intensities
+    if execution.execution_backend == "batched":
+        # Preserve the trial-specific SFMAP2 reflection multipliers. Reuse the
+        # prepared geometry/parameters and replace only the final gratings.
+        prepared = replace(base, slice_types=tuple(
+            replace(stored, phase_grating=grating)
+            for stored, grating in zip(base.slice_types, gratings)))
+        series = simulate_tilt_series_batched(prepared, tilts, batch_size=execution.batch_size)
+        amplitudes, intensities = series.amplitudes, series.intensities
+    else:
+        amplitudes = np.empty((len(tilts), len(experimental.beam_indices_hk)), dtype=np.complex128)
+        intensities = np.empty(amplitudes.shape, dtype=np.float64)
+        for i, (h, k) in enumerate(tilts):
+            kernels = build_tilt_propagators(base, tilt_h_undilated_fractional=h, tilt_k_undilated_fractional=k)
+            result = simulate_slice_sequence(tuple(gratings), kernels, sequence,
+                beam_indices_hk=experimental.beam_indices_hk, reciprocal_ordering="centered", propagator_ordering="centered")
+            amplitudes[i], intensities[i] = result.amplitudes, result.intensities
     objective_values = _gradient(intensities, scan.scan_rows, scan.scan_columns) if experimental.gradient_option == 1 else intensities
     result = compute_selected_objective(objective_values, experimental, iref=mapped.iref,
                                         objective_mode=objective_mode)

@@ -8,6 +8,7 @@ import time
 
 import numpy as np
 
+from .execution import ForwardExecutionConfig
 from .multislice import _snapshot
 from .refinement import _entries, apply_refinement_parameters, build_refinement_parameter_layout
 from .refinement_driver import run_legacy_refinement
@@ -44,6 +45,7 @@ class LocalOptimizationRunResult:
     snapshots: tuple[RefinementSnapshot, ...]
     objective_mode: str
     elapsed_seconds: float
+    execution: ForwardExecutionConfig = ForwardExecutionConfig()
 
     @property
     def final_physical_parameters(self):
@@ -145,7 +147,7 @@ def run_local_optimization(state, experimental, config, *, objective_mode="legac
     result=run_legacy_refinement(state,experimental,config,objective_mode=objective_mode,
         phase_grating_method=phase_grating_method,progress_callback=observe)
     final_trial=evaluate_refinement_trial(state,result.final_vector,experimental,
-        objective_mode=objective_mode,phase_grating_method=phase_grating_method)
+        objective_mode=objective_mode,phase_grating_method=phase_grating_method,execution=config.execution)
     if not np.isclose(final_trial.objective,result.final_objective,rtol=1e-12,atol=1e-14):
         raise ValueError("final diagnostic objective disagrees with retained driver objective")
     final=_simulated(final_trial,experimental)
@@ -158,14 +160,15 @@ def run_local_optimization(state, experimental, config, *, objective_mode="legac
     snapshot("final",final_record,final)
     validation=RefinementValidation(result,CbedComparison(experimental,initial,final))
     run=LocalOptimizationRunResult(validation,tuple(history),tuple(snapshots),objective_mode,
-                                   time.perf_counter()-started)
+                                   time.perf_counter()-started,config.execution)
     if destination is not None:
         from .validation_report import generate_refinement_validation_report
         generate_refinement_validation_report(destination/"report.html",validation,
             layout=build_refinement_parameter_layout(state),config=config,
             reference_input_name=reference_input_name,local_run=run)
         from dataclasses import asdict
-        summary=dict(objective_mode=objective_mode,seed=config.seed,stages=list(config.stages),
+        summary=dict(objective_mode=objective_mode,execution_backend=config.execution.execution_backend,
+            batch_size=config.execution.batch_size,process_workers=None,seed=config.seed,stages=list(config.stages),
             loops=config.loops,maxfsimp=config.maxfsimp,maxfpara=config.maxfpara,
             initial_objective=float(initial.objective),final_objective=float(final.objective),
             improvement=float(initial.objective-final.objective),initial_ynorm=float(initial.ynorm),

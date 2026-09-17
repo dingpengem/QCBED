@@ -317,3 +317,138 @@ Final `git status --short`:
 ```
 
 The latter two paths were already untracked before this task and were not modified.
+
+## Integrated refinement trial backend
+
+The follow-up integration adds `ForwardExecutionConfig` and
+`LegacyRefinementConfig.execution`. Serial remains the default reference;
+explicit batched execution calls the existing `simulate_tilt_series_batched`
+with a default maximum batch size of 64. This replaces only the tilt execution
+inside a trial, not any optimizer or objective algorithm. Parallel refinement
+integration and SciPy FFT remain deferred.
+
+Source/control-flow checks used `private predecessor implementationâ€“101` (SFMAP2 and phase-grating
+preparation), `111â€“127` (per-tilt propagators), `129â€“163` (ordered slice propagation
+and beam extraction), and `164â€“176` (GRADIENT, beam-major assembly, CHISQCAL).
+The existing Python coordinate, FFT, sequence and objective conventions remain
+unchanged. The trial's final reflection-adjusted gratings are placed in immutable
+prepared-sample snapshots for batching; base gratings are never substituted for
+nonunit elastic/absorptive multipliers. There is one preparation implementation.
+
+All pre-stage, optimizer callback, stage handoff, local-runner final diagnostic,
+and validation reevaluation calls receive the same execution config. The four
+optimizer modules changed only to forward that config. Tests compare exact
+evaluation histories and all returned optimizer state for ANNEAL, AMOEBA,
+PARAMIN, SIMPARA, ANSI and PAAN with fixed seeds/order and both objective modes.
+Additional trial coverage includes optional GRADIENT, three IREF branches,
+nonbinary weights and zero-variance masked points, nonzero scan coordinates,
+partial batches, multiple stored slices, absorption, nonunit reflection
+multipliers and direct/FFT phase-grating construction.
+
+The reproducible follow-up benchmark is `benchmarks/refinement_execution.py`:
+
+```powershell
+& "C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe" benchmarks/refinement_execution.py
+```
+
+It times complete production `evaluate_refinement_trial` calls for serial and
+batch sizes 32/64 on the physical reference case (840 angstrom, 1521 tilts,
+nine beams, 415 occurrences), with only the active flags reduced to depth as in
+the previous benchmark. No optimizer or shortened scan/sequence is used.
+Each call independently prepares its sample. Scoped forward timers include
+propagator construction and propagation; preparation/assembly are in the
+remaining total. GRADIENT and combined YNORM/objective have separate timers.
+Native thread environment limits are one, and timings are single observations,
+not a statistical performance guarantee.
+
+After all timed calls, the benchmark uses `CbedComparison`, `_simulated` and
+the existing `plot_cbed_comparison` to produce separate serial/batched galleries
+for all nine beams. It verifies the actual Matplotlib image data, weight masks
+and color limits agree exactly. Experimental and YNORM-scaled simulated maps
+share color limits; residuals use symmetric limits about zero. No independent
+display normalization is applied. The existing four-panel layout repeats the
+evaluated trial in its two simulation slots, explicitly relabeled; this is a
+diagnostic trial preview, not evidence of refinement improvement. Plotting,
+compression and report generation are outside every measured trial scope.
+
+### Measured integrated trial results (2026-09-16)
+
+Exact interpreter: `C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe`. NumPy 2.4.6.
+The reference uses GRADIENT=1 and the existing mask-before-YNORM policy.
+
+| Backend | Complete trial (s) | Forward (s) | GRADIENT (s) | YNORM/objective (s) | Other/preparation (s) | Speedup |
+|---|---:|---:|---:|---:|---:|---:|
+| serial | 333.206213 | 333.139277 | 0.000415 | 0.006682 | 0.059838 | 1.00x |
+| batched32 | 7.990145 | 7.969735 | 0.000231 | 0.007684 | 0.012494 | 41.70x |
+| batched64 | 7.309462 | 7.294363 | 0.000235 | 0.005692 | 0.009171 | 45.59x |
+
+All three calls returned objective **1.4154022826663093** and YNORM
+**4723684.377058742**. Max complex-amplitude, raw-intensity, post-GRADIENT,
+YNORM and objective residuals were **exactly zero**. Mapped physical states
+also matched exactly. No objective or optimizer policy was modified.
+
+This invocation differs substantially from the earlier 192.76/14.76-second
+measurements: serial was slower and batching faster. The 41.70x/45.59x ratios
+are observations from this invocation, not a universal or statistically established
+speedup. CPU frequency, thermal/power state and background load were not controlled;
+no single cause for the difference is established. Batch 64 was about 8.5% faster
+in wall time than batch 32 here. The configurable default remains 64, not an
+automatic tuner or a promise that 64 wins on every mesh/machine.
+
+Artifacts (ignored benchmark output; not committed):
+
+- Gallery index: `tmp/refinement_execution/20260916_233916_909590/index.html`.
+- Serial preview: `tmp/refinement_execution/20260916_233916_909590/serial.html`.
+- Batched preview: `tmp/refinement_execution/20260916_233916_909590/batched64.html`.
+- Each preview contains all nine beams as separate labeled PNGs; the HTML and PNGs
+  should be kept together. Results JSON and three NPZ numerical snapshots are in
+  the same timestamped directory.
+- Actual plotted data, masks and color limits were checked with exact equality
+  for every panel and beam. The generated origin-beam PNG was visually inspected.
+
+Production files touched: new `execution.py`; `refinement_trial.py`,
+`refinement_driver.py`, the four optimizer callback wrappers (`anneal.py`,
+`amoeba.py`, `paramin.py`, `simpara.py`), `local_runner.py`, `validation.py`,
+`validation_report.py`, and package exports. New focused tests:
+`tests/test_refinement_execution.py`. Physics kernels, objective implementations,
+GRADIENT, scan generation, parameter mapping and optimizer algorithms were not edited.
+
+### Integration validation
+
+- Focused refinement/backend/driver/local-runner suite: **137 passed in 22.80 s**.
+- Complete suite: **1648 passed in 62.80 s**, using the exact qcbed-python interpreter.
+- Serial/batched optimizer decisions: all returned optimizer fields, ordered
+  objective-evaluation histories, retained vectors and stage handoffs matched
+  exactly in the deterministic/seeded short runs. No tolerance-based branching
+  differences were accepted.
+- `git diff --check`: passed. New untracked implementation/test/benchmark files
+  separately passed trailing-whitespace checks.
+- `git diff --exit-code -- private predecessor sources reference_data`: passed; protected
+  tracked files unchanged. The two user-owned untracked files were not modified.
+- No stage or commit performed. The measured reference run used masked mode;
+  finite legacy-objective equivalence is tested with synthetic data. Historical
+  executable equivalence and a full real-data optimization remain outside this
+  performance integration validation.
+
+Final working tree for this task:
+
+```text
+ M README.md
+ M docs/cpu_performance_benchmark.md
+ M docs/local_optimization.md
+ M src/qcbed/__init__.py
+ M src/qcbed/amoeba.py
+ M src/qcbed/anneal.py
+ M src/qcbed/local_runner.py
+ M src/qcbed/paramin.py
+ M src/qcbed/refinement_driver.py
+ M src/qcbed/refinement_trial.py
+ M src/qcbed/simpara.py
+ M src/qcbed/validation.py
+ M src/qcbed/validation_report.py
+?? benchmarks/refinement_execution.py
+?? examples/validate_fft_correction.py
+?? reference_data/bestin.dm4
+?? src/qcbed/execution.py
+?? tests/test_refinement_execution.py
+```

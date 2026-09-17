@@ -30,6 +30,58 @@ Do not infer improvement from successful execution: inspect the measured scores.
 
 ## API
 
+### Forward execution
+
+The default remains the scalar **serial reference**. Select the existing NumPy
+batched CPU engine explicitly through the immutable execution configuration:
+
+```python
+from dataclasses import replace
+from qcbed import ForwardExecutionConfig, evaluate_refinement_trial
+
+execution = ForwardExecutionConfig(execution_backend="batched", batch_size=64)
+config = replace(config, execution=execution)
+# run_local_optimization(state, experimental, config, ...) and
+# run_legacy_refinement(state, experimental, config, ...) use this policy
+# for every pre-stage, optimizer, and final diagnostic evaluation.
+trial = evaluate_refinement_trial(
+    state, trial_vector, experimental, execution=execution,
+    objective_mode="masked",
+)
+```
+
+`ForwardExecutionConfig()` selects serial with `batch_size=None`.
+`ForwardExecutionConfig("batched")` resolves to batch size 64, based on the
+measured 32â€“64 optimum for the 16-by-16 reference mesh. This is a configurable
+maximum number of tilts per chunk, not a physics constant or a universal optimum;
+larger meshes may need smaller batches. The final partial chunk preserves order.
+Unknown backends, nonpositive/noninteger/bool batch sizes, and batch settings for
+serial are rejected. Process-only keywords are not accepted by this config.
+
+Batched execution is the recommended CPU refinement mode. Both paths share
+trial mapping and preparation, including nonunit elastic/absorptive reflection
+multipliers, beam order, sequence and wavelength. The batched path snapshots the
+final trial gratings into the existing prepared sample and calls
+`simulate_tilt_series_batched`; it does not translate new physics. Optional
+GRADIENT, YNORM and both objective policies run afterward, unchanged.
+See [complete trial measurements](cpu_performance_benchmark.md#integrated-refinement-trial-backend)
+for exact Python-to-Python equality checks. In the follow-up real-case run,
+complete trial time was 333.21 s serial versus 7.99 s (batch 32) and 7.31 s
+(batch 64), observed speedups of 41.70x and 45.59x. These single-run timings
+differ substantially from the earlier benchmark and are not a general guarantee. These checks
+do not establish historical Fortran executable equivalence.
+
+`LocalOptimizationRunResult.execution`, HTML run fields and `summary.json`
+record backend/batch settings; JSON records `process_workers=null` and objective
+mode. Progress and visualization are observational and do not select a backend.
+Standalone optimizer wrappers also accept `execution=execution`.
+`validate_refinement` uses the same config for its diagnostic reevaluations.
+
+Parallel refinement integration is deferred: the independent
+`simulate_tilt_series_parallel` API remains available, but `"parallel"` is not
+an accepted refinement backend. No persistent pools or SciPy FFT switch are
+introduced. Existing unsupported physical-state errors remain unchanged.
+
 ```python
 from qcbed import run_local_optimization
 

@@ -227,3 +227,12 @@ exponent divided by the mesh size into reciprocal space, positive exponent
 without normalization on return. Potential construction is unchanged.
 See [FFT correction validation](docs/fft_sign_correction.md), including the
 historical-output comparison and unresolved scattering-source provenance.
+
+## Batched refinement execution
+
+Refinement can explicitly reuse the validated NumPy batched tilt engine:
+set `LegacyRefinementConfig.execution` to
+`ForwardExecutionConfig("batched", batch_size=64)` (for example with
+`dataclasses.replace`). Serial remains the default reference path and objective
+defaults are unchanged. See [local optimization](docs/local_optimization.md#forward-execution)
+for the API and [performance measurements](docs/cpu_performance_benchmark.md#integrated-refinement-trial-backend).

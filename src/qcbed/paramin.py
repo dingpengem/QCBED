@@ -141,7 +141,7 @@ def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
 def run_legacy_paramin(state, initial_vector, experimental, *, max_cycles,
                        tolerance, random_order=False, seed=None,
                        phase_grating_method="fft", objective_mode="legacy",
-                       evaluation_callback=None) -> LegacyParaminResult:
+                       evaluation_callback=None, execution=None) -> LegacyParaminResult:
     """Physical-coordinate PARAMIN with BOT=D2 and TOP=D1 from state.ranges.
 
     max_cycles is literal MAXFPARA: up to max_cycles+1 cycles can execute.
@@ -177,7 +177,7 @@ def run_legacy_paramin(state, initial_vector, experimental, *, max_cycles,
     def evaluate(vector):
         return evaluate_refinement_trial(state, vector, experimental,
             coordinate_mode="physical", phase_grating_method=phase_grating_method,
-            objective_mode=objective_mode, evaluation_callback=evaluation_callback).objective
+            objective_mode=objective_mode, execution=execution, evaluation_callback=evaluation_callback).objective
 
     with np.errstate(divide="raise", invalid="raise", over="raise"):
         return _run(initial, bottom, top, project, evaluate, max_cycles=int(max_cycles),

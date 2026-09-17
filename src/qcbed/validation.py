@@ -107,7 +107,7 @@ def validate_refinement(state, experimental, config, *, phase_grating_method="ff
     if config.loops <= 0:
         vector=_snapshot(pack_refinement_parameters(state))
         trial=evaluate_refinement_trial(state,vector,experimental,
-                                        phase_grating_method=phase_grating_method,objective_mode=objective_mode)
+                                        phase_grating_method=phase_grating_method,objective_mode=objective_mode,execution=config.execution)
         check=compute_selected_objective(trial.objective_intensities,experimental,iref=state.iref,objective_mode=objective_mode)
         if not (np.isclose(trial.objective,check.objective,equal_nan=True) and
                 np.isclose(trial.scaling,check.scaling,equal_nan=True)):
@@ -117,10 +117,10 @@ def validate_refinement(state, experimental, config, *, phase_grating_method="ff
         return RefinementValidation(result,CbedComparison(experimental,simulated,simulated))
     result=run_legacy_refinement(state,experimental,config,phase_grating_method=phase_grating_method,objective_mode=objective_mode)
     initial=evaluate_refinement_trial(state,pack_refinement_parameters(state),experimental,
-                                      phase_grating_method=phase_grating_method,objective_mode=objective_mode)
+                                      phase_grating_method=phase_grating_method,objective_mode=objective_mode,execution=config.execution)
     final=(initial if np.array_equal(result.initial_vector,result.final_vector) else
            evaluate_refinement_trial(state,result.final_vector,experimental,
-                                      phase_grating_method=phase_grating_method,objective_mode=objective_mode))
+                                      phase_grating_method=phase_grating_method,objective_mode=objective_mode,execution=config.execution))
     for label,trial,score in (("initial",initial,result.initial_objective),
                              ("final",final,result.final_objective)):
         check=compute_selected_objective(trial.objective_intensities,experimental,iref=state.iref,objective_mode=objective_mode)

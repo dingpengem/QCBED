@@ -99,7 +99,10 @@ from .refinement import (
 from .refinement_io import parse_refinement_state
 from .refinement_trial import RefinementTrialResult, evaluate_refinement_trial
 
+from .execution import ForwardExecutionConfig
+
 __all__ = [
+    "ForwardExecutionConfig",
     "MaskedObjectiveResult", "compute_masked_objective", "compute_selected_objective",
     "RefinementProgressRecord", "RefinementSnapshot", "LocalOptimizationRunResult", "run_local_optimization",
     "SimulatedCbedData", "LegacySimulatedOutput", "reshape_scan_map",

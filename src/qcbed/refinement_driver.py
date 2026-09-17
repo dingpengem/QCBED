@@ -5,6 +5,7 @@ from numbers import Integral
 
 import numpy as np
 
+from .execution import ForwardExecutionConfig, _execution
 from .anneal import run_legacy_anneal
 from .amoeba import build_legacy_simplex, run_legacy_amoeba
 from .paramin import run_legacy_paramin
@@ -41,8 +42,10 @@ class LegacyRefinementConfig:
     seed: int
     paraopt: int = 0
     loud: int = 0
+    execution: ForwardExecutionConfig = ForwardExecutionConfig()
 
     def __post_init__(self):
+        object.__setattr__(self, "execution", _execution(self.execution))
         for name in ("loops","maxfsimp","maxfpara","seed","paraopt","loud"):
             value = getattr(self,name)
             if isinstance(value,(bool,np.bool_)) or not isinstance(value,Integral):
@@ -148,7 +151,7 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
                     progress_callback("evaluation",stage_index,name or "EVALUATION",loop,trial)
             pre = evaluate_refinement_trial(state,current,experimental,
                 coordinate_mode="physical",phase_grating_method=phase_grating_method,
-                objective_mode=objective_mode,evaluation_callback=observe if progress_callback else None)
+                objective_mode=objective_mode,execution=config.execution,evaluation_callback=observe if progress_callback else None)
             evaluations += 1
             score = np.float64(pre.objective)
             if not np.isfinite(score) or score > 1e20:
@@ -164,6 +167,7 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
             incoming_score = score
             stage_seed = None
             common = dict(phase_grating_method=phase_grating_method,objective_mode=objective_mode,
+                          execution=config.execution,
                           evaluation_callback=observe if progress_callback else None)
             if name in ("ANNEAL","SIMPARA"):
                 stage_seed = int(np.random.SeedSequence([config.seed,loop,position]).generate_state(1,dtype=np.uint64)[0])
