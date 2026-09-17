@@ -1,0 +1,5 @@
+{
+  "scope": "Private predecessor-source integrity inventory is not distributed.",
+  "private_source_required": true,
+  "notice": "The original inventory is retained privately. See source_provenance.md for unchanged source-integrity test requirements."
+}
