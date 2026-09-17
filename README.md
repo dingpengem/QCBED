@@ -112,7 +112,11 @@ historical executable equivalence is unverified. See
 [objective evaluation](docs/objective_function.md).
 
 The [optimizer architecture audit](docs/optimizer_architecture.md) documents
-legacy sequencing, parameter flow and missing source; optimizers remain unimplemented.
+legacy sequencing, parameter flow and missing source. Source-derived
+`run_legacy_anneal` now provides seeded float64 adaptive Gaussian search through
+the existing trial evaluator. It accepts improvements and ties, with no uphill
+acceptance. Historical executable/RNG equivalence is unverified; see
+[ANNEAL optimizer](docs/anneal_optimizer.md). Other optimizers remain unimplemented.
 
 Refinement parameter layouts, packing/unpacking and explicit physical/simplex
 trial evaluation are implemented. Trials reuse the serial numerical kernels

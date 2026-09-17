@@ -102,9 +102,10 @@ optimizers are unknown.
 ## Replacement ANNEAL: narrow interface, RNG and capacity audit
 
 **Classification: interface-compatible but dependency/ABI compatibility
-unresolved.** No full ANNEAL algorithm audit or optimizer implementation is
-performed here. This section supersedes earlier compatibility conclusions.
-Only this compatibility section was updated in the present task.
+unresolved for historical execution.** The explicitly float64 Python
+source-derived algorithm is now implemented; see [ANNEAL optimizer](anneal_optimizer.md)
+for its full audit, seeded RNG, capacity guard and tests. This does not resolve
+the historical ABI conclusions recorded below.
 
 ### Content discovery and evidence scope
 
@@ -318,9 +319,11 @@ Next obtain original compiler commands/default-kind settings and establish
 which RNG definitions were linked, including timing-helper contracts. Confirm
 the intended active-count domain and address capacity/leading-dimension issues
 as explicit follow-up decisions. The source signatures no longer need to be
-recovered: they are readable in private predecessor implementation. Only after resolving compatibility
-should the full ANNEAL algorithm audit proceed. Metropolis/global-search,
-cooling, stopping and best-state logic are deliberately not certified here.
+recovered: they are readable in private predecessor implementation. With explicit authorization to use
+float64 and a deterministic Python RNG, the algorithm audit and implementation
+have now proceeded independently of historical ABI recovery. The source uses
+greedy Gaussian proposals with ties, not Metropolis acceptance; details are in
+[ANNEAL optimizer](anneal_optimizer.md).
 
 Narrow-audit validation: **1357 tests passed in 37.57 s**, using exactly
 `C:\Users\peng863\AppData\Local\miniconda3\envs\qcbed-python\python.exe`.
@@ -422,8 +425,8 @@ Executable behavior:
   Recompute PERTSIZE, set C0=CBEST. Return NFUNC=TOTSTEPS at 430.
 
 This proves randomized exploration with parabolic proposals and temperature
-adaptation. Its stochastic search mechanics are audited here; replacement ANNEAL remains
-subject to its compatibility gate. Global
+adaptation. Its stochastic search mechanics are audited here; replacement ANNEAL
+has a separate [source-derived implementation](anneal_optimizer.md). Global
 optimality, a conventional global-optimizer classification or escape through
 uphill acceptance is not established. Direction restarts stay at the current
 best point, not a newly randomized starting vector. No other optimizer is
@@ -557,11 +560,10 @@ across all other paths and UPDATE effects remain unresolved.
    forward and scalar APIs, keeping physical and simplex coordinates distinct.
    Resolve GRADIENT and stateful callback behavior before claiming legacy
    end-to-end equivalence. A restricted GRADIENTOPT=0 mode must be explicit.
-3. Resolve current ANNEAL's NRANDO/RANDO interface and compiler-kind/build
-   evidence, and confirm its <=1000 active-parameter domain against the intended
-   driver inputs. The callback signature now matches; no module-state adapter
-   is indicated. Only after this compatibility gate, perform the replacement's
-   algorithm audit. Recover other missing optimizer source or executable
+3. Source-derived float64 ANNEAL is now implemented with an explicit <=1000
+   active-parameter guard and seeded RNG. Recover compiler-kind/build and
+   linked-RNG evidence before historical executable equivalence claims.
+   Recover other missing optimizer source or executable
    comparison evidence; SIMPARA remains a candidate with its own state issues.
    Do not substitute generic simulated annealing, SciPy Nelder-Mead or a
    guessed coordinate minimizer under a legacy-equivalence label.
