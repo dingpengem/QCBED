@@ -197,6 +197,15 @@ limits of compatibility with the Fortran runtime.
 
 ## Current target
 
+CBED validation now includes source-derived `out.dat` I/O, immutable comparison
+maps, per-beam residual diagnostics and self-contained HTML reports. Install
+the optional `visualization` extra for Matplotlib. The example
+`examples/validate_reference_output.py` evaluates the full reference dimensions
+and writes to `tmp/end_to_end_validation/`. Its objective is undefined because
+the supplied data contain zero variances; no successful reference refinement
+or historical executable equivalence is claimed. See
+[end-to-end validation](docs/end_to_end_validation.md) for APIs and evidence.
+
 - NumPy/SciPy serial reference implementation
 - CPU process-based parallelism over independent incident tilts
 - future optional GPU backend

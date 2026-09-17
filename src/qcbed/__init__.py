@@ -9,6 +9,12 @@ from .models import (
 )
 from .legacy_io import AtomSite, LegacyInput, LegacyInputParseError, Species, parse_for007
 from .electron import electron_wavelength_angstrom
+from .output_io import (SimulatedCbedData, LegacySimulatedOutput, reshape_scan_map,
+                        write_legacy_out_dat, parse_legacy_out_dat)
+from .validation import CbedComparison, RefinementValidation, validate_refinement
+from .visualization import (plot_cbed_comparison, plot_refinement_convergence,
+                            plot_parameter_trajectories)
+from .validation_report import generate_refinement_validation_report
 from .anneal import LegacyAnnealResult, run_legacy_anneal
 from .amoeba import LegacyAmoebaResult, build_legacy_simplex, run_legacy_amoeba
 from .paramin import LegacyParaminResult, run_legacy_paramin
@@ -91,6 +97,11 @@ from .refinement_io import parse_refinement_state
 from .refinement_trial import RefinementTrialResult, evaluate_refinement_trial
 
 __all__ = [
+    "SimulatedCbedData", "LegacySimulatedOutput", "reshape_scan_map",
+    "write_legacy_out_dat", "parse_legacy_out_dat", "CbedComparison",
+    "RefinementValidation", "validate_refinement", "plot_cbed_comparison",
+    "plot_refinement_convergence", "plot_parameter_trajectories",
+    "generate_refinement_validation_report",
     "RefinementRegion",
     "RefinementReflection",
     "RefinementState",
