@@ -2,6 +2,12 @@
 
 ## Evidence and limits
 
+The source-derived multi-stage driver is now implemented as
+`run_legacy_refinement`, with `parse_legacy_refinement` and immutable controls,
+results and history. See [refinement driver](refinement_driver.md) for tested
+METHOD/LOOPS orchestration, coordinate transitions and retained-state rules.
+This does not establish historical executable equivalence.
+
 This is a static audit, not an optimizer implementation or executable-equivalence
 claim. Readable executable statements take precedence over names and comments;
 call sites and real inputs corroborate them. private predecessor implementation is only the
@@ -351,7 +357,8 @@ the mean of best and worst. There is no final best-vertex swap.
 The callback's retained best can differ from the final simplex best; both
 are exposed explicitly. The driver restores PARMIN through UPDPARS,
 ARRANGEPARS and UPDATE after return. Python does not implement that multi-stage
-driver or mutate the baseline refinement state.
+driver inside AMOEBA or mutate the baseline refinement state. The separate
+[refinement driver](refinement_driver.md) now orchestrates the stages.
 
 The recovered P(MP,NP) declaration confirms the leading-dimension mismatch:
 driver SIMP(2001,2000) is passed with MP=1001,NP=1000. Python uses dynamic
@@ -378,8 +385,8 @@ There is no call to AMOEBA or another optimizer within PARAMIN.
 Python uses dynamic arrays with an explicit 1..1000 active-count guard,
 float64 arithmetic and private seeded PCG64 for optional random traversal.
 Historical clock-based RANDO ABI and executable equivalence remain unresolved.
-The existing driver sequencing table remains applicable; Python sequencing
-and multi-stage refinement remain unimplemented.
+The existing driver sequencing table remains applicable and is now implemented
+by the separate [refinement driver](refinement_driver.md).
 
 ## SIMPARA: implemented source-derived stochastic optimizer
 
@@ -576,8 +583,9 @@ across all other paths and UPDATE effects remain unresolved.
    comparison evidence; SIMPARA remains a candidate with its own state issues.
    Do not substitute generic simulated annealing, SciPy Nelder-Mead or a
    guessed coordinate minimizer under a legacy-equivalence label.
-4. Validate individual chosen optimizers and only then implement the documented
-   METHOD/LOOPS driver and best-state bookkeeping. There is no evidence-based
+4. The documented METHOD/LOOPS driver and retained-state handoff are now
+   implemented and tested after the individual optimizers. Historical
+   executable comparisons remain outstanding. There is no evidence-based
    requirement to implement a global optimizer before a local one: the driver
    explicitly supports both orders and standalone stages.
 

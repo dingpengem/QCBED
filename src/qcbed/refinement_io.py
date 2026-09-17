@@ -37,6 +37,11 @@ class _CaptureRecords(_Records):
 
 
 def parse_refinement_state(path, *, experimental_header_path=None) -> RefinementState:
+    """Read the refinement state; preserve the existing controls-consuming API."""
+    return _parse_refinement_input(path, experimental_header_path=experimental_header_path)[0]
+
+
+def _parse_refinement_input(path, *, experimental_header_path=None):
     """Read active masks, physical values and D1/D2 without running refinement.
 
     Existing FOR007 and scan parser behavior is unchanged. Optimizer controls
@@ -97,22 +102,24 @@ def parse_refinement_state(path, *, experimental_header_path=None) -> Refinement
         scan, scan_masks, tuple(reflections), tuple(symmetry), v["DSAP"][0], iref)
     n = len(build_refinement_parameter_layout(state).parameters)
     read = records.read("optimizer selector (not executed)")
-    read.token()
-    read.integer("PARAOPT")
-    read.integer("LOUD")
+    controls = {"method": read.token().value, "paraopt": read.integer("PARAOPT"),
+                "loud": read.integer("LOUD")}
+    control_record = records.position
     for name in ("LOOPS", "MAXFSIMP", "MAXFPARA"):
-        records.read(name).integer(name)
+        controls[name.lower()] = records.read(name).integer(name)
     for name in ("FTOL", "CHIMIN", "MAXTEMP", "MINTEMP", "COOLRATE"):
-        records.read(name).real(name)
+        controls[name.lower()] = records.read(name).real(name)
     # Empty implied-DO READ still consumes a record in the source.
+    plamda = []
     if n:
         read = records.read("PLAMDA (not applied)")
         for _ in range(n):
-            read.real("PLAMDA")
+            plamda.append(read.real("PLAMDA"))
     else:
         records.next("empty PLAMDA record")
     ranges = []
     for i in range(n):
         read = records.read(f"parameter {i+1} range factors")
         ranges.append((read.real("D1"), read.real("D2")))
-    return replace(state, ranges=tuple(ranges))
+    controls["plamda"] = tuple(plamda)
+    return replace(state, ranges=tuple(ranges)), controls, records, control_record

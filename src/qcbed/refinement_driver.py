@@ -1,0 +1,194 @@
+"""Source-backed oneitpara.f stage orchestration; no optimizer algorithms."""
+
+from dataclasses import dataclass
+from numbers import Integral
+
+import numpy as np
+
+from .anneal import run_legacy_anneal
+from .amoeba import build_legacy_simplex, run_legacy_amoeba
+from .paramin import run_legacy_paramin
+from .simpara import run_legacy_simpara
+from .multislice import _snapshot
+from .refinement import (build_refinement_parameter_layout, pack_refinement_parameters,
+                         apply_refinement_parameters, _physical_vector, _entries)
+from .refinement_io import _parse_refinement_input
+from .refinement_trial import evaluate_refinement_trial
+from .structure_factors import _finite
+
+
+_STAGES = {"ANNE": ("ANNEAL",), "SIMP": ("AMOEBA",), "PARA": ("PARAMIN",),
+           "SPAR": ("SIMPARA",), "PAAN": ("PARAMIN","ANNEAL"),
+           "ANPA": ("ANNEAL","PARAMIN"), "SIPA": ("AMOEBA","PARAMIN"),
+           "PASI": ("PARAMIN","AMOEBA"), "SIAN": ("AMOEBA","ANNEAL"),
+           "ANSI": ("ANNEAL","AMOEBA")}
+
+
+@dataclass(frozen=True)
+class LegacyRefinementConfig:
+    """Legacy control names; seed is explicit Python reproducibility policy."""
+
+    method: str
+    loops: int
+    maxfsimp: int
+    maxfpara: int
+    ftol: float
+    chimin: float
+    maxtemp: float
+    mintemp: float
+    coolrate: float
+    plamda: tuple[float, ...]
+    seed: int
+    paraopt: int = 0
+    loud: int = 0
+
+    def __post_init__(self):
+        for name in ("loops","maxfsimp","maxfpara","seed","paraopt","loud"):
+            value = getattr(self,name)
+            if isinstance(value,(bool,np.bool_)) or not isinstance(value,Integral):
+                raise ValueError(f"{name} must be an integer excluding bool")
+        if min(self.maxfsimp,self.maxfpara,self.seed) < 0:
+            raise ValueError("optimizer limits and seed must be nonnegative")
+        if self.paraopt not in (0,1) or self.loud not in (0,1):
+            raise ValueError("PARAOPT and LOUD must be 0 or 1")
+        for name in ("ftol","chimin","maxtemp","mintemp","coolrate"):
+            object.__setattr__(self,name,_finite(getattr(self,name),name))
+        object.__setattr__(self,"plamda",tuple(_finite(x,"PLAMDA") for x in self.plamda))
+        if self.ftol < 0 or self.maxtemp <= 0 or self.mintemp <= 0 or not 0 < self.coolrate < 1:
+            raise ValueError("require FTOL>=0, positive temperatures and 0<COOLRATE<1")
+        if not isinstance(self.method,str):
+            raise TypeError("METHOD must be text")
+        self.stages  # Validate dispatch without accepting mixed case.
+
+    @property
+    def stages(self):
+        prefix = self.method[:4]
+        if prefix in _STAGES:
+            return _STAGES[prefix]
+        if prefix in {x.lower() for x in _STAGES}:
+            return _STAGES[prefix.upper()]
+        if self.loops <= 0:
+            return ()
+        raise ValueError(f"unsupported legacy METHOD {self.method!r}")
+
+
+@dataclass(frozen=True, eq=False)
+class LegacyRefinementStage:
+    optimizer: str
+    loop_index: int
+    input_vector: np.ndarray
+    input_objective: np.float64
+    retained_vector: np.ndarray
+    retained_objective: np.float64
+    optimizer_result: object
+    seed: int | None
+
+    def __post_init__(self):
+        for name in ("input_vector","retained_vector"):
+            object.__setattr__(self,name,_snapshot(getattr(self,name)))
+
+
+@dataclass(frozen=True, eq=False)
+class LegacyRefinementResult:
+    initial_vector: np.ndarray
+    initial_objective: np.float64
+    final_vector: np.ndarray
+    final_objective: np.float64
+    final_state: object
+    loop_count: int
+    stage_history: tuple[LegacyRefinementStage, ...]
+    evaluations: int
+
+    def __post_init__(self):
+        for name in ("initial_vector","final_vector"):
+            object.__setattr__(self,name,_snapshot(getattr(self,name)))
+        object.__setattr__(self,"stage_history",tuple(self.stage_history))
+
+
+def parse_legacy_refinement(path, *, seed, experimental_header_path=None):
+    """Return (RefinementState, LegacyRefinementConfig) from source records."""
+    state, controls, records, record = _parse_refinement_input(
+        path, experimental_header_path=experimental_header_path)
+    try:
+        config = LegacyRefinementConfig(**controls,seed=seed)
+    except (TypeError,ValueError) as exc:
+        raise records.error("refinement controls",repr(controls),str(exc),record) from exc
+    return state,config
+
+
+def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *,
+                          phase_grating_method="fft") -> LegacyRefinementResult:
+    """Run complete selected sequences, carrying PARMIN through UPDPARS/packing.
+
+    Baseline state (and hence AMOEBA SCAL) stays anchored across all stages.
+    No extra final objective evaluation or all-time best selection is added.
+    """
+    if not isinstance(config,LegacyRefinementConfig):
+        raise TypeError("config must be LegacyRefinementConfig")
+    layout = build_refinement_parameter_layout(state)
+    n = len(layout.parameters)
+    if n > 1000 or (config.loops > 0 and n == 0):
+        raise ValueError("driver requires 1..1000 active parameters for optimization")
+    if len(config.plamda) != n:
+        raise ValueError("PLAMDA count must match active parameter count")
+    initial = pack_refinement_parameters(state)
+    current = initial.copy()
+    history = []
+    evaluations = 0
+    first_score = None
+    selected = config.stages if config.loops > 0 else (None,)
+    for loop in range(1,max(config.loops,1)+1):
+        for position,name in enumerate(selected):
+            pre = evaluate_refinement_trial(state,current,experimental,
+                coordinate_mode="physical",phase_grating_method=phase_grating_method)
+            evaluations += 1
+            score = np.float64(pre.objective)
+            if not np.isfinite(score) or score > 1e20:
+                raise ValueError("driver objective must be finite and <= source CHISMIN sentinel 1e20")
+            # Preserve ONEITPARA's supported PT writebacks, without repacking.
+            retained = current.copy()
+            for i,(category,_,value) in enumerate(_entries(pre.physical_state)):
+                if category in ("constant_vacancy","vacancy_coefficient","absorption","debye_waller"):
+                    retained[i] = value
+            if first_score is None:
+                first_score = score
+            start = retained.copy()
+            incoming_score = score
+            stage_seed = None
+            common = dict(phase_grating_method=phase_grating_method)
+            if name in ("ANNEAL","SIMPARA"):
+                stage_seed = int(np.random.SeedSequence([config.seed,loop,position]).generate_state(1,dtype=np.uint64)[0])
+            if name == "ANNEAL":
+                result = run_legacy_anneal(state,start,experimental,
+                    max_iterations=config.maxfsimp,seed=stage_seed,
+                    maximum_temperature=config.maxtemp,minimum_temperature=config.mintemp,
+                    cooling_rate=config.coolrate,**common)
+            elif name == "PARAMIN":
+                stage_seed = int(np.random.SeedSequence([config.seed,loop,position]).generate_state(1,dtype=np.uint64)[0]) if config.paraopt else None
+                result = run_legacy_paramin(state,start,experimental,max_cycles=config.maxfpara,
+                    tolerance=config.ftol,random_order=bool(config.paraopt),seed=stage_seed,**common)
+            elif name == "SIMPARA":
+                result = run_legacy_simpara(state,start,experimental,
+                    uncertainties=np.asarray(config.plamda,dtype=np.float64),
+                    max_evaluations=config.maxfsimp,high_temperature=config.maxtemp,
+                    low_temperature=config.mintemp,cooling=config.coolrate,
+                    seed=stage_seed,random_order=bool(config.paraopt),**common)
+            elif name == "AMOEBA":
+                simplex = build_legacy_simplex(state,start,np.asarray(config.plamda,dtype=np.float64))
+                result = run_legacy_amoeba(state,simplex,experimental,ftol=config.ftol,
+                    max_evaluations=config.maxfsimp,fmin=config.chimin,**common)
+                # AMOEBA does not reset callback CHISMIN after the pre-stage call.
+                if result.best_evaluated_objective <= score:
+                    retained = _physical_vector(layout,result.best_evaluated_vector,"legacy_simplex")
+                    score = result.best_evaluated_objective
+            if name is not None:
+                if name != "AMOEBA":
+                    retained,score = result.best_vector.copy(),result.best_objective
+                evaluations += result.evaluations
+                history.append(LegacyRefinementStage(name,loop,start,incoming_score,
+                    retained,score,result,stage_seed))
+            final_state = apply_refinement_parameters(state,retained)
+            # Source P and PARMIN differ: only P is packed/floored for next stage.
+            current = pack_refinement_parameters(final_state)
+    return LegacyRefinementResult(initial,first_score,retained,score,final_state,
+                                  max(config.loops,0),tuple(history),evaluations)

@@ -129,7 +129,11 @@ for its fallback, stopping and historical-equivalence limitations.
 source direction and temperature adaptation. Its startup direction/counter
 are explicitly zero-initialized by agreement; historical executable equivalence
 is unverified. See [SIMPARA optimizer](docs/simpara_optimizer.md).
-The multi-stage driver remains unimplemented.
+`parse_legacy_refinement` and `run_legacy_refinement` now support the ten
+source-selected standalone/hybrid modes and full-sequence LOOPS repetition.
+The driver preserves retained-state handoff and the original AMOEBA scale
+anchor, with immutable stage history. See [refinement driver](docs/refinement_driver.md)
+for control mapping, supported scope and executable-equivalence limitations.
 
 Refinement parameter layouts, packing/unpacking and explicit physical/simplex
 trial evaluation are implemented. Trials reuse the serial numerical kernels

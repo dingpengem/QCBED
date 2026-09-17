@@ -264,6 +264,18 @@ def _scal(layout):
     return np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
 
 
+def _physical_vector(layout, trial_vector, coordinate_mode):
+    """Shared coordinate conversion, before UPDPARS sign folding or packing."""
+    values = _vector(trial_vector, len(layout.parameters))
+    if coordinate_mode == "legacy_simplex":
+        a, b = _scal(layout)
+        with np.errstate(over="raise", invalid="raise", divide="raise"):
+            values = values/a+b
+    elif coordinate_mode != "physical":
+        raise ValueError("coordinate_mode must be physical or legacy_simplex")
+    return values
+
+
 def apply_refinement_parameters(state: RefinementState, trial_vector: np.ndarray, *,
                                 coordinate_mode="physical") -> RefinementState:
     """UPDPARS scalar assignment on a copy; dependent physics is prepared later.
@@ -272,13 +284,7 @@ def apply_refinement_parameters(state: RefinementState, trial_vector: np.ndarray
     No D1/D2 clipping occurs. Input vector is never modified or repacked.
     """
     layout = build_refinement_parameter_layout(state)
-    values = _vector(trial_vector, len(layout.parameters))
-    if coordinate_mode == "legacy_simplex":
-        a, b = _scal(layout)
-        with np.errstate(over="raise", invalid="raise", divide="raise"):
-            values = values/a+b
-    elif coordinate_mode != "physical":
-        raise ValueError("coordinate_mode must be physical or legacy_simplex")
+    values = _physical_vector(layout, trial_vector, coordinate_mode)
     regions = list(state.regions)
     absorption = [list(row) for row in state.absorption]
     atoms = [list(row) for row in state.model.atoms_by_slice]
