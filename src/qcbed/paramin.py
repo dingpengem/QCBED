@@ -8,7 +8,7 @@ import numpy as np
 from .multislice import _snapshot
 from .refinement import (build_refinement_parameter_layout, apply_refinement_parameters,
                          pack_refinement_parameters, _vector)
-from .refinement_trial import evaluate_refinement_trial
+from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
 
 
@@ -70,7 +70,7 @@ def _order(n, random_order, rng):
 
 
 def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
-         random_order=False, rng=None):
+         random_order=False, rng=None, allow_invalid=False):
     bottom, top = bottom.copy(), top.copy()
     n = len(initial)
     uncertainty = abs(1-bottom)
@@ -80,18 +80,20 @@ def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
     last = None
     last_fit = None
 
-    def visit(vector):
+    def visit(vector, *, required_valid=False):
         nonlocal retained, chi, evaluations, last, last_fit
         last = project(vector).copy()
         last_fit = np.float64(evaluate(last.copy()))
         evaluations += 1
+        if allow_invalid and not required_valid and evaluations > 1 and np.isposinf(last_fit):
+            return last.copy(), last_fit
         if not np.isfinite(last_fit) or last_fit > 1e20:
             raise ValueError("PARAMIN objective must be finite and <= source CHISMIN sentinel 1e20")
         if last_fit <= chi:  # ONEITPARA shared best update, including ties
             retained, chi = last.copy(), last_fit
         return last.copy(), last_fit
 
-    _, c0 = visit(retained)
+    _, c0 = visit(retained, required_valid=True)
     best = c0
     cycles = steps = 0
     average = np.float64(1)
@@ -131,7 +133,7 @@ def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
             bottom[m], top[m] = 1-delta, 1+delta
         average /= n
         chi = np.float64(1e20)
-        _, best = visit(retained)
+        _, best = visit(retained, required_valid=True)
         c0 = best
     return LegacyParaminResult(retained, chi, last, last_fit, bottom, top,
                               uncertainty, average, cycles, steps, evaluations,
@@ -141,12 +143,13 @@ def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
 def run_legacy_paramin(state, initial_vector, experimental, *, max_cycles,
                        tolerance, random_order=False, seed=None,
                        phase_grating_method="fft", objective_mode="legacy",
-                       evaluation_callback=None, execution=None, before_evaluation=None) -> LegacyParaminResult:
+                       evaluation_callback=None, execution=None, before_evaluation=None, invalid_trial_policy="raise") -> LegacyParaminResult:
     """Physical-coordinate PARAMIN with BOT=D2 and TOP=D1 from state.ranges.
 
     max_cycles is literal MAXFPARA: up to max_cycles+1 cycles can execute.
     Random traversal requires an explicit seed; fixed traversal uses no RNG.
     """
+    _invalid_policy(invalid_trial_policy)
     layout = build_refinement_parameter_layout(state)
     n = len(layout.parameters)
     if not 1 <= n <= 1000:
@@ -177,8 +180,8 @@ def run_legacy_paramin(state, initial_vector, experimental, *, max_cycles,
     def evaluate(vector):
         return evaluate_refinement_trial(state, vector, experimental,
             coordinate_mode="physical", phase_grating_method=phase_grating_method,
-            objective_mode=objective_mode, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback).objective
+            objective_mode=objective_mode, invalid_trial_policy=invalid_trial_policy, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback).objective
 
     with np.errstate(divide="raise", invalid="raise", over="raise"):
         return _run(initial, bottom, top, project, evaluate, max_cycles=int(max_cycles),
-                    tolerance=tolerance, random_order=random_order, rng=rng)
+                    tolerance=tolerance, random_order=random_order, rng=rng, allow_invalid=invalid_trial_policy == "reject")

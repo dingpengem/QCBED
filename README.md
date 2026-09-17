@@ -239,6 +239,19 @@ for the API and [performance measurements](docs/cpu_performance_benchmark.md#int
 
 ## Durable full-refinement runner
 
+The editable full-refinement example now selects depth and scan coordinates
+with explicit user-selected physical hard bounds, checked after source mapping
+and before simulation. Package APIs default to no hard bounds. See
+[refinement bounds](docs/refinement_bounds.md) for settings and resume rules.
+Specific-target, category absolute and category relative rules expand over the
+active layout automatically; `--dry-run` displays each resolved bound.
+
+Production runs explicitly reject numerical-invalid proposals with an infinite
+score, preserving the retained state and logging the reason. Low-level APIs
+default to `invalid_trial_policy="raise"`. This is a Python safety policy, not
+proven historical Fortran behavior. Optional category selection can restrict a
+first run to depth and scan coordinates; see [invalid-trial policy](docs/invalid_trial_policy.md).
+
 Run `examples/run_full_refinement.py --quick` for a short real-data pipeline
 check, or `--dry-run` to inspect configuration without optimization. Edit the
 settings at the top before running without flags. Use

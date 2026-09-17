@@ -8,7 +8,7 @@ import numpy as np
 from .anneal import _normal
 from .multislice import _snapshot
 from .refinement import build_refinement_parameter_layout, _vector, _entries
-from .refinement_trial import evaluate_refinement_trial
+from .refinement_trial import evaluate_refinement_trial, InvalidRefinementTrial, _invalid_policy
 from .structure_factors import _finite
 
 
@@ -64,7 +64,7 @@ def _parabola(central, inverse, trial, c0, c1, c2, counter):
 
 
 def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
-         low_temperature, cooling, random_order, rng):
+         low_temperature, cooling, random_order, rng, allow_invalid=False):
     """Literal cycle order; evaluate may mutate its vector as ONEITPARA does."""
     out = initial.copy()
     n = len(out)
@@ -77,9 +77,13 @@ def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
     last = out.copy()
     last_score = None
 
-    def visit(vector):
+    def visit(vector, *, required_valid=False):
         nonlocal chi, evaluations, last, last_score
         score = np.float64(evaluate(vector))
+        if allow_invalid and not required_valid and evaluations > 0 and np.isposinf(score):
+            last, last_score = vector.copy(), score
+            evaluations += 1
+            return score  # no callback OUTVAR/CHISMIN write
         if not np.isfinite(score) or score > 1e20:
             raise ValueError("SIMPARA objective must be finite and <= source sentinel 1e20")
         if not np.all(np.isfinite(vector)):
@@ -92,7 +96,7 @@ def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
             out[:] = vector
         return score
 
-    c0 = best = visit(out)
+    c0 = best = visit(out, required_valid=True)
     central = out.copy()
     change = 0
     while evaluations <= max_evaluations and temperature >= low_temperature*cooling:
@@ -147,7 +151,7 @@ def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
         else:
             since_change += 1
         if cycles % n == 0:
-            best = visit(out)
+            best = visit(out, required_valid=True)
             for i in range(n):
                 central[i] = out[i]
                 direction[i] = (out[i]-central[i])/(abs(out[i]-central[i])+1e-30)
@@ -163,13 +167,14 @@ def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
 def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
                        max_evaluations, high_temperature, low_temperature, cooling,
                        seed, random_order=False, phase_grating_method="fft", objective_mode="legacy",
-                       evaluation_callback=None, execution=None, before_evaluation=None) -> LegacySimparaResult:
+                       evaluation_callback=None, execution=None, before_evaluation=None, invalid_trial_policy="raise") -> LegacySimparaResult:
     """One driver-compatible physical-coordinate SIMPARA invocation.
 
     uncertainties are absolute physical widths, not D1/D2 factors. Startup
     direction and no-improvement counter are explicitly zero in Python.
     max_evaluations is the soft source MAXITS limit, including initialization.
     """
+    _invalid_policy(invalid_trial_policy)
     layout = build_refinement_parameter_layout(state)
     n = len(layout.parameters)
     if not 1 <= n <= 1000:
@@ -192,7 +197,9 @@ def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
     def evaluate(vector):
         result = evaluate_refinement_trial(state, vector, experimental,
             coordinate_mode="physical", phase_grating_method=phase_grating_method,
-            objective_mode=objective_mode, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback)
+            objective_mode=objective_mode, invalid_trial_policy=invalid_trial_policy, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback)
+        if isinstance(result, InvalidRefinementTrial):
+            return result.objective
         # UPDPARS writes PT only for these categories. Reuse mapped values;
         # do not repack all coordinates or apply ARRANGEPARS' near-zero floor.
         for i, (category, _, value) in enumerate(_entries(result.physical_state)):
@@ -203,4 +210,4 @@ def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
     with np.errstate(divide="raise", invalid="raise", over="raise"):
         return _run(initial, uncertainty, evaluate, max_evaluations=int(max_evaluations),
                     high_temperature=high, low_temperature=low, cooling=cooling,
-                    random_order=random_order, rng=np.random.Generator(np.random.PCG64(seed)))
+                    random_order=random_order, rng=np.random.Generator(np.random.PCG64(seed)), allow_invalid=invalid_trial_policy == "reject")

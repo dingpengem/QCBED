@@ -8,7 +8,7 @@ import numpy as np
 from .multislice import _snapshot
 from .refinement import (build_refinement_parameter_layout, apply_refinement_parameters,
                          pack_refinement_parameters, _vector)
-from .refinement_trial import evaluate_refinement_trial
+from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
 
 
@@ -54,7 +54,7 @@ def _integer(value, name):
 
 
 def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
-         minimum_temperature, cooling_rate, rng):
+         minimum_temperature, cooling_rate, rng, allow_invalid=False):
     """Private control-flow seam for independent scalar-objective tests."""
     best = initial.copy()
     chi = np.float64(1e20)
@@ -62,13 +62,15 @@ def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
     last = best.copy()
     last_fit = np.float64(np.nan)
 
-    def visit(vector):
+    def visit(vector, *, required_valid=False):
         nonlocal best, chi, evaluations, last, last_fit
         last = project(vector)
         last_fit = np.float64(evaluate(last))
         evaluations += 1
         # Explicit Python domain policy: never present an undefined/sentinel
         # best point as a successful optimizer result, and never add penalties.
+        if allow_invalid and not required_valid and evaluations > 1 and np.isposinf(last_fit):
+            return last_fit  # rejecting score: never update PARMIN/CHISMIN
         if not np.isfinite(last_fit) or last_fit > 1e20:
             raise ValueError("ANNEAL objective must be finite and <= the source CHISMIN sentinel 1e20")
         if last_fit <= chi:  # ONEITPARA callback side effect, randnumgen.f:178
@@ -76,7 +78,7 @@ def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
             best = last.copy()
         return last_fit
 
-    best_fit = visit(best)  # initial UPDPARS -> ARRANGEPARS -> GOF
+    best_fit = visit(best, required_valid=True)  # initial UPDPARS -> ARRANGEPARS -> GOF
     steps = 0
     temperature = np.float64(maximum_temperature)
     amplitudes = np.full(len(best), temperature, dtype=np.float64)
@@ -100,10 +102,10 @@ def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
             temperature = temperature*cooling_rate
             amplitudes = np.full(len(best), temperature, dtype=np.float64)
             chi = np.float64(1e20)
-            best_fit = visit(best)
+            best_fit = visit(best, required_valid=True)
         if steps % 10 == 0:  # separate IF: can cause a second evaluation
             chi = np.float64(1e20)
-            best_fit = visit(best)
+            best_fit = visit(best, required_valid=True)
     return LegacyAnnealResult(best, chi, last, last_fit, best_fit, steps,
                               evaluations, temperature, amplitudes)
 
@@ -111,13 +113,14 @@ def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
 def run_legacy_anneal(state, initial_vector, experimental, *, max_iterations,
                       seed, maximum_temperature, minimum_temperature, cooling_rate,
                       phase_grating_method="fft", objective_mode="legacy",
-                      evaluation_callback=None, execution=None, before_evaluation=None) -> LegacyAnnealResult:
+                      evaluation_callback=None, execution=None, before_evaluation=None, invalid_trial_policy="raise") -> LegacyAnnealResult:
     """Run source-derived ANNEAL in physical coordinates, with no hidden RNG.
 
     max_iterations preserves MAXITS literally: the source permits MAXITS+1
     proposals. Evaluations additionally include initialization and resets.
     All objectives use evaluate_refinement_trial; unsupported states propagate.
     """
+    _invalid_policy(invalid_trial_policy)
     n = len(build_refinement_parameter_layout(state).parameters)
     if n > 1000:
         raise ValueError("ANNEAL supports at most 1000 active parameters; no truncation")
@@ -136,8 +139,8 @@ def run_legacy_anneal(state, initial_vector, experimental, *, max_iterations,
     def evaluate(vector):
         return evaluate_refinement_trial(state, vector, experimental,
             coordinate_mode="physical", phase_grating_method=phase_grating_method,
-            objective_mode=objective_mode, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback).objective
+            objective_mode=objective_mode, invalid_trial_policy=invalid_trial_policy, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback).objective
 
     return _run(initial, project, evaluate, max_iterations=max_iterations,
         maximum_temperature=maximum_temperature, minimum_temperature=minimum_temperature,
-        cooling_rate=cooling_rate, rng=np.random.Generator(np.random.PCG64(seed)))
+        cooling_rate=cooling_rate, allow_invalid=invalid_trial_policy == "reject", rng=np.random.Generator(np.random.PCG64(seed)))

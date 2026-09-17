@@ -97,14 +97,25 @@ from .refinement import (
     build_refinement_parameter_layout, pack_refinement_parameters, apply_refinement_parameters,
 )
 from .refinement_io import parse_refinement_state
-from .refinement_trial import RefinementTrialResult, evaluate_refinement_trial
+from .refinement_trial import RefinementTrialResult, InvalidRefinementTrial, evaluate_refinement_trial
 
 from .execution import ForwardExecutionConfig
 
 from .full_runner import FullRefinementConfig, FullRefinementRun, run_full_refinement, load_refinement_checkpoint
 from .refinement_driver import LegacyRefinementRestart
 
+from .refinement_subset import select_refinement_categories
+
+from .refinement_bounds import RefinementBound, RefinementBounds, BoundViolation, scan_relative_bounds, refinement_bound_policy
+from .refinement_trial import BoundRejectedTrial
+from .refinement_bounds import RefinementBoundRules, resolve_refinement_bounds
+
 __all__ = [
+    "RefinementBound", "RefinementBounds", "BoundViolation", "scan_relative_bounds",
+    "refinement_bound_policy", "BoundRejectedTrial",
+    "RefinementBoundRules", "resolve_refinement_bounds",
+    "select_refinement_categories",
+    "InvalidRefinementTrial",
     "FullRefinementConfig", "FullRefinementRun", "run_full_refinement", "load_refinement_checkpoint",
     "LegacyRefinementRestart",
     "ForwardExecutionConfig",

@@ -21,7 +21,8 @@ from .refinement import (apply_refinement_parameters, build_refinement_parameter
 from .refinement_driver import (LegacyRefinementConfig, LegacyRefinementRestart,
                                 LegacyRefinementResult, LegacyRefinementStage,
                                 run_legacy_refinement)
-from .refinement_trial import evaluate_refinement_trial
+from .refinement_trial import evaluate_refinement_trial, InvalidRefinementTrial, BoundRejectedTrial, _invalid_policy
+from .refinement_bounds import RefinementBounds, RefinementBoundRules, resolve_refinement_bounds, _validate_policy
 from .validation import CbedComparison, RefinementValidation, _simulated
 from .output_io import SimulatedCbedData, write_legacy_out_dat
 
@@ -38,12 +39,26 @@ RESTART_POLICY = ("Only initial/pre-stage/completed-stage retained states are du
 class FullRefinementConfig:
     refinement: LegacyRefinementConfig
     objective_mode: str = "masked"
+    invalid_trial_policy: str = "reject"
+    refinement_categories: tuple[str, ...] | None = None
     snapshot_every: int | None = 100
     checkpoint_every: int = 25
     max_total_evaluations: int | None = 1000
     max_wall_time: float | None = 3600.
+    bounds_policy: str = "none"
+    refinement_bounds: RefinementBounds = RefinementBounds()
+    bound_rules: RefinementBoundRules | None = None
 
     def __post_init__(self):
+        _invalid_policy(self.invalid_trial_policy)
+        if self.bounds_policy not in ("none", "reject"):
+            raise ValueError("bounds_policy must be 'none' or 'reject'")
+        if not isinstance(self.refinement_bounds, RefinementBounds):
+            raise TypeError("refinement_bounds must be RefinementBounds")
+        if self.bound_rules is not None and not isinstance(self.bound_rules, RefinementBoundRules):
+            raise TypeError("bound_rules must be RefinementBoundRules or None")
+        if self.refinement_categories is not None:
+            object.__setattr__(self, "refinement_categories", tuple(self.refinement_categories))
         if not isinstance(self.refinement, LegacyRefinementConfig):
             raise TypeError("refinement must be LegacyRefinementConfig")
         if self.objective_mode not in ("legacy", "masked"):
@@ -161,6 +176,9 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
     files = {str(Path(p).resolve()): hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in input_paths}
     cfg = config.refinement
     layout = build_refinement_parameter_layout(state)
+    _validate_policy(config.bounds_policy, config.refinement_bounds, state)
+    if config.bound_rules is not None and resolve_refinement_bounds(state, config.bound_rules) != config.refinement_bounds:
+        raise ValueError("resolved bounds must exactly match bound_rules and mapped starting layout")
     identity = _digest(state, experimental)
     settings = json.loads(_json(asdict(config)))
     labels = [f"{p.vector_index+1}: {p.category} {p.target}" for p in layout.parameters]
@@ -174,10 +192,15 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
             raise ValueError("resume requires the original optimizer/execution configuration and objective mode")
         if cp["layout"] != json.loads(_json(asdict(layout))):
             raise ValueError("checkpoint active parameter layout mismatch")
+        for name, default in (("bounds_policy", "none"), ("refinement_bounds", {"entries": []}), ("bound_rules", None)):
+            if cp["config"].get(name, default) != settings[name]:
+                raise ValueError("resume requires the original hard-bound policy and bounds")
         # A hard exit can leave completed trial log rows newer than the latest
         # periodic checkpoint. Keep its safe boundary, but never reuse indices.
         progress_path = destination / "progress.jsonl"
         completed_indices, driver_count = set(), 0
+        invalid_count, invalid_stages, invalid_reasons = 0, {}, {}
+        bound_count, bound_stages = 0, {}
         if progress_path.exists():
             with progress_path.open(encoding="utf-8") as stream:
                 for line_number, line in enumerate(stream, 1):
@@ -189,7 +212,17 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
                     cp["elapsed_seconds"] = max(cp["elapsed_seconds"], row["elapsed_wall_time"] if "elapsed_wall_time" in row else row["elapsed_seconds"])
                     if row["classification"] in ("trial", "initial_retained", "verification", "snapshot_verification"):
                         completed_indices.add(row["global_evaluation_index"])
-                    driver_count += row["classification"] == "trial"
+                    driver_count += row["classification"] in ("trial", "invalid_trial", "bound_rejection")
+                    if row["classification"] == "bound_rejection":
+                        bound_count += 1
+                        bound_stages[row["stage"]] = bound_stages.get(row["stage"], 0)+1
+                    if row["classification"] == "invalid_trial":
+                        invalid_count += 1
+                        invalid_stages[row["stage"]] = invalid_stages.get(row["stage"], 0)+1
+                        reason = row["exception_type"]+": "+row["reason"]
+                        invalid_reasons[reason] = invalid_reasons.get(reason, 0)+1
+        cp.update(invalid_trial_count=invalid_count, invalid_trials_by_stage=invalid_stages, invalid_trial_reasons=invalid_reasons)
+        cp.update(bound_rejection_count=bound_count, bound_rejections_by_stage=bound_stages)
         cp["completed_evaluations"] = max(cp["completed_evaluations"], len(completed_indices))
         cp["driver_evaluations"] = max(cp["driver_evaluations"], driver_count)
     else:
@@ -215,6 +248,11 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
     previous_elapsed = cp["elapsed_seconds"]
     cp["config"] = settings
     cp["restart_count"] += int(resume)
+    cp.setdefault("invalid_trial_count", 0)
+    cp.setdefault("invalid_trials_by_stage", {})
+    cp.setdefault("invalid_trial_reasons", {})
+    cp.setdefault("bound_rejection_count", 0)
+    cp.setdefault("bound_rejections_by_stage", {})
     stage_values = {}
     local_index = 0
     observed_stage = None
@@ -238,9 +276,9 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         row = dict(global_evaluation_index=cp["evaluation_count"],
             stage=current_stage if stage is None else stage,
             loop_index=cp["loop_index"] if event_loop is None else event_loop,
-            stage_local_index=local_index, classification=kind, objective=float(objective),
-            ynorm=float(ynorm), active_vector=np.asarray(vector).tolist(), elapsed_seconds=elapsed(),
-            accepted=None, restart_count=cp["restart_count"], **extra)
+            stage_local_index=local_index, classification=kind, objective="inf" if np.isposinf(objective) else float(objective),
+            ynorm=None if ynorm is None else float(ynorm), active_vector=[float(v) if np.isfinite(v) else str(v) for v in np.asarray(vector)], elapsed_seconds=elapsed(),
+            accepted=extra.pop("accepted", None), restart_count=cp["restart_count"], **extra)
         with (destination / "progress.jsonl").open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(row, allow_nan=False) + "\n")
             stream.flush()
@@ -263,7 +301,10 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         else:
             before()
         trial = evaluate_refinement_trial(state, np.asarray(vector, dtype=np.float64), experimental,
-            objective_mode=config.objective_mode, execution=cfg.execution)
+            objective_mode=config.objective_mode, execution=cfg.execution,
+            bounds_policy=config.bounds_policy, refinement_bounds=config.refinement_bounds)
+        if isinstance(trial, BoundRejectedTrial):
+            raise ValueError(f"retained state violates configured hard bounds: {trial.violations}")
         if not np.isfinite(trial.objective) or trial.objective > 1e20:
             raise ValueError("retained objective must be finite and <= source CHISMIN sentinel")
         cp["completed_evaluations"] += 1
@@ -306,8 +347,36 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
                 local_index = 0
                 observed_stage = (loop, stage_index)
             local_index += 1
-            cp["completed_evaluations"] += 1
             cp["driver_evaluations"] += 1
+            if isinstance(payload, BoundRejectedTrial):
+                cp["bound_rejection_count"] += 1
+                counts = cp["bound_rejections_by_stage"]
+                counts[name] = counts.get(name, 0)+1
+                log("bound_rejection", vector=payload.trial_vector, objective=np.inf, ynorm=None,
+                    event_loop=loop, driver_stage_index=stage_index, accepted=False,
+                    coordinate_mode=payload.coordinate_mode, reason="bound_rejection",
+                    raw_trial_vector=payload.trial_vector.tolist() if name in ("AMOEBA", "SIMPARA") else None,
+                    retained_state_unchanged=True, violations=[asdict(v) for v in payload.violations],
+                    mapped_physical_parameters=json.loads(_json(asdict(payload.physical_state))))
+                print(f"Warning: rejected bound trial {cp['evaluation_count']} in {name}: {payload.violations}", flush=True)
+                checkpoint("bound_rejection")
+                return
+            if isinstance(payload, InvalidRefinementTrial):
+                cp["invalid_trial_count"] += 1
+                counts = cp["invalid_trials_by_stage"]
+                counts[name] = counts.get(name, 0)+1
+                reasons = cp["invalid_trial_reasons"]
+                reason = payload.exception_type+": "+payload.reason
+                reasons[reason] = reasons.get(reason, 0)+1
+                log("invalid_trial", vector=payload.trial_vector, objective=np.inf, ynorm=None,
+                    event_loop=loop, driver_stage_index=stage_index, accepted=False,
+                    coordinate_mode=payload.coordinate_mode, exception_type=payload.exception_type,
+                    reason=payload.reason, retained_state_unchanged=True,
+                    mapped_physical_parameters=None if payload.physical_state is None else json.loads(_json(asdict(payload.physical_state))))
+                print(f"Warning: rejected invalid trial {cp['evaluation_count']} in {name}: {reason}", flush=True)
+                checkpoint("invalid_trial")
+                return
+            cp["completed_evaluations"] += 1
             stage_values[key(payload.physical_state, payload.objective)] = float(payload.scaling)
             log("trial", vector=[v for _, _, v in _entries(payload.physical_state)],
                 objective=payload.objective, ynorm=payload.scaling, driver_stage_index=stage_index,
@@ -376,7 +445,8 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
                     np.asarray(cp["next_vector"], dtype=np.float64)) if cfg.loops > 0 else None)
                 run_legacy_refinement(state, experimental, cfg, objective_mode=config.objective_mode,
                     restart=restart, stage_start_callback=stage_start, progress_callback=observe,
-                    before_evaluation=before)
+                    before_evaluation=before, invalid_trial_policy=config.invalid_trial_policy,
+                    bounds_policy=config.bounds_policy, refinement_bounds=config.refinement_bounds)
                 cp["completed"] = True
         except KeyboardInterrupt:
             status, reason = "interrupted", "KeyboardInterrupt; latest confirmed retained boundary saved"
@@ -413,9 +483,12 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
             # trials (acceptance unknown) from confirmed retained boundaries.
             from .visualization import plot_local_progress
             plot_rows = []
+            invalid_indices = []
             with (destination / "progress.jsonl").open(encoding="utf-8") as stream:
                 for line in stream:
                     row = json.loads(line)
+                    if row["classification"] in ("invalid_trial", "bound_rejection"):
+                        invalid_indices.append(row["global_evaluation_index"])
                     if row["classification"] not in ("trial", "stage_retained"):
                         continue
                     stage_position = cfg.stages.index(row["stage"]) if row["stage"] in cfg.stages else 0
@@ -424,6 +497,15 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
                         evaluation_index=row["global_evaluation_index"], objective=row["objective"],
                         stage_index=stage_number, stage_name=row["stage"], loop_index=row["loop_index"]))
             figure = plot_local_progress(SimpleNamespace(progress=plot_rows, objective_mode=config.objective_mode))
+            if invalid_indices:
+                ax = figure.axes[0]
+                ax.scatter(invalid_indices, [.96]*len(invalid_indices), marker="x", color="red",
+                    transform=ax.get_xaxis_transform(), label="Rejected: numerical or bound (+inf; marker at plot top)")
+                # Mixed axes/data transforms do not autoscale the x limits.
+                left, right = ax.get_xlim()
+                ax.set_xlim(min(left, min(invalid_indices)-.1),
+                            max(right, max(invalid_indices)+.1))
+                ax.legend()
             figure.savefig(destination / "trial_progress.png", dpi=100)
             figure.clear()
             if labels:
@@ -440,6 +522,12 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
             summary = dict(status=status, reason=reason, objective_mode=config.objective_mode,
                 execution_backend=cfg.execution.execution_backend, batch_size=cfg.execution.batch_size,
                 optimizer_mode=cfg.method, stages=cfg.stages, seed=cfg.seed,
+                invalid_trial_policy=config.invalid_trial_policy, invalid_trial_count=cp["invalid_trial_count"],
+                invalid_trials_by_stage=cp["invalid_trials_by_stage"], invalid_trial_reasons=cp["invalid_trial_reasons"],
+                bounds_policy=config.bounds_policy, refinement_bounds=asdict(config.refinement_bounds),
+                bound_rules=None if config.bound_rules is None else asdict(config.bound_rules),
+                bound_rejection_count=cp["bound_rejection_count"], bound_rejections_by_stage=cp["bound_rejections_by_stage"],
+                bound_policy_provenance="Hard bounds are a user-selected production refinement policy, not legacy Fortran behavior.",
                 initial_objective=cp["initial_objective"], final_objective=float(final.objective),
                 improvement=improvement, relative_improvement=improvement/cp["initial_objective"] if cp["initial_objective"] else None,
                 initial_ynorm=cp["initial_ynorm"], final_ynorm=float(final.ynorm),
@@ -458,9 +546,17 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
             report_path = destination / "report.html"
             text = report_path.read_text(encoding="utf-8")
             summary["runtime_seconds"] = elapsed()
+            active_targets = {(p.category, p.target) for p in layout.parameters}
+            bound_table = ("<h2>User-selected physical hard bounds</h2><p>Production policy, not legacy Fortran behavior. "
+                "Endpoints are inclusive; inactive targets are metadata only.</p>"
+                "<table><tr><th>Category</th><th>Target</th><th>Lower</th><th>Upper</th><th>Active</th></tr>" +
+                "".join("<tr>" + "".join("<td>"+escape(str(v))+"</td>" for v in
+                    (b.category, b.target, b.lower, b.upper, (b.category, b.target) in active_targets)) + "</tr>"
+                    for b in config.refinement_bounds.entries) + "</table>")
             extra = ("<h2>Production run / restart summary</h2><pre>" + escape(_json(summary)) + "</pre>"
-                "<p>Trial acceptance is unknown in callbacks; trials are never labeled retained. "
+                "<p>Invalid numerical trials are rejected explicitly; acceptance of finite trials is unknown in callbacks. "
                 "Only driver-confirmed boundaries appear on retained trajectories.</p>"
+                + bound_table +
                 "<h2>Evaluated trials versus retained stage states</h2><img src='trial_progress.png' "
                 "alt='Evaluated trials, acceptance unknown, and retained stage markers'>"
                 "<p><a href='initial_preview/index.html'>Initial all-beam gallery</a> | "

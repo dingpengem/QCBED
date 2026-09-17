@@ -14,7 +14,7 @@ from .multislice import _snapshot
 from .refinement import (build_refinement_parameter_layout, pack_refinement_parameters,
                          apply_refinement_parameters, _physical_vector, _entries)
 from .refinement_io import _parse_refinement_input
-from .refinement_trial import evaluate_refinement_trial
+from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
 
 
@@ -141,15 +141,16 @@ def parse_legacy_refinement(path, *, seed, experimental_header_path=None):
     return state,config
 
 
-def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *,
+def _run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *,
                           phase_grating_method="fft", objective_mode="legacy",
                           progress_callback=None, restart=None, stage_start_callback=None,
-                          before_evaluation=None) -> LegacyRefinementResult:
+                          before_evaluation=None, invalid_trial_policy="raise") -> LegacyRefinementResult:
     """Run complete selected sequences, carrying PARMIN through UPDPARS/packing.
 
     Baseline state (and hence AMOEBA SCAL) stays anchored across all stages.
     No extra final objective evaluation or all-time best selection is added.
     """
+    _invalid_policy(invalid_trial_policy)
     if not isinstance(config,LegacyRefinementConfig):
         raise TypeError("config must be LegacyRefinementConfig")
     if objective_mode not in ("legacy", "masked"):
@@ -203,7 +204,7 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
                 stage_start_callback(LegacyRefinementRestart(loop, position, start), pre)
             incoming_score = score
             stage_seed = None
-            common = dict(phase_grating_method=phase_grating_method,objective_mode=objective_mode,
+            common = dict(invalid_trial_policy=invalid_trial_policy,phase_grating_method=phase_grating_method,objective_mode=objective_mode,
                           execution=config.execution,before_evaluation=before_evaluation,
                           evaluation_callback=observe if progress_callback else None)
             if name in ("ANNEAL","SIMPARA"):
@@ -251,3 +252,19 @@ def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *
             current = pack_refinement_parameters(final_state)
     return LegacyRefinementResult(initial,first_score,retained,score,final_state,
                                   max(config.loops,0),tuple(history),evaluations)
+
+
+def run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, *,
+                          phase_grating_method="fft", objective_mode="legacy",
+                          progress_callback=None, restart=None, stage_start_callback=None,
+                          before_evaluation=None, invalid_trial_policy="raise",
+                          bounds_policy="none", refinement_bounds=None):
+    """Run the unchanged driver with optional mapped-physical bound rejection."""
+    from .refinement_bounds import refinement_bound_policy
+    with refinement_bound_policy(state, bounds_policy=bounds_policy,
+            refinement_bounds=refinement_bounds, invalid_trial_policy=invalid_trial_policy):
+        return _run_legacy_refinement(state, experimental, config,
+            phase_grating_method=phase_grating_method, objective_mode=objective_mode,
+            progress_callback=progress_callback, restart=restart,
+            stage_start_callback=stage_start_callback, before_evaluation=before_evaluation,
+            invalid_trial_policy="reject" if bounds_policy == "reject" else invalid_trial_policy)

@@ -30,8 +30,17 @@ Default example settings:
 - Objective: `masked`; execution: NumPy `batched`, maximum batch size 64.
 - Mode: `ANSI`, the existing ANNEAL then AMOEBA sequence, one loop, seed 2026.
 - ANNEAL/AMOEBA/SIMPARA controls: 20; PARAMIN cycle control: 3.
-- Snapshot request every 100 objective evaluations, checkpoint every 25.
-- Cumulative evaluation limit 1000; cumulative wall-time limit 3600 seconds.
+- Snapshot request every 25 objective evaluations, checkpoint every 25.
+- Cumulative evaluation limit 150; cumulative wall-time limit 1800 seconds.
+- Invalid proposed numerical states: explicit `invalid_trial_policy="reject"`.
+- The example selects `REFINEMENT_CATEGORIES=("depth", "scan_coordinate")`;
+  `None` preserves all parsed active categories.
+- The example enables user-selected hard bounds: depth 600..1200 angstrom and
+  scan half-width `max(abs(start)*.20, .05)`. Category rules automatically cover
+  absorption, Debye-Waller and reflection multipliers when activated; specific
+  targets override category rules. Dry-run shows every resolved bound. Package configuration defaults to
+  no bounds. See [refinement bounds](refinement_bounds.md) for mapped-value
+  checks, inactive targets, separate rejection counts and exact resume policy.
 
 `ANNE`, `SIMP`, `PARA`, `SPAR`, `PAAN`, `ANPA`, `SIPA`, `PASI`, `SIAN`, `ANSI`
 are the existing driver modes. `SPAR` preserves the input's SIMPARA strategy as
@@ -44,7 +53,7 @@ limits remain soft/inclusive, not strict universal evaluation caps.
 Quick mode overrides the example to ANNEAL, one loop, MAXFSIMP=0 (one source
 inclusive proposal), temperatures .001/.0001, cooling .5, seed 2026, masked
 objective, batch 64, no intermediate snapshots, checkpoint every evaluation,
-20 total evaluations and 600 seconds. It retains all 18 active parameters,
+20 total evaluations and 600 seconds. With no category subset it retains all 18 active parameters,
 1521 tilts, nine beams and original reference physics. It is pipeline validation,
 not a scientifically converged fit. A normal/full run is never launched as part
 of pytest or validation automation.
@@ -99,9 +108,11 @@ when AMOEBA internally evaluates simplex coordinates. Semantic labels/targets
 are stored once in `run_config.json` and checkpoints. Stage-local indices count
 pre-stage evaluations and reset when restarting a stage.
 
-Classifications distinguish `initial_retained`, `trial`, `retained_boundary`,
-`stage_retained`, `snapshot_verification`, and final `verification`. `accepted`
-is null: existing callbacks expose completed evaluations, not source-backed
+Classifications distinguish `initial_retained`, `trial`, `invalid_trial`,
+`retained_boundary`, `stage_retained`, `snapshot_verification`, and final
+`verification`. Invalid trials use `accepted=false` and retain their original
+trial coordinate mode/vector alongside mapped physical values where available.
+For finite trials `accepted` is null: callbacks expose evaluations, not source-backed
 proposal acceptance. A trial is never relabeled as retained just because its
 objective is lower. Retained plots show only confirmed driver states; rejected
 or acceptance-unknown proposals are not drawn as accepted trajectories.
@@ -159,7 +170,11 @@ and output. A second Ctrl+C during finalization saves a checkpoint and exits;
 resume regenerates outputs. Interruption before a successful initial evaluation
 cannot produce a valid CBED snapshot; the checkpoint explicitly retains an
 unevaluated initial vector. Other errors save a failed checkpoint/summary and
-propagate; no penalty objective or repaired physics is substituted.
+propagate, except numerical-invalid proposals under the explicit rejection
+policy: these receive a rejecting positive-infinite score and do not alter the
+retained state. Initial and retained-state verification must remain valid.
+See [invalid-trial policy](invalid_trial_policy.md) for classification, logging,
+subset selection and the reproduced seed-2026 failure. Physics is never repaired.
 
 A `.run.lock` prevents concurrent writers. After a hard process kill, verify the
 old process is gone before manually removing a stale lock. Complete progress

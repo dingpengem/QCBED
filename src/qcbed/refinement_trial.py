@@ -101,7 +101,7 @@ class RefinementTrialResult:
             object.__setattr__(self, name, _snapshot(getattr(self, name)))
 
 
-def evaluate_refinement_trial(
+def _evaluate_refinement_trial(
     state: RefinementState, trial_vector: np.ndarray, experimental: ExperimentalIntensityData, *,
     coordinate_mode="physical", phase_grating_method="fft", objective_mode="legacy",
     evaluation_callback=None, execution=None, before_evaluation=None,
@@ -122,6 +122,13 @@ def evaluate_refinement_trial(
     if before_evaluation is not None:
         before_evaluation()
     mapped = apply_refinement_parameters(state, trial_vector, coordinate_mode=coordinate_mode)
+    from .refinement_bounds import _scope
+    policy, bounds, _ = _scope.get()
+    if policy == "reject":
+        violations = bounds.violations(mapped)
+        if violations:
+            return BoundRejectedTrial(trial_vector, coordinate_mode, mapped,
+                "", "bound_rejection", violations=violations)
     scan = mapped.scan
     if (scan.scan_rows, scan.scan_columns) != (experimental.scan_rows, experimental.scan_columns):
         raise ValueError("experimental scan dimensions must match trial scan")
@@ -172,3 +179,118 @@ def evaluate_refinement_trial(
     if evaluation_callback is not None:
         evaluation_callback(trial)
     return trial
+
+
+@dataclass(frozen=True, eq=False)
+class InvalidRefinementTrial:
+    """Rejected evaluation metadata only: no fabricated amplitudes or YNORM."""
+    trial_vector: np.ndarray
+    coordinate_mode: str
+    physical_state: RefinementState | None
+    exception_type: str
+    reason: str
+    objective: float = float("inf")
+
+    def __post_init__(self):
+        object.__setattr__(self, "trial_vector", _snapshot(self.trial_vector))
+
+
+def _invalid_policy(value):
+    if value not in ("raise", "reject"):
+        raise ValueError("invalid_trial_policy must be 'raise' or 'reject'")
+    return value
+
+
+@dataclass(frozen=True, eq=False)
+class BoundRejectedTrial(InvalidRefinementTrial):
+    """Constraint rejection, not a numerical exception; shared rejecting protocol."""
+    violations: tuple = ()
+
+    def __post_init__(self):
+        super().__post_init__()
+        object.__setattr__(self, "violations", tuple(self.violations))
+
+
+def _numerical_trial_error(exc):
+    # Do not hide geometry/configuration errors, unsupported physics, invalid
+    # experimental variances, user callback errors, or unexpected exceptions.
+    if isinstance(exc, (FloatingPointError, OverflowError)):
+        return True
+    message = str(exc)
+    if message.startswith("masked objective: nonzero-weight point") or "experimental normalizer" in message:
+        return False
+    return isinstance(exc, ValueError) and any(text in message for text in (
+        "must be finite", "must remain finite", "must contain finite", "nonfinite", "non-finite"))
+
+
+def _evaluate_with_invalid_policy(
+    state: RefinementState, trial_vector: np.ndarray, experimental: ExperimentalIntensityData, *,
+    coordinate_mode="physical", phase_grating_method="fft", objective_mode="legacy",
+    evaluation_callback=None, execution=None, before_evaluation=None,
+    invalid_trial_policy="raise",
+) -> RefinementTrialResult | InvalidRefinementTrial:
+    """Evaluate unchanged physics, optionally rejecting numerical trial failures.
+
+    reject is a Python production-run numerical safety policy; not proven
+    historical Fortran behavior. raise preserves original errors and nonfinite
+    low-level objective results. Callbacks/budget checks are outside the catch.
+    """
+    _invalid_policy(invalid_trial_policy)
+    if invalid_trial_policy == "reject":
+        from .refinement import build_refinement_parameter_layout
+        count = len(build_refinement_parameter_layout(state).parameters)
+        if (not isinstance(trial_vector, np.ndarray) or trial_vector.dtype != np.float64 or
+                trial_vector.shape != (count,)):
+            # Preserve the original structural/type error, outside the numerical
+            # failure catch. Only a correctly shaped proposal can be rejected.
+            apply_refinement_parameters(state, trial_vector, coordinate_mode=coordinate_mode)
+    if before_evaluation is not None:
+        before_evaluation()
+    try:
+        # Preserve the original arithmetic/errstate in raise mode. Reject mode
+        # turns overflow into an exception at its first arithmetic occurrence;
+        # no finite validation is disabled and no array is repaired.
+        from contextlib import nullcontext
+        context = np.errstate(over="raise", invalid="raise", divide="raise") if invalid_trial_policy == "reject" else nullcontext()
+        with context:
+            result = _evaluate_refinement_trial(state, trial_vector, experimental,
+                coordinate_mode=coordinate_mode, phase_grating_method=phase_grating_method,
+                objective_mode=objective_mode, execution=execution)
+        if not isinstance(result, BoundRejectedTrial) and invalid_trial_policy == "reject" and (not np.isfinite(result.objective) or not np.isfinite(result.scaling)):
+            raise FloatingPointError("YNORM/objective must be finite")
+    except (ValueError, FloatingPointError, OverflowError) as exc:
+        if invalid_trial_policy != "reject" or not _numerical_trial_error(exc):
+            raise
+        try:
+            mapped = apply_refinement_parameters(state, trial_vector, coordinate_mode=coordinate_mode)
+        except (ValueError, FloatingPointError, OverflowError):
+            mapped = None
+        result = InvalidRefinementTrial(trial_vector, coordinate_mode, mapped,
+                                        type(exc).__name__, str(exc))
+    if evaluation_callback is not None:
+        evaluation_callback(result)
+    return result
+
+
+def evaluate_refinement_trial(
+    state: RefinementState, trial_vector: np.ndarray, experimental: ExperimentalIntensityData, *,
+    coordinate_mode="physical", phase_grating_method="fft", objective_mode="legacy",
+    evaluation_callback=None, execution=None, before_evaluation=None,
+    invalid_trial_policy="raise", bounds_policy=None, refinement_bounds=None,
+) -> RefinementTrialResult | InvalidRefinementTrial:
+    """Evaluate a mapped physical trial, with independently selected safety policies.
+
+    bounds_policy=None inherits an explicit driver scope, otherwise means 'none'.
+    Explicit 'none' disables bounds for this call. 'reject' checks inclusive
+    physical limits before preparing the sample or running forward simulation.
+    """
+    from .refinement_bounds import _scope, refinement_bound_policy
+    inherited_policy, inherited_bounds, numerical = _scope.get()
+    policy = inherited_policy if bounds_policy is None else bounds_policy
+    bounds = inherited_bounds if refinement_bounds is None else refinement_bounds
+    with refinement_bound_policy(state, bounds_policy=policy, refinement_bounds=bounds):
+        return _evaluate_with_invalid_policy(state, trial_vector, experimental,
+            coordinate_mode=coordinate_mode, phase_grating_method=phase_grating_method,
+            objective_mode=objective_mode, evaluation_callback=evaluation_callback,
+            execution=execution, before_evaluation=before_evaluation,
+            invalid_trial_policy=invalid_trial_policy if numerical is None else numerical)

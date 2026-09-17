@@ -7,7 +7,7 @@ import numpy as np
 
 from .multislice import _snapshot
 from .refinement import build_refinement_parameter_layout, _scal, _vector
-from .refinement_trial import evaluate_refinement_trial
+from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
 
 
@@ -85,7 +85,7 @@ def _rank(y):
     return lo, hi, nhi
 
 
-def _run(simplex, evaluate, *, ftol, max_evaluations, fmin):
+def _run(simplex, evaluate, *, ftol, max_evaluations, fmin, allow_invalid=False):
     """Private scalar-objective seam; source loops retain summation order."""
     p = simplex.copy()
     n = p.shape[1]
@@ -95,6 +95,8 @@ def _run(simplex, evaluate, *, ftol, max_evaluations, fmin):
     def visit(point):
         nonlocal retained, retained_value
         value = np.float64(evaluate(point.copy()))
+        if allow_invalid and retained is not None and np.isposinf(value):
+            return value  # invalid vertices may rank worst, never retain them
         if not np.isfinite(value):
             raise ValueError("AMOEBA objective must be finite")
         if value <= retained_value:
@@ -157,12 +159,13 @@ def _run(simplex, evaluate, *, ftol, max_evaluations, fmin):
 
 def run_legacy_amoeba(state, initial_simplex, experimental, *, ftol,
                       max_evaluations, fmin, phase_grating_method="fft", objective_mode="legacy",
-                      evaluation_callback=None, execution=None, before_evaluation=None) -> LegacyAmoebaResult:
+                      evaluation_callback=None, execution=None, before_evaluation=None, invalid_trial_policy="raise") -> LegacyAmoebaResult:
     """Run one source AMOEBA stage; initial_simplex is in legacy_simplex coordinates.
 
     max_evaluations is the soft source MXF limit excluding initial vertices.
     No driver restart or implicit final reevaluation is performed.
     """
+    _invalid_policy(invalid_trial_policy)
     layout = _layout(state)
     _scal(layout)  # Validate the baseline conversion even on immediate return.
     n = len(layout.parameters)
@@ -181,8 +184,8 @@ def run_legacy_amoeba(state, initial_simplex, experimental, *, ftol,
     def evaluate(vector):
         return evaluate_refinement_trial(state, vector, experimental,
             coordinate_mode="legacy_simplex", phase_grating_method=phase_grating_method,
-            objective_mode=objective_mode, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback).objective
+            objective_mode=objective_mode, invalid_trial_policy=invalid_trial_policy, execution=execution, before_evaluation=before_evaluation, evaluation_callback=evaluation_callback).objective
 
     with np.errstate(over="raise", invalid="raise", divide="raise"):
         return _run(initial_simplex, evaluate, ftol=ftol,
-                    max_evaluations=int(max_evaluations), fmin=fmin)
+                    max_evaluations=int(max_evaluations), fmin=fmin, allow_invalid=invalid_trial_policy == "reject")
