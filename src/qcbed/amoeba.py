@@ -9,6 +9,7 @@ from .multislice import _snapshot
 from .refinement import build_refinement_parameter_layout, _scal, _vector
 from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
+from .refinement_categories import LEGACY_OPTIMIZER_PARAMETER_LIMIT
 
 
 @dataclass(frozen=True, eq=False)
@@ -49,8 +50,8 @@ class LegacyAmoebaResult:
 
 def _layout(state):
     layout = build_refinement_parameter_layout(state)
-    if not 1 <= len(layout.parameters) <= 1000:
-        raise ValueError("AMOEBA requires 1..1000 active parameters")
+    if not 1 <= len(layout.parameters) <= LEGACY_OPTIMIZER_PARAMETER_LIMIT:
+        raise ValueError(f"AMOEBA requires 1..{LEGACY_OPTIMIZER_PARAMETER_LIMIT} active parameters")
     return layout
 
 

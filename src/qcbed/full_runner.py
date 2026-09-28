@@ -159,7 +159,8 @@ def _preview(path, experimental, initial, simulated, metadata):
 
 
 def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
-                        output_directory, input_paths=(), resume=False, progress_hook=None):
+                        output_directory, input_paths=(), resume=False, progress_hook=None,
+                        checkpoint_identity=None, final_output_path=None, results_metadata=None):
     """Run with durable boundary checkpoints and optional safe stage restart.
 
     Limits count attempted evaluations, including initial, snapshot diagnostics
@@ -173,6 +174,14 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
     root = Path(__file__).resolve().parents[2]
     if any(destination.is_relative_to(root / p) for p in ("legacy_fortran", "reference_data")):
         raise ValueError("output_directory is inside protected source/reference directories")
+    export_path = None if final_output_path is None else Path(final_output_path).resolve()
+    if export_path is not None:
+        if any(export_path.is_relative_to(root / p) for p in ("legacy_fortran", "reference_data")):
+            raise ValueError("final_output_path is inside protected source/reference directories")
+        if not resume and export_path.exists():
+            raise FileExistsError(export_path)
+    # Optional frontend identity is JSON-normalized; absent preserves legacy checkpoints.
+    checkpoint_identity = json.loads(_json(checkpoint_identity))
     files = {str(Path(p).resolve()): hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in input_paths}
     cfg = config.refinement
     layout = build_refinement_parameter_layout(state)
@@ -186,6 +195,8 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         raise ValueError("optimizer configuration does not match active parameter layout")
     if resume:
         cp = load_refinement_checkpoint(destination)
+        if cp.get("checkpoint_identity") != checkpoint_identity:
+            raise ValueError("checkpoint frontend/configuration identity mismatch")
         if cp["problem_digest"] != identity or cp["input_files"] != files:
             raise ValueError("checkpoint input/problem fingerprint mismatch")
         if cp["config"]["refinement"] != settings["refinement"] or cp["objective_mode"] != config.objective_mode:
@@ -236,8 +247,11 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
             config=settings, objective_mode=config.objective_mode, seed=cfg.seed,
             execution_backend=cfg.execution.execution_backend, batch_size=cfg.execution.batch_size,
             rng_state=None, restart_policy=RESTART_POLICY, stages=[], completed=False, restart_count=0)
+        if checkpoint_identity is not None:
+            cp["checkpoint_identity"] = checkpoint_identity
         _atomic_json(destination / "run_config.json", dict(**settings, input_files=files,
-            parameter_labels=labels, layout=asdict(layout), masked_policy=POLICY, restart_policy=RESTART_POLICY))
+            parameter_labels=labels, layout=asdict(layout), masked_policy=POLICY, restart_policy=RESTART_POLICY,
+            results_metadata=results_metadata))
     # Refuse concurrent writers. A hard process kill may leave this lock behind;
     # manual removal is allowed only after verifying the old process has exited.
     lock = destination / ".run.lock"
@@ -272,7 +286,27 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         _atomic_json(destination / name, cp)
         _atomic_json(destination / "checkpoint_latest.json", cp)
 
+    latest_display = None
+
+    def record_completed_evaluation(trial):
+        # Output only: copy completed trial values, never request another trial.
+        nonlocal latest_display
+        sim = _simulated(trial, experimental)
+        latest_display = dict(evaluation_index=cp["evaluation_count"],
+            physical_active_vector=[v for _, _, v in _entries(trial.physical_state)])
+        _save_arrays(destination / "latest_evaluation.npz",
+            evaluation_index=cp["evaluation_count"], vector=latest_display["physical_active_vector"],
+            objective=trial.objective, ynorm=trial.scaling, scaled=sim.scaled_intensity,
+            experimental=experimental.intensities, beams=np.asarray(experimental.beam_indices_hk),
+            scan_shape=[experimental.scan_rows, experimental.scan_columns],
+            scan_json=_json(asdict(trial.physical_state.scan)))
+
     def log(kind, *, vector, objective, ynorm, stage=None, event_loop=None, **extra):
+        if (kind in ("trial", "initial_retained", "retained_boundary", "snapshot_verification", "verification")
+                and latest_display is not None
+                and latest_display["evaluation_index"] == cp["evaluation_count"]):
+            extra["physical_active_vector"] = latest_display["physical_active_vector"]
+            extra["completed_evaluation"] = True
         row = dict(global_evaluation_index=cp["evaluation_count"],
             stage=current_stage if stage is None else stage,
             loop_index=cp["loop_index"] if event_loop is None else event_loop,
@@ -308,6 +342,7 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         if not np.isfinite(trial.objective) or trial.objective > 1e20:
             raise ValueError("retained objective must be finite and <= source CHISMIN sentinel")
         cp["completed_evaluations"] += 1
+        record_completed_evaluation(trial)
         return trial
 
     def retain(vector, trial):
@@ -320,9 +355,15 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         metadata = dict(evaluation_index=cp["evaluation_count"], retained_at_evaluation=cp["retained_at_evaluation"],
             stage=cp["retained_stage_name"], loop_index=cp["retained_loop_index"], objective=float(trial.objective),
             ynorm=float(trial.scaling), retained_active_vector=cp["retained_vector"], classification="retained")
-        _save_arrays(destination / f"{label}_snapshot.npz", raw=sim.raw_intensity,
+        _save_arrays(destination / f"{label}_snapshot.npz",
+            evaluation_index=cp["evaluation_count"],
+            physical_vector=[v for _, _, v in _entries(trial.physical_state)],
+            raw=sim.raw_intensity,
             objective_intensity=sim.objective_intensity, scaled=sim.scaled_intensity,
-            vector=np.asarray(cp["retained_vector"]), objective=sim.objective, ynorm=sim.ynorm)
+            vector=np.asarray(cp["retained_vector"]), objective=sim.objective, ynorm=sim.ynorm,
+            experimental=experimental.intensities, beams=np.asarray(experimental.beam_indices_hk),
+            scan_shape=np.asarray([experimental.scan_rows, experimental.scan_columns]),
+            scan_json=_json(asdict(trial.physical_state.scan)))
         _atomic_json(destination / f"{label}_snapshot.json", metadata)
         _preview(destination / f"{label}_preview", experimental, initial or sim, sim, metadata)
         return sim
@@ -377,6 +418,7 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
                 checkpoint("invalid_trial")
                 return
             cp["completed_evaluations"] += 1
+            record_completed_evaluation(payload)
             stage_values[key(payload.physical_state, payload.objective)] = float(payload.scaling)
             log("trial", vector=[v for _, _, v in _entries(payload.physical_state)],
                 objective=payload.objective, ynorm=payload.scaling, driver_stage_index=stage_index,
@@ -470,6 +512,9 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
             np.save(destination / "final_simulated_intensity.npy", final.raw_intensity)
             np.save(destination / "final_scaled_intensity.npy", final.scaled_intensity)
             write_legacy_out_dat(destination / "final_out.dat", final)
+            if export_path is not None and export_path != destination / "final_out.dat":
+                export_path.parent.mkdir(parents=True, exist_ok=True)
+                write_legacy_out_dat(export_path, final)
             history = tuple(LegacyRefinementStage(h["optimizer"], h["loop_index"],
                 np.asarray(h["input_vector"]), h["input_objective"], np.asarray(h["retained_vector"]),
                 h["retained_objective"], SimpleNamespace(evaluations=h["evaluations"]), h["seed"]) for h in cp["stages"])

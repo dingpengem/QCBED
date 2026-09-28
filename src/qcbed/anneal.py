@@ -10,6 +10,7 @@ from .refinement import (build_refinement_parameter_layout, apply_refinement_par
                          pack_refinement_parameters, _vector)
 from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
+from .refinement_categories import LEGACY_OPTIMIZER_PARAMETER_LIMIT
 
 
 @dataclass(frozen=True, eq=False)
@@ -122,8 +123,8 @@ def run_legacy_anneal(state, initial_vector, experimental, *, max_iterations,
     """
     _invalid_policy(invalid_trial_policy)
     n = len(build_refinement_parameter_layout(state).parameters)
-    if n > 1000:
-        raise ValueError("ANNEAL supports at most 1000 active parameters; no truncation")
+    if n > LEGACY_OPTIMIZER_PARAMETER_LIMIT:
+        raise ValueError(f"ANNEAL supports at most {LEGACY_OPTIMIZER_PARAMETER_LIMIT} active parameters; no truncation")
     initial = _vector(initial_vector, n)
     max_iterations = _integer(max_iterations, "max_iterations")
     seed = _integer(seed, "seed")

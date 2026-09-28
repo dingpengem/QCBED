@@ -4,6 +4,38 @@ Python rewrite of a legacy Fortran multislice QCBED simulation program.
 
 ## Current status
 
+An optional [macOS arm64 app build](packaging/macos/README.md) packages the existing
+GUI as `QCBED.app` using PyInstaller; Python development and CLI workflows remain
+available. Build artifacts are generated under `dist/` and are not tracked.
+
+An optional [Qt configuration editor](docs/configuration_editor.md) supports Open,
+validated structural transactions, Undo/Redo, compiled summaries, atomic Save/Save As,
+isolated Run/Resume, cooperative Cancel, and a separate Compatibility / Legacy menu
+for explicit migration and optional exports. Install with
+`python -m pip install -e '.[gui]'`, then launch
+`python -m qcbed.gui examples/qcbed_config.yml`. Runs use immutable canonical snapshots in a separate process;
+PySide6 is not required for the core package or CLI.
+
+[Frontend-independent APIs](docs/frontend_apis.md) provide structured validation,
+physical target discovery, immutable editing, atomic YAML saving, and canonical
+run snapshots. No GUI toolkit is required.
+
+Canonical typed Python configuration is available through `QcbedConfig` and
+`compile_config`, alongside the unchanged legacy loaders. Compilation performs
+no file I/O and preserves existing refinement ordering and numerical mapping.
+See [configuration Stages 1–5](docs/configuration.md) and the directly constructed
+[reference configuration](examples/reference_configuration.py). Explicit experimental
+loading supports headerless bodies or strict legacy-header validation against
+configuration. The optional [strict YAML frontend](docs/yaml_configuration.md)
+loads the same typed objects through `load_yaml_config`; see
+[the canonical YAML example](examples/qcbed_config.yml). Optional
+[legacy import/export tooling](docs/legacy_migration.md) supports migration and
+compatibility bundles; canonical runs do not require FOR007.
+
+For production runs, use `python -m qcbed.run --config examples/qcbed_config.yml`.
+See the [YAML run and resume workflow](docs/yaml_runs.md); the legacy
+`examples/run_full_refinement.py` entry point remains supported.
+
 The first legacy input-parser stage is implemented. It supports the formatted
 `FOR007.DAT` title and run header, beam voltage and zone axis, mesh and slice
 geometry, species and atom records, and the output and experimental-intensity

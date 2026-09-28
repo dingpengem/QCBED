@@ -1,5 +1,18 @@
 """Foundational types and grid helpers for the QCBED rewrite."""
 
+from .configuration import QcbedConfig
+from .config_compiler import CompiledConfig, compile_config
+from .experimental_config import load_experimental_data
+from .yaml_config import load_yaml_config
+from .config_paths import resolve_config_paths
+from .config_serialization import save_yaml_config
+from .canonical_run import RunSnapshot, prepare_run_snapshot, run_snapshot, run_config
+from .config_targets import RefinementTargetInfo, available_refinement_targets
+from .config_validation import ValidationPhase, ValidationLocation, ValidationIssue, validate_fields, validate_config
+from .config_editing import (Id, Dependency, DependencyError, get_object, add_object,
+    delete_object, deletion_dependencies, duplicate_object, reorder_objects,
+    replace_object, update_object, set_refinement)
+
 from .models import (
     MeshConfig,
     MicroscopeConfig,
@@ -111,6 +124,37 @@ from .refinement_trial import BoundRejectedTrial
 from .refinement_bounds import RefinementBoundRules, resolve_refinement_bounds
 
 __all__ = [
+    "QcbedConfig",
+    "CompiledConfig",
+    "compile_config",
+    "load_experimental_data",
+    "load_yaml_config",
+    "resolve_config_paths",
+    "save_yaml_config",
+    "RunSnapshot",
+    "prepare_run_snapshot",
+    "run_snapshot",
+    "run_config",
+    "RefinementTargetInfo",
+    "available_refinement_targets",
+    "ValidationPhase",
+    "ValidationLocation",
+    "ValidationIssue",
+    "validate_fields",
+    "validate_config",
+    "Id",
+    "Dependency",
+    "DependencyError",
+    "get_object",
+    "add_object",
+    "delete_object",
+    "deletion_dependencies",
+    "duplicate_object",
+    "reorder_objects",
+    "replace_object",
+    "update_object",
+    "set_refinement",
+
     "RefinementBound", "RefinementBounds", "BoundViolation", "scan_relative_bounds",
     "refinement_bound_policy", "BoundRejectedTrial",
     "RefinementBoundRules", "resolve_refinement_bounds",

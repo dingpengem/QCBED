@@ -13,6 +13,7 @@ from .legacy_io import LegacyInput
 from .scan import LegacyScanDefinition
 from .multislice import _snapshot
 from .structure_factors import _finite
+from .refinement_categories import PARAMETER_SEMANTICS
 
 
 def _flag(value, name, allowed=(0, 1)):
@@ -152,10 +153,7 @@ class RefinementParameterSpec:
         if isinstance(self.vector_index, (bool, np.bool_)) or not isinstance(self.vector_index, Integral) or self.vector_index < 0:
             raise ValueError("vector_index must be a nonnegative integer")
         target = tuple(self.target)
-        lengths = dict(voltage=0, depth=1, vacancy_coefficient=2, constant_vacancy=2,
-                       dilation=0, absorption=2, debye_waller=2, atom_coordinate=3,
-                       scan_coordinate=2, reflection_multiplier=3)
-        if self.category not in lengths or len(target) != lengths[self.category]:
+        if self.category not in PARAMETER_SEMANTICS or len(target) != PARAMETER_SEMANTICS[self.category].target_arity:
             raise ValueError("unknown category or incorrect physical target")
         if any(isinstance(i, (bool, np.bool_)) or not isinstance(i, Integral) or i < 0 for i in target):
             raise ValueError("target indices must be nonnegative integers")
@@ -218,6 +216,16 @@ def _entries(s):
 def _fold_dilation(v):
     v = abs(v)
     return 1/v if v > 1 else v
+
+
+def _writeback_mapped_parameters(vector, mapped):
+    """Existing UPDPARS selective PT writeback, shared by numerical adapters.
+
+    Preserve raw depth/voltage signs; do not apply the packing near-zero floor.
+    """
+    for i, (category, _, value) in enumerate(_entries(mapped)):
+        if PARAMETER_SEMANTICS[category].write_back_mapped_value:
+            vector[i] = value
 
 
 def _packed(category, v):

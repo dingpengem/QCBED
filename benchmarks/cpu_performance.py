@@ -101,16 +101,39 @@ def fft_backend(name='numpy', workers=1):
         yield totals,counts
 
 
+def _cpu_model():
+    """Prefer the Windows registry when available; otherwise report architecture."""
+    if sys.platform == 'win32':
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,r'HARDWARE\DESCRIPTION\System\CentralProcessor\0') as key:
+                model=winreg.QueryValueEx(key,'ProcessorNameString')[0].strip()
+            if model:
+                return model
+        except (ImportError, OSError):
+            pass
+    return platform.processor() or platform.machine() or 'unknown'
+
+
+def _loaded_math_libraries():
+    """Return detected paths and an explicit status for best-effort inspection."""
+    try:
+        mappings=psutil.Process().memory_maps()
+    except (AttributeError, NotImplementedError, OSError, psutil.Error) as exc:
+        return [], f'unavailable: {type(exc).__name__}: {exc}'
+    paths=sorted({entry.path for entry in mappings
+        if any(token in entry.path.lower() for token in
+               ('mkl','blas','pocketfft','fftw','iomp','accelerate','veclib'))})
+    return paths, 'available'
+
+
 def environment():
     out=dict(interpreter=sys.executable,python=sys.version,numpy=np.__version__,
              platform=platform.platform(),logical_cpus=os.cpu_count(),physical_cpus=psutil.cpu_count(logical=False),
              inherited_environment=INCOMING_ENV,benchmark_environment={k:os.environ[k] for k in INCOMING_ENV},
              optional_packages={n:bool(importlib.util.find_spec(n)) for n in ('scipy','mkl_fft','pyfftw','threadpoolctl')})
-    try:
-        import winreg
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,r'HARDWARE\DESCRIPTION\System\CentralProcessor\0') as key:
-            out['cpu_model']=winreg.QueryValueEx(key,'ProcessorNameString')[0].strip()
-    except OSError:out['cpu_model']=platform.processor()
+    out['cpu_model']=_cpu_model()
+    out['machine']=platform.machine()
     for name in ('numpy','scipy'):
         if importlib.util.find_spec(name):
             mod=__import__(name); buff=io.StringIO()
@@ -124,8 +147,7 @@ def environment():
         out['scipy_fft_source']=spocket.__file__
     # Trigger BLAS loading; this is not inside any measured simulation.
     np.ones((32,32)) @ np.ones((32,32))
-    out['loaded_math_libraries']=sorted({x.path for x in psutil.Process().memory_maps()
-        if any(t in x.path.lower() for t in ('mkl','blas','pocketfft','fftw','iomp'))})
+    out['loaded_math_libraries'],out['loaded_math_libraries_status']=_loaded_math_libraries()
     out['psutil_version']=psutil.__version__
     for dll in out['loaded_math_libraries']:
         if Path(dll).name.lower().startswith('mkl_rt'):

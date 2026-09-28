@@ -1,0 +1,382 @@
+# Fixed canonical regression fixture; not a user-editable example.
+title: PACBED EMPAD MONASH E.T. Trondheim
+microscope:
+  energy_kv: 200.0
+  zone_axis:
+  - 0
+  - 0
+  - 1
+sample:
+  mesh:
+    mesh_x: 16
+    mesh_y: 16
+  species:
+  - id: al
+    label: AL
+    atomic_number: 13
+    label_raw: AL
+  regions:
+  - id: specimen
+    depth_angstrom: 840.0
+    slices:
+    - id: al_slice
+      geometry:
+        thickness_angstrom: 2.0245
+        x_shift_fractional: 0.0
+        y_shift_fractional: 0.0
+        cell_a_angstrom: 2.8630754
+        cell_b_angstrom: 2.8630754
+        lattice_gamma_degrees: 90.0
+      atoms:
+      - id: a0
+        species: al
+        x_fractional: 0.0
+        y_fractional: 0.0
+        starting_occupancy: 0.5
+      - id: a1
+        species: al
+        x_fractional: 0.5
+        y_fractional: 0.5
+        starting_occupancy: 0.5
+      record_type: S
+      record_type_raw: ''
+    debye_waller:
+    - species: al
+      value_angstrom_squared: 0.86
+    reflections:
+    - id: r0
+      h: 1
+      k: 1
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r1
+      h: 1
+      k: -1
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r2
+      h: -1
+      k: 1
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r3
+      h: -1
+      k: -1
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r4
+      h: 2
+      k: 0
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r5
+      h: 0
+      k: -2
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r6
+      h: -2
+      k: 0
+      elastic: 1.0
+      absorptive: 1.0
+    - id: r7
+      h: 2
+      k: 0
+      elastic: 1.0
+      absorptive: 1.0
+    symmetry: NONE
+    vacancy:
+      kind: 0
+      values:
+      - 0.0
+    free_surface:
+      kind: 0
+      coefficients:
+      - 0.0
+      - 0.0
+      - 1.0
+  dsap_inverse_angstrom: 2.5
+  dilation: 0.0
+  absorption:
+    enabled: true
+    coefficients:
+    - species: al
+      a: 0.0
+      b: 1.0
+      c: 1.0
+      c_mode: independent
+    legacy_raw: 'YES_ABSORPTION      '
+scan:
+  scan_columns: 39
+  scan_rows: 39
+  basis_1:
+  - 1.0
+  - 1.0
+  - 0.0
+  basis_2:
+  - 1.0
+  - -1.0
+  - 0.0
+  corner_a:
+  - -0.508156
+  - 0.407641
+  corner_b:
+  - 0.407641
+  - 0.508156
+  corner_c:
+  - -0.407641
+  - -0.508156
+experiment:
+  path: ../tmp/configuration_reference/in_body.dat
+  beam_indices_hk:
+  - - 0
+    - 0
+  - - 1
+    - 1
+  - - 1
+    - -1
+  - - -1
+    - -1
+  - - -1
+    - 1
+  - - 2
+    - 0
+  - - 0
+    - -2
+  - - -2
+    - 0
+  - - 0
+    - 2
+  gradient_option: 1
+  header: absent
+  format: legacy_intensity_blocks
+refinement:
+  optimizer:
+    method: ANSI
+    loops: 1
+    maxfsimp: 20
+    maxfpara: 3
+    ftol: 1.0e-06
+    chimin: 1.0e-06
+    maxtemp: 100.0
+    mintemp: 1.0
+    coolrate: 0.9
+    seed: 2026
+    paraopt: 1
+    loud: 1
+  parameters:
+  - target:
+      category: depth
+      identifiers:
+      - specimen
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.5
+  - target:
+      category: absorption
+      identifiers:
+      - al
+      - b
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.005
+  - target:
+      category: absorption
+      identifiers:
+      - al
+      - c
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.005
+  - target:
+      category: debye_waller
+      identifiers:
+      - specimen
+      - al
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0002
+  - target:
+      category: scan_coordinate
+      identifiers:
+      - A
+      - first
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: scan_coordinate
+      identifiers:
+      - A
+      - second
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: scan_coordinate
+      identifiers:
+      - B
+      - first
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: scan_coordinate
+      identifiers:
+      - B
+      - second
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: scan_coordinate
+      identifiers:
+      - C
+      - first
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: scan_coordinate
+      identifiers:
+      - C
+      - second
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r0
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r1
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r2
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r3
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r4
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r5
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r6
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  - target:
+      category: reflection_multiplier
+      identifiers:
+      - specimen
+      - r7
+      - elastic
+    range_factors:
+    - 1.05
+    - 0.95
+    plamda: 0.0005
+  iref: -1.0
+  objective_mode: masked
+  invalid_trial_policy: reject
+  active_categories:
+  - depth
+  - scan_coordinate
+  bounds:
+    policy: reject
+    specific:
+    - target:
+        category: depth
+        identifiers:
+        - specimen
+      lower: 600.0
+      upper: 1200.0
+    absolute:
+    - category: absorption
+      lower: 0.5
+      upper: 1.5
+    - category: debye_waller
+      lower: 0.5
+      upper: 1.5
+    - category: reflection_multiplier
+      lower: 0.5
+      upper: 1.5
+    relative:
+    - category: scan_coordinate
+      fraction: 0.2
+      absolute_fallback: 0.05
+execution:
+  execution_backend: batched
+  batch_size: 64
+run:
+  output_directory: ../tmp/full_refinement
+  output_filename: out.dat
+  snapshot_every: 25
+  checkpoint_every: 25
+  max_total_evaluations: 150
+  max_wall_time_seconds: 1800.0
+legacy_export:
+  dsmax_inverse_angstrom: 0.5
+  filename: null
+  title_raw: 'PACBED EMPAD MONASH E.T. Trondheim                                              '
+  output_filename_raw: 'out.dat   '
+  experimental_filename_raw: null
+schema_version: 1

@@ -12,3 +12,6 @@ dependencies:
   - pytest
   - psutil
   - pip
+  - pip:
+      - -e .
+  - pyyaml

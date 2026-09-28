@@ -12,7 +12,8 @@ from .paramin import run_legacy_paramin
 from .simpara import run_legacy_simpara
 from .multislice import _snapshot
 from .refinement import (build_refinement_parameter_layout, pack_refinement_parameters,
-                         apply_refinement_parameters, _physical_vector, _entries)
+                         apply_refinement_parameters, _physical_vector, _writeback_mapped_parameters)
+from .refinement_categories import LEGACY_OPTIMIZER_PARAMETER_LIMIT
 from .refinement_io import _parse_refinement_input
 from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
@@ -157,8 +158,8 @@ def _run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, 
         raise ValueError("objective_mode must be 'legacy' or 'masked'")
     layout = build_refinement_parameter_layout(state)
     n = len(layout.parameters)
-    if n > 1000 or (config.loops > 0 and n == 0):
-        raise ValueError("driver requires 1..1000 active parameters for optimization")
+    if n > LEGACY_OPTIMIZER_PARAMETER_LIMIT or (config.loops > 0 and n == 0):
+        raise ValueError(f"driver requires 1..{LEGACY_OPTIMIZER_PARAMETER_LIMIT} active parameters for optimization")
     if len(config.plamda) != n:
         raise ValueError("PLAMDA count must match active parameter count")
     initial = pack_refinement_parameters(state)
@@ -194,9 +195,7 @@ def _run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, 
                 raise ValueError("driver objective must be finite and <= source CHISMIN sentinel 1e20")
             # Preserve ONEITPARA's supported PT writebacks, without repacking.
             retained = current.copy()
-            for i,(category,_,value) in enumerate(_entries(pre.physical_state)):
-                if category in ("constant_vacancy","vacancy_coefficient","absorption","debye_waller"):
-                    retained[i] = value
+            _writeback_mapped_parameters(retained, pre.physical_state)
             if first_score is None:
                 first_score = score
             start = retained.copy()
@@ -236,9 +235,7 @@ def _run_legacy_refinement(state, experimental, config: LegacyRefinementConfig, 
                     # then UPDPARS(PARMIN) writes selected projected entries.
                     # Depth/voltage fold the model only; do not repack/floor P.
                     mapped = apply_refinement_parameters(state, retained)
-                    for i,(category,_,value) in enumerate(_entries(mapped)):
-                        if category in ("constant_vacancy","vacancy_coefficient","absorption","debye_waller"):
-                            retained[i] = value
+                    _writeback_mapped_parameters(retained, mapped)
             if name is not None:
                 if name != "AMOEBA":
                     retained,score = result.best_vector.copy(),result.best_objective

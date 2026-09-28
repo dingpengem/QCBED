@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from .refinement import (RefinementParameterSpec, RefinementParameterLayout, RefinementState,
     build_refinement_parameter_layout, pack_refinement_parameters, apply_refinement_parameters, _entries)
 from .structure_factors import _finite
+from .refinement_categories import PARAMETER_SEMANTICS
 
 
 @dataclass(frozen=True)
@@ -79,11 +80,6 @@ class RefinementBounds:
                  or (b.upper is not None and active[b.category, b.target] > b.upper)))
 
 
-_TARGET_SIZES = dict(voltage=0, depth=1, vacancy_coefficient=2, constant_vacancy=2,
-    dilation=0, absorption=2, debye_waller=2, atom_coordinate=3,
-    scan_coordinate=2, reflection_multiplier=3)
-
-
 @dataclass(frozen=True)
 class RefinementBoundRules:
     """Mapping inputs are copied into immutable tuples; no live dict references."""
@@ -103,10 +99,10 @@ class RefinementBoundRules:
             items = tuple(value.items()) if isinstance(value, Mapping) else tuple(value)
             normalized = []
             for category, setting in items:
-                if category not in _TARGET_SIZES:
+                if category not in PARAMETER_SEMANTICS:
                     raise ValueError(f"unknown bound category: {category}")
                 if field == "category_bounds":
-                    bound = RefinementBound(category, (0,)*_TARGET_SIZES[category], *setting)
+                    bound = RefinementBound(category, (0,)*PARAMETER_SEMANTICS[category].target_arity, *setting)
                     setting = (bound.lower, bound.upper)
                 else:
                     setting = _finite(setting, field)

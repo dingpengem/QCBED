@@ -10,6 +10,7 @@ from .refinement import (build_refinement_parameter_layout, apply_refinement_par
                          pack_refinement_parameters, _vector)
 from .refinement_trial import evaluate_refinement_trial, _invalid_policy
 from .structure_factors import _finite
+from .refinement_categories import LEGACY_OPTIMIZER_PARAMETER_LIMIT
 
 
 @dataclass(frozen=True, eq=False)
@@ -152,8 +153,8 @@ def run_legacy_paramin(state, initial_vector, experimental, *, max_cycles,
     _invalid_policy(invalid_trial_policy)
     layout = build_refinement_parameter_layout(state)
     n = len(layout.parameters)
-    if not 1 <= n <= 1000:
-        raise ValueError("PARAMIN requires 1..1000 active parameters")
+    if not 1 <= n <= LEGACY_OPTIMIZER_PARAMETER_LIMIT:
+        raise ValueError(f"PARAMIN requires 1..{LEGACY_OPTIMIZER_PARAMETER_LIMIT} active parameters")
     initial = _vector(initial_vector, n)
     if any(p.range_factors is None for p in layout.parameters):
         raise ValueError("PARAMIN requires D1,D2 range factors for every active parameter")

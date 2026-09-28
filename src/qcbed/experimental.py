@@ -16,8 +16,8 @@ class ExperimentalIntensityData:
     """Raw XPINTS, VARIANCE and WEIGHTS; no scaling or weighting applied.
 
     All arrays have float64 shape (scan_rows*scan_columns, beam_count).
-    beam_indices_hk must be supplied in the external FOR007 MBOUT list order.
-    gradient_option preserves the header integer without running GRADIENT.
+    beam_indices_hk follows the explicitly supplied ordered beam list.
+    gradient_option preserves the supplied integer without running GRADIENT.
     """
 
     scan_columns: int
@@ -71,6 +71,11 @@ def parse_experimental_intensities(
     if scan is not None and (columns, rows) != (scan.scan_columns, scan.scan_rows):
         raise read.fail(read.last, f"scan dimensions NUMP,NUML = {scan.scan_columns},{scan.scan_rows}; "
                         f"observed {columns},{rows}")
+    return _parse_experimental_body(records, columns, rows, option, beams)
+
+
+def _parse_experimental_body(records, columns, rows, option, beams):
+    """Shared unchanged logical body READs for legacy and configured entrypoints."""
     blocks = {}
     for name in ("intensities", "variances", "weights"):
         block = np.empty((rows*columns, len(beams)), dtype=np.float64)

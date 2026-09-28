@@ -171,3 +171,12 @@ Every reference array matched the independent raw-row float64 values exactly.
 
 No normalization, residuals, weighting, uncertainty propagation, objective,
 refinement, optimization or forward-physics changes are part of this module.
+
+## Configuration-driven loading (Stage 2)
+
+`load_experimental_data(compiled, base_directory=...)` adds an explicit
+headerless mode and a legacy-header validation mode. Canonical configuration
+provides NUMP, NUML and GRADIENTOPT; validation requires exact agreement and
+never overrides those values. Both modes use the same body READ implementation
+as the unchanged legacy API. See [configuration documentation](configuration.md#stage-2-configuration-driven-experimental-data)
+for usage, migration example and equivalence coverage.

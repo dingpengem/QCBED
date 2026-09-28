@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from .refinement import build_refinement_parameter_layout
+from .refinement_categories import PARAMETER_SEMANTICS
 
 
 def select_refinement_categories(state, config, categories):
@@ -13,9 +14,7 @@ def select_refinement_categories(state, config, categories):
     if isinstance(categories, str):
         raise TypeError("categories must be a collection of category names")
     selected = frozenset(categories)
-    known = {"voltage", "depth", "constant_vacancy", "vacancy_coefficient", "dilation",
-             "absorption", "debye_waller", "atom_coordinate", "scan_coordinate", "reflection_multiplier"}
-    if not selected or not selected <= known:
+    if not selected or not selected <= PARAMETER_SEMANTICS.keys():
         raise ValueError("categories must select known refinement categories")
     layout = build_refinement_parameter_layout(state)
     indices = [p.vector_index for p in layout.parameters if p.category in selected]

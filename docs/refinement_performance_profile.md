@@ -1,5 +1,9 @@
 # Refinement performance profile
 
+Current batched depth-plus-scan measurements on Apple Silicon, including exact
+reuse opportunities, are recorded in [the Stage 1 baseline](apple_silicon_refinement_baseline.md).
+No cache has been implemented.
+
 > Follow-up: the wave signs have now been corrected. Numerical findings below
 > describe the pre-correction implementation unless explicitly stated otherwise.
 > See [correction validation](fft_sign_correction.md). Old profiling timings

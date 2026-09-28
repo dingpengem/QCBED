@@ -7,7 +7,8 @@ import numpy as np
 
 from .anneal import _normal
 from .multislice import _snapshot
-from .refinement import build_refinement_parameter_layout, _vector, _entries
+from .refinement import build_refinement_parameter_layout, _vector, _writeback_mapped_parameters
+from .refinement_categories import LEGACY_OPTIMIZER_PARAMETER_LIMIT
 from .refinement_trial import evaluate_refinement_trial, InvalidRefinementTrial, _invalid_policy
 from .structure_factors import _finite
 
@@ -177,8 +178,8 @@ def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
     _invalid_policy(invalid_trial_policy)
     layout = build_refinement_parameter_layout(state)
     n = len(layout.parameters)
-    if not 1 <= n <= 1000:
-        raise ValueError("SIMPARA driver callback supports 1..1000 active parameters")
+    if not 1 <= n <= LEGACY_OPTIMIZER_PARAMETER_LIMIT:
+        raise ValueError(f"SIMPARA driver callback supports 1..{LEGACY_OPTIMIZER_PARAMETER_LIMIT} active parameters")
     initial = _vector(initial_vector, n)
     uncertainty = _vector(uncertainties, n)
     if np.any(uncertainty < 0):
@@ -202,9 +203,7 @@ def run_legacy_simpara(state, initial_vector, experimental, *, uncertainties,
             return result.objective
         # UPDPARS writes PT only for these categories. Reuse mapped values;
         # do not repack all coordinates or apply ARRANGEPARS' near-zero floor.
-        for i, (category, _, value) in enumerate(_entries(result.physical_state)):
-            if category in ("constant_vacancy", "vacancy_coefficient", "absorption", "debye_waller"):
-                vector[i] = value
+        _writeback_mapped_parameters(vector, result.physical_state)
         return result.objective
 
     with np.errstate(divide="raise", invalid="raise", over="raise"):
