@@ -42,3 +42,6 @@ runs/
 *.log
 !reference_data/**/*.log
 !tests/data/**/*.log
+
+# Private predecessor sources; never publish
+/legacy_fortran/

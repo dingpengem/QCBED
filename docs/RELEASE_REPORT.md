@@ -1,6 +1,12 @@
 # Final release acceptance — current QCBED milestone
 
-**RELEASE ACCEPTANCE: PASS**
+**Historical release acceptance: PASS (before private-source separation).**
+
+The source-distribution policy has since changed. Private predecessor sources and
+detailed inventories are no longer distributed. Five unchanged source-dependent
+checks require private maintainer assets; this shared checkout alone cannot
+reproduce the full-suite count below. Python behavior and scientific reference data
+remain unchanged. See [source provenance](source_provenance.md).
 
 This closure verifies the final working tree after the earlier readiness-test
 correction. It adds no features or physics changes and runs no refinement campaign.

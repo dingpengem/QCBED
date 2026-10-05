@@ -4,8 +4,9 @@ QCBED is a CPU implementation of multislice quantitative convergent-beam electro
 diffraction simulation and refinement, with a modern Qt workflow for TEM researchers.
 It combines experimental-data preparation, an explicit crystallographic model,
 physical refinement targets, resumable execution, and recorded-results inspection.
-The original Fortran sources and scientific reference data remain available for
-numerical comparison and provenance.
+Scientific reference data remain available for numerical comparison. The predecessor
+implementation and detailed source inventories are maintained privately and are
+not distributed with this repository.
 
 ## Start here
 
@@ -55,8 +56,10 @@ remain the researcher's responsibility. The teaching example is not a converged 
 The automated suite includes complex-wave, Fortran-reference, data-preparation,
 crystallography, optimizer, checkpoint and GUI regressions. Run it with
 `python -m pytest -q`. The [release report](docs/RELEASE_REPORT.md) records the exact
-current test/build results and limitations. The final acceptance suite passed **2,965 tests**; the rebuilt signed-app
-GUI and compact-YAML round-trip smoke passed with zero optimizer evaluations.
+current test/build results and limitations. Before private-source separation, the acceptance suite passed **2,965 tests**; the rebuilt signed-app
+GUI and compact-YAML round-trip smoke passed with zero optimizer evaluations. Five unchanged source-integrity checks require private maintainer
+assets; a shared checkout alone cannot reproduce that full-suite count. See
+[source provenance](docs/source_provenance.md).
 [Historical measurements](docs/history/DEVELOPMENT_LOG.md)
 retain their original configurations and dates.
 

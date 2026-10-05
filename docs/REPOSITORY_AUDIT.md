@@ -10,7 +10,7 @@ scientific/GUI work. The inventory and link/syntax checks can be reproduced with
 | `src/qcbed/` | Production: numerical kernels, data preparation, crystallography, canonical execution and Qt GUI. Keep compatibility entry points still referenced by tests/public callers. |
 | `tests/` | Permanent scientific, preparation, crystallographic, dynamic-target, checkpoint and GUI regressions. No tests removed or consolidated. |
 | `reference_data/` | Protected scientific/reference inputs and provenance, including hidden preparation assets. Preserve every byte. |
-| `private predecessor sources` | Read-only numerical/provenance reference. Preserve every byte. |
+| Private predecessor material | Preserved outside the shared repository; source listings and detailed inventories are not distributed. |
 | `examples/` | Runnable demonstrations and historical diagnostic/replay cases. Keep the diagnostic scripts because reports/tests cite them. Replace only the main tutorial YAML with portable raw inputs. |
 | `benchmarks/` | Permanent measured-performance tools. Keep; no new benchmark claims. |
 | `tools/` | Maintained helper scripts, including the read-only release audit. |

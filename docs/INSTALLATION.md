@@ -95,7 +95,10 @@ QT_QPA_PLATFORM=offscreen python -m pytest -q
 Reference files are included in the checkout and must not be regenerated to make
 a failing scientific regression pass. A Fortran compiler is only needed for
 optional developer work that explicitly rebuilds legacy executables; the normal
-Python regression suite uses recorded references.
+Python numerical tests use recorded references. Five unchanged direct-source
+integrity/comparison checks require private maintainer assets not included in this
+checkout. See [source provenance](source_provenance.md); the earlier complete
+acceptance count is historical and is not reproducible from the shared checkout alone.
 
 ### Build the app (native macOS arm64 only)
 
