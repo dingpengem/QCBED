@@ -1,5 +1,9 @@
 # Optional configuration editor and runner (Stages 6B, 6C and 6D)
 
+> Historical milestone/audit record. For current controls and the A/B/C/D workflow,
+> use the [User Manual](user_manual.md); dated counts and replay inputs below retain
+> their original provenance.
+
 Install the optional frontend into your development environment and launch it:
 
 ```sh

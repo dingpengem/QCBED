@@ -2,17 +2,20 @@
 from pathlib import Path
 import platform
 from importlib.metadata import distribution, version
-from PyInstaller.utils.hooks import collect_data_files, copy_metadata
+from PyInstaller.utils.hooks import collect_data_files, copy_metadata, collect_submodules
 
 if platform.system() != 'Darwin' or platform.machine() != 'arm64':
     raise SystemExit('QCBED.app must be built with native macOS arm64 Python')
 base = Path(SPECPATH)
 root = base.parent.parent
-packages = ['qcbed','numpy','scipy','h5py','matplotlib','psutil','PyYAML',
+packages = ['ase','qcbed','numpy','scipy','h5py','matplotlib','psutil','PyYAML',
             'PySide6','PySide6_Essentials','PySide6_Addons','shiboken6',
             'contourpy','cycler','fonttools','kiwisolver','packaging','pillow',
             'pyparsing','python-dateutil','six']
-data = collect_data_files('qcbed')
+data = collect_data_files('qcbed') + collect_data_files('ase', includes=['spacegroup/*.dat'])
+# ASE resolves readers by module name at runtime; static analysis cannot find them.
+modern_imports = collect_submodules('ase.io') + collect_submodules('qcbed.crystallography')
+modern_imports += ['qcbed.modern_frontend','qcbed.modern_yaml','qcbed.grouped_run','modern_smoke']
 # Include distribution notices/licenses and version metadata, not tests/tools.
 for name in packages:
     data += copy_metadata(name)
@@ -23,7 +26,7 @@ for name in packages:
             if file.is_file(): data.append((str(file), 'licenses/'+name+'/'+str(entry.parent)))
 a = Analysis([str(base/'launcher.py')],
     pathex=[str(root/'src'),str(base)], binaries=[], datas=data,
-    hiddenimports=['scipy','scipy.linalg','scipy.fft','h5py','psutil','yaml','app_smoke'],
+    hiddenimports=['scipy','scipy.linalg','scipy.fft','h5py','psutil','yaml','app_smoke'] + modern_imports,
     hookspath=[], hooksconfig={'matplotlib': {'backends':['Agg', 'QtAgg']}},
     excludes=['pandas','sympy','torch','tensorflow','jax','cupy','numba','numexpr',
               'dask','xarray','sklearn','seaborn','pytest','_pytest','hypothesis','IPython','notebook','tkinter',

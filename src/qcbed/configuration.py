@@ -284,14 +284,100 @@ class LegacyExportConfig(_Config):
 
 
 @dataclass(frozen=True)
+class StructureFileConfig(_Config):
+    path: str
+    format: str | None = None
+
+
+@dataclass(frozen=True)
+class CbedReflectionBasisConfig(_Config):
+    g1_hkl: tuple[int, int, int]
+    g2_hkl: tuple[int, int, int]
+
+    def __post_init__(self):
+        for values in (self.g1_hkl, self.g2_hkl):
+            if isinstance(values, (tuple, list)) and len(values) == 4:
+                raise ValueError("4-index Miller–Bravais notation is not supported; provide canonical 3-index input")
+        super().__post_init__()
+
+
+@dataclass(frozen=True)
+class ExperimentalBeamConfig(_Config):
+    id: str
+    lattice_coordinates: tuple[int, int]
+
+
+@dataclass(frozen=True)
+class AtomicSiteGroup(_Config):
+    """Explicit physical ownership in the ordered original crystallographic cell.
+
+    Member indices refer to the immutable source structure, never simulation atoms.
+    B is isotropic Debye–Waller B in Å², occupancy a chemical fraction, absorption
+    the existing independent species (a,b,c) coefficients, not a new potential.
+    """
+    id: str
+    element: str
+    site_indices: tuple[int, ...]
+    debye_waller_b: float | None
+    occupancy: float
+    absorption: tuple[float, float, float] | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        from .crystallography.structure import AtomicSite
+        if not self.id.strip():
+            raise ValueError('site-group ID must be nonempty')
+        if not self.site_indices or len(set(self.site_indices)) != len(self.site_indices) or min(self.site_indices) < 0:
+            raise ValueError('site-group members must be distinct nonnegative original indices')
+        AtomicSite(self.element, (0., 0., 0.), self.occupancy, self.debye_waller_b)
+        if self.absorption is not None:
+            from .absorption import AbsorptionCoefficients
+            AbsorptionCoefficients(*self.absorption)
+
+
+@dataclass(frozen=True)
+class CrystallographyConfig(_Config):
+    structure: StructureFileConfig
+    zone_axis: tuple[int, int, int]
+    cbed_basis: CbedReflectionBasisConfig
+    mesh: MeshConfig
+    depth_angstrom: float
+    slice_boundaries_fractional: tuple[float, ...]
+    debye_waller: tuple[ThermalFactorConfig, ...]
+    dsap_inverse_angstrom: float
+    beams: tuple[ExperimentalBeamConfig, ...]
+    scan_basis_transform: tuple[tuple[int, int], tuple[int, int]]
+    absorption: AbsorptionConfig = AbsorptionConfig()
+    site_groups: tuple[AtomicSiteGroup, ...] = ()
+
+
+@dataclass(frozen=True)
+class CrystalScanConfig(_Config):
+    scan_columns: int
+    scan_rows: int
+    corner_a: tuple[float, float]
+    corner_b: tuple[float, float]
+    corner_c: tuple[float, float]
+
+
+@dataclass(frozen=True)
+class CrystalExperimentalDataConfig(_Config):
+    path: str
+    gradient_option: int
+    header: Literal['absent', 'validate'] = 'absent'
+    format: Literal['legacy_intensity_blocks'] = 'legacy_intensity_blocks'
+
+
+@dataclass(frozen=True)
 class QcbedConfig(_Config):
     title: str
     microscope: MicroscopeConfig
-    sample: SampleConfig
-    scan: ScanConfig
-    experiment: ExperimentalDataConfig
+    sample: SampleConfig | None
+    scan: ScanConfig | CrystalScanConfig
+    experiment: ExperimentalDataConfig | CrystalExperimentalDataConfig
     refinement: RefinementConfig
     execution: ForwardExecutionConfig
     run: RunConfig
     legacy_export: LegacyExportConfig = LegacyExportConfig()
     schema_version: int = 1
+    crystallography: CrystallographyConfig | None = None

@@ -1,5 +1,5 @@
 """Physical target catalogue backed by the compiler's own target enumeration."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .configuration import ParameterTarget
 from .config_compiler import CompiledConfig, compile_config, _target_map
@@ -68,7 +68,13 @@ def available_refinement_targets(config):
     readiness of the complete experiment is reported by validate_config.
     """
     from .config_editing import _target_references
-    compiled = config if isinstance(config,CompiledConfig) else compile_config(config)
+    if isinstance(config,CompiledConfig):
+        compiled = config
+    elif config.crystallography is not None:
+        from .crystallography_config import compile_config_from_sources
+        compiled = compile_config_from_sources(config)
+    else:
+        compiled = compile_config(config)
     raw = compiled.configuration
     coefficients = tuple(next(c for c in raw.sample.absorption.coefficients if c.species == sp.id)
                          for sp in raw.sample.species) if raw.sample.absorption.enabled else ()
@@ -80,10 +86,35 @@ def available_refinement_targets(config):
     for target,(category,indices) in sorted(targets.items(),key=lambda item:
             (PARAMETER_SEMANTICS[item[1][0]].source_order_group,item[1][1])):
         value,units,reason = _value_and_support(raw,category,indices,coefficients,slices)
-        label = category.replace('_',' ').capitalize()
+        label = 'Vacancy-coupling coefficient (legacy DILATION)' if category=='dilation' else category.replace('_',' ').capitalize()
         if target.identifiers: label += ': '+' / '.join(target.identifiers)
         result.append(RefinementTargetInfo(target,label,units,value,target in selected,
             (category,indices) in active,reason is None,reason,_target_references(raw,target)))
+    if compiled.crystallography is not None and compiled.crystallography.site_groups:
+        aliases = {internal:physical for physical,internal in compiled.crystallography.target_aliases}
+        unsupported = {
+            'atom_coordinate': 'Missing original-site coordinate binding across recasting/slicing; stored-slice indices are not physical site identities.',
+            'reflection_multiplier': 'Strict crystallography bridge uses unity multipliers; original-hkl multiplier mapping is not implemented.',
+            'constant_vacancy': 'Legacy vacancy is not chemical occupancy; nonzero vacancy propagation is unsupported.',
+            'vacancy_coefficient': 'Nonzero vacancy/profile propagation is unsupported.',
+            'dilation': 'Vacancy-coupling coefficient, not lattice dilation; nonzero vacancy propagation is unsupported.',
+        }
+        modern = []
+        for info in result:
+            target = aliases.get(info.target)
+            if target is None:
+                modern.append(replace(info, available=False, reason=unsupported.get(info.category.value, 'No modern physical target mapping.')))
+                continue
+            label = info.label
+            refs = ()
+            if info.category.value == 'depth': label = 'Sample → requested depth'
+            elif info.category.value in ('debye_waller', 'absorption'):
+                label = f'Site group {target.identifiers[1]} → ' + ('Debye–Waller B' if info.category.value == 'debye_waller' else 'absorption '+target.identifiers[2])
+                refs = ((1, ('crystallography', 'site_groups', target.identifiers[1])),)
+            elif info.category.value == 'voltage': label = 'Microscope → accelerating voltage'
+            elif info.category.value == 'scan_coordinate': label = f'Scan {target.identifiers[0]} → {target.identifiers[1]}'
+            modern.append(replace(info, target=target, label=label, references=refs))
+        result = modern
     return tuple(result)
 
 
@@ -91,7 +122,9 @@ def target_label(config,info):
     """Presentation of catalogue identities only; no target enumeration here."""
     ids = info.target.identifiers
     category = info.category.value
+    if info.label == 'Sample → requested depth': return info.label
     if category == 'depth': return f'Region {ids[0]} → depth'
+    if category == 'debye_waller' and ids[0] == 'site_group': return info.label
     if category == 'debye_waller': return f'Region {ids[0]} → species {ids[1]} → Debye–Waller'
     if category == 'reflection_multiplier':
         region = next(r for r in config.sample.regions if r.id == ids[0])

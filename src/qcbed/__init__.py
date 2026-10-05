@@ -267,3 +267,11 @@ __all__ = [
     "build_tilt_propagators",
     "simulate_one_tilt",
 ]
+
+from .crystallography_config import CompiledCrystallography, compile_config_from_sources, load_config_structure
+from .configuration import (CrystallographyConfig, StructureFileConfig, CbedReflectionBasisConfig,
+    ExperimentalBeamConfig, CrystalScanConfig, CrystalExperimentalDataConfig)
+
+__all__ += ['CompiledCrystallography', 'compile_config_from_sources', 'load_config_structure',
+    'CrystallographyConfig', 'StructureFileConfig', 'CbedReflectionBasisConfig',
+    'ExperimentalBeamConfig', 'CrystalScanConfig', 'CrystalExperimentalDataConfig']

@@ -1,0 +1,48 @@
+{
+  "source_sha256": "4f57383971109ffc48fe1a59d284284f180dba408f27f50069c8067a01e304fa",
+  "built_at_utc": "2026-10-05T02:21:58.206586+00:00",
+  "git_commit": "e4288b3aeab273df3ff02b118ccc4d8e086602e4",
+  "git_dirty": true,
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "executable": "/opt/miniconda3/envs/qcbed-python/bin/python",
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "architecture": "arm64",
+  "versions": {
+    "qcbed": "0.1.0",
+    "pyinstaller": "6.22.3",
+    "pyinstaller-hooks-contrib": "2026.8",
+    "PySide6": "6.11.2",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "matplotlib": "3.11.2",
+    "psutil": "7.2.2",
+    "PyYAML": "6.0.3",
+    "ase": "3.29.0"
+  },
+  "closure_date": "2026-10-04 America/Los_Angeles",
+  "accepted_tests": {
+    "focused": 128,
+    "gui": 102,
+    "full_suite": 2880
+  },
+  "signing": {
+    "type": "ad-hoc",
+    "deep_strict_verification": "passed",
+    "notarized": false
+  },
+  "artifacts": {
+    "dist/QCBED-arm64.zip": {
+      "sha256": "c2cae667faaa331aea34c513f752a2f0509687d538409dee43e3677dbb91ee0c",
+      "bytes": 109790475
+    },
+    "dist/QCBED.app/Contents/MacOS/QCBED": {
+      "sha256": "99fdc0e47b4935963a5292940cc3ced2f1e17420039682a3b6179a8192132636",
+      "bytes": 17411376
+    }
+  },
+  "closure_working_tree": "Dirty: accumulated accepted milestone changes plus local output artifacts and editable example output-path change; see release summary.",
+  "release_commit": null,
+  "release_tag": null,
+  "commit_status": "Not created: mixed working tree; milestone-only commit scope awaiting confirmation. Original dirty build base remains recorded in git_commit."
+}

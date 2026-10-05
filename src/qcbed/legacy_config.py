@@ -146,6 +146,8 @@ def write_yaml_config(config, path):
 def legacy_export_report(compiled):
     """Explicit values omitted from FOR007, returned even for default policies."""
     raw = compiled.configuration
+    if compiled.crystallography is not None:
+        raise ValueError("Crystallography-derived legacy export is not supported: original structure and hkl provenance cannot be represented; no automatic flattening")
     return dict(execution=asdict(raw.execution),seed=raw.refinement.optimizer.seed,
         bounds=asdict(raw.refinement.bounds),objective_mode=raw.refinement.objective_mode,
         invalid_trial_policy=raw.refinement.invalid_trial_policy,run=asdict(raw.run),
@@ -156,6 +158,8 @@ def legacy_export_report(compiled):
 
 
 def _for007_text(compiled, *, experimental_filename, output_filename):
+    if compiled.crystallography is not None:
+        raise ValueError("Crystallography-derived FOR007 export is deferred; original hkl provenance cannot be represented")
     s,m = compiled.state,compiled.state.model
     metadata = compiled.configuration.legacy_export
     if metadata.dsmax_inverse_angstrom is None:

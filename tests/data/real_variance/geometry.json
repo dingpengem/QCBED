@@ -1,0 +1,508 @@
+{
+  "provenance": {
+    "catalogue": {
+      "path": "tmp/a7_boundary_catalogue_r38_final/beam_catalogue.csv",
+      "sha256": "bf62fc686298b2831a3ddba0b23a4e4f9c6b6c0282d1cfcd7941586058e437d6"
+    },
+    "a7": {
+      "path": "tmp/a7_boundary_catalogue_r38_final/validation_summary.json",
+      "sha256": "dc8c4755a7bd9b3a105e331e93a5158519ffa7fbcffd59774397f7d98da9c9e2"
+    },
+    "a8": {
+      "path": "tmp/a8_manual_selection/measurement.json",
+      "sha256": "49f6ff6f6163cefdf564f38c2751db17731006e298a3463e390ddab1cd825449"
+    },
+    "closure": {
+      "path": "tmp/patch_a_closure/prepared_dataset_provenance.json",
+      "sha256": "82d455211c69e02b05d674c448faf4e4f7a11dad198582add539311f68743c63"
+    }
+  },
+  "pattern_sha256": "f6bb8ac456aba94ddbfabb544d22711d13e5c87f45f1b1dec888ce538aaa7ad6",
+  "sigma_sha256": "2ffba07c1087e73b7d1cd430ec30430d3d4dafadd7d380af005f9698495e532c",
+  "geometry": {
+    "radius_x_px": 38.0,
+    "radius_y_px": 38.0
+  },
+  "central_disk_center_px": [
+    127.0,
+    126.0
+  ],
+  "zone_axis_origin_px": [
+    127.0,
+    126.0
+  ],
+  "a10": {
+    "scan_geometry": {
+      "corner_a": [
+        -0.50623966320854,
+        0.4005412719891745
+      ],
+      "corner_b": [
+        0.39497819876710266,
+        0.5006765899864682
+      ],
+      "corner_c": [
+        -0.39497819876710266,
+        -0.5006765899864682
+      ],
+      "scan_rows": 38,
+      "scan_columns": 38
+    },
+    "reference_point_px": [
+      127.0,
+      126.0
+    ],
+    "zone_axis_origin_px": [
+      127.0,
+      126.0
+    ],
+    "reference_point_1_px": [
+      208.0,
+      135.0
+    ],
+    "reference_point_2_px": [
+      137.0,
+      45.0
+    ],
+    "vec1": [
+      81.0,
+      9.0
+    ],
+    "vec2": [
+      10.0,
+      -81.0
+    ],
+    "point4": [
+      0.0,
+      0.0
+    ],
+    "points": [
+      [
+        -37.0,
+        -37.0
+      ],
+      [
+        37.0,
+        -37.0
+      ],
+      [
+        -37.0,
+        37.0
+      ]
+    ],
+    "determinant": -6651.000000000002,
+    "condition_number": 1.0123372719941535,
+    "selection_width": 76,
+    "selection_height": 76,
+    "final_binning": 2,
+    "expansion_factor": 1,
+    "canonical_to_scan_basis": [
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        -1
+      ]
+    ],
+    "provenance": [
+      "DM N:810-841 / E:198-231: explicit reference points minus A8 origin",
+      "point1=a; point2=b; point3=c; x=column,y=row",
+      "expansion does not enter source corner equation",
+      "maximum accepted basis condition number=1e+10",
+      "point4 beam ID=lattice_0_0; canonical basis IDs=('lattice_1_0', 'lattice_0_1')",
+      "reference endpoints=A8 origin + canonical displacement matrix @ explicit integer transform"
+    ]
+  },
+  "baseline_modes": {
+    "conventional": {
+      "dataset": {
+        "arrays": {
+          "intensities": {
+            "shape": [
+              1444,
+              9
+            ],
+            "dtype": "float64",
+            "sha256": "ca360dbb303fced21945a91c9d7c6f4834c56faef0b35691952dd88ffbcd6c3b"
+          },
+          "variances": null,
+          "weights": {
+            "shape": [
+              1444,
+              9
+            ],
+            "dtype": "float64",
+            "sha256": "e0df916a13693e9c48e60ac21bd6ef4d938a769f511a5f42e82eeb9be14ca25c"
+          }
+        },
+        "beam_mapping": [
+          {
+            "stable_beam_id": "lattice_0_0",
+            "lattice_coordinates": [
+              0,
+              0
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 0,
+            "retained_extraction_block": 0,
+            "refinement_column": 0,
+            "center_px": [
+              127.0,
+              126.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_-1_0",
+            "lattice_coordinates": [
+              -1,
+              0
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 1,
+            "retained_extraction_block": 1,
+            "refinement_column": 1,
+            "center_px": [
+              46.0,
+              117.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_1_0",
+            "lattice_coordinates": [
+              1,
+              0
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 2,
+            "retained_extraction_block": 2,
+            "refinement_column": 2,
+            "center_px": [
+              208.0,
+              135.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_0_-1",
+            "lattice_coordinates": [
+              0,
+              -1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 3,
+            "retained_extraction_block": 3,
+            "refinement_column": 3,
+            "center_px": [
+              137.0,
+              45.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_0_1",
+            "lattice_coordinates": [
+              0,
+              1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 4,
+            "retained_extraction_block": 4,
+            "refinement_column": 4,
+            "center_px": [
+              117.0,
+              207.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_-1_-1",
+            "lattice_coordinates": [
+              -1,
+              -1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 5,
+            "retained_extraction_block": 5,
+            "refinement_column": 5,
+            "center_px": [
+              56.0,
+              36.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_1_1",
+            "lattice_coordinates": [
+              1,
+              1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 6,
+            "retained_extraction_block": 6,
+            "refinement_column": 6,
+            "center_px": [
+              198.0,
+              216.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_-1_1",
+            "lattice_coordinates": [
+              -1,
+              1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 7,
+            "retained_extraction_block": 7,
+            "refinement_column": 7,
+            "center_px": [
+              36.0,
+              198.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          },
+          {
+            "stable_beam_id": "lattice_1_-1",
+            "lattice_coordinates": [
+              1,
+              -1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 8,
+            "retained_extraction_block": 8,
+            "refinement_column": 8,
+            "center_px": [
+              218.0,
+              54.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 886
+          }
+        ],
+        "scan_geometry": {
+          "corner_a": [
+            -0.50623966320854,
+            0.4005412719891745
+          ],
+          "corner_b": [
+            0.39497819876710266,
+            0.5006765899864682
+          ],
+          "corner_c": [
+            -0.39497819876710266,
+            -0.5006765899864682
+          ],
+          "scan_rows": 38,
+          "scan_columns": 38
+        }
+      }
+    },
+    "gradient": {
+      "dataset": {
+        "arrays": {
+          "intensities": {
+            "shape": [
+              1444,
+              9
+            ],
+            "dtype": "float64",
+            "sha256": "f0baade5ce8db25ffe6a663ea8d975fd5134504e0092fac7788baab0f9204634"
+          },
+          "variances": null,
+          "weights": {
+            "shape": [
+              1444,
+              9
+            ],
+            "dtype": "float64",
+            "sha256": "715d4f361c27e35d9b08e4c3c2da8bef485c80c80fc5a9a5f981b76c503562cb"
+          }
+        },
+        "beam_mapping": [
+          {
+            "stable_beam_id": "lattice_0_0",
+            "lattice_coordinates": [
+              0,
+              0
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 0,
+            "retained_extraction_block": 0,
+            "refinement_column": 0,
+            "center_px": [
+              127.0,
+              126.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_-1_0",
+            "lattice_coordinates": [
+              -1,
+              0
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 1,
+            "retained_extraction_block": 1,
+            "refinement_column": 1,
+            "center_px": [
+              46.0,
+              117.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_1_0",
+            "lattice_coordinates": [
+              1,
+              0
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 2,
+            "retained_extraction_block": 2,
+            "refinement_column": 2,
+            "center_px": [
+              208.0,
+              135.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_0_-1",
+            "lattice_coordinates": [
+              0,
+              -1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 3,
+            "retained_extraction_block": 3,
+            "refinement_column": 3,
+            "center_px": [
+              137.0,
+              45.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_0_1",
+            "lattice_coordinates": [
+              0,
+              1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 4,
+            "retained_extraction_block": 4,
+            "refinement_column": 4,
+            "center_px": [
+              117.0,
+              207.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_-1_-1",
+            "lattice_coordinates": [
+              -1,
+              -1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 5,
+            "retained_extraction_block": 5,
+            "refinement_column": 5,
+            "center_px": [
+              56.0,
+              36.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_1_1",
+            "lattice_coordinates": [
+              1,
+              1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 6,
+            "retained_extraction_block": 6,
+            "refinement_column": 6,
+            "center_px": [
+              198.0,
+              216.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_-1_1",
+            "lattice_coordinates": [
+              -1,
+              1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 7,
+            "retained_extraction_block": 7,
+            "refinement_column": 7,
+            "center_px": [
+              36.0,
+              198.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          },
+          {
+            "stable_beam_id": "lattice_1_-1",
+            "lattice_coordinates": [
+              1,
+              -1
+            ],
+            "physical_indices": null,
+            "original_extraction_block": 8,
+            "retained_extraction_block": 8,
+            "refinement_column": 8,
+            "center_px": [
+              218.0,
+              54.0
+            ],
+            "center_source": "predicted",
+            "nonzero_weight_pixels": 809
+          }
+        ],
+        "scan_geometry": {
+          "corner_a": [
+            -0.50623966320854,
+            0.4005412719891745
+          ],
+          "corner_b": [
+            0.39497819876710266,
+            0.5006765899864682
+          ],
+          "corner_c": [
+            -0.39497819876710266,
+            -0.5006765899864682
+          ],
+          "scan_rows": 38,
+          "scan_columns": 38
+        }
+      }
+    }
+  }
+}

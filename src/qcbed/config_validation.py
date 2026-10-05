@@ -88,7 +88,7 @@ def validate_fields(model_type, values, *, section='config', object_path=()):
 
 
 def validate_config(config, *, phases=(ValidationPhase.FIELD,ValidationPhase.COMPILE,ValidationPhase.EXECUTION),
-                    base_directory=None, resume=False, export_bundle=True, filename_limits=None):
+                    base_directory=None, resume=False, export_bundle=True, filename_limits=None, structure=None):
     """Return immutable diagnostic records; never write files or run propagation.
 
     The FILES phase requires an explicit absolute base_directory. EXPORT validates
@@ -118,6 +118,42 @@ def validate_config(config, *, phases=(ValidationPhase.FIELD,ValidationPhase.COM
                         field_walk(item,child_section,path+(name,selector))
     field_walk(config,'config',())
     if issues or phases == {ValidationPhase.FIELD}: return tuple(issues)
+    if config.crystallography is not None:
+        from .crystallography_config import compile_config_from_sources, CrystallographyConfigError
+        try:
+            from .config_paths import resolve_config_paths
+            resolved = resolve_config_paths(config,base_directory=base_directory) if base_directory is not None else config
+            compiled = (compile_config_from_sources(resolved) if ValidationPhase.FILES in phases
+                        else compile_config(resolved,structure=structure))
+        except (ValueError,TypeError,OSError) as exc:
+            field = exc.field if isinstance(exc,CrystallographyConfigError) else 'structure'
+            phase = ValidationPhase.FILES if field == 'structure.path' else ValidationPhase.COMPILE
+            add('crystallography_error',phase,'crystallography',('crystallography',),field,str(exc))
+            return tuple(issues)
+        if ValidationPhase.EXPORT in phases:
+            add('crystallography_export_unsupported',ValidationPhase.EXPORT,'crystallography',
+                ('crystallography',),None,'Original structure/hkl provenance is not representable; crystallography export is deferred')
+        if compiled.crystallography.site_groups and phases & {ValidationPhase.EXECUTION, ValidationPhase.FILES}:
+            # Physical ownership must not be discarded by validating a derived
+            # legacy sample against the legacy checkpoint format.
+            if ValidationPhase.FILES in phases:
+                from .modern_frontend import validate_modern
+                return tuple(issues) + validate_modern(resolved,base_directory,
+                    check_files=True,resume=resume,execution=ValidationPhase.EXECUTION in phases)
+            from .grouped_run import check_grouped
+            try:
+                check_grouped(compiled)
+            except ValueError as exc:
+                add('grouped_capability',ValidationPhase.EXECUTION,'refinement',
+                    ('refinement',),'parameters',str(exc))
+            return tuple(issues)
+        # Pure modern configuration validation does not require a run destination.
+        preview=compiled.configuration
+        if not preview.run.output_directory.strip() and not phases & {ValidationPhase.EXECUTION,ValidationPhase.FILES}:
+            from dataclasses import replace
+            preview=replace(preview,run=replace(preview.run,output_directory='.'))
+        return tuple(issues) + validate_config(preview,phases=phases-{ValidationPhase.EXPORT},base_directory=base_directory,
+                               resume=resume,export_bundle=export_bundle,filename_limits=filename_limits)
     # Every dependent phase requires a valid compilation; expose its blockers too.
     C = ValidationPhase.COMPILE
     def unique(items,path,key='id',seen=None):
@@ -132,6 +168,9 @@ def validate_config(config, *, phases=(ValidationPhase.FIELD,ValidationPhase.COM
             else: seen[value] = loc
         return seen
     sample = config.sample
+    if sample is None:
+        add("missing_sample",C,"sample",("sample",),None,"sample is required without crystallography")
+        return tuple(issues)
     if config.schema_version != 1:
         add('unsupported_schema_version',C,'config',(),'schema_version','Only canonical schema version 1 is supported')
     if not sample.species:

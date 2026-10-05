@@ -1,0 +1,131 @@
+# Synthetic demo only. No confirmed real-pattern indexing.
+title: Synthetic crystallography demonstration - not pattern.dat indexing
+microscope:
+  energy_kv: 200.0
+  zone_axis:
+  - 0
+  - 0
+  - 1
+sample: null
+scan:
+  scan_columns: 1
+  scan_rows: 1
+  corner_a:
+  - 0.0
+  - 0.0
+  corner_b:
+  - 0.0
+  - 0.0
+  corner_c:
+  - 0.0
+  - 0.0
+experiment:
+  path: b4b_demo_intensities.dat
+  gradient_option: 0
+  header: absent
+refinement:
+  optimizer:
+    method: ANSI
+    loops: 1
+    maxfsimp: 20
+    maxfpara: 3
+    ftol: 1.0e-06
+    chimin: 1.0e-06
+    maxtemp: 100.0
+    mintemp: 1.0
+    coolrate: 0.9
+    seed: 2026
+    paraopt: 1
+    loud: 1
+  parameters: []
+  iref: -1.0
+  objective_mode: masked
+  invalid_trial_policy: reject
+  active_categories: null
+  bounds:
+    policy: none
+execution:
+  execution_backend: batched
+  batch_size: 64
+run:
+  output_directory: ../tmp/b4b_demo_run
+  output_filename: ../tmp/b4b_demo_out.dat
+  snapshot_every: 25
+  checkpoint_every: 25
+  max_total_evaluations: 150
+  max_wall_time_seconds: 1800.0
+legacy_export: {}
+schema_version: 1
+crystallography:
+  structure:
+    path: b4b_demo.extxyz
+    format: extxyz
+  zone_axis:
+  - 0
+  - 0
+  - 1
+  cbed_basis:
+    g1_hkl:
+    - 1
+    - 0
+    - 0
+    g2_hkl:
+    - 0
+    - 1
+    - 0
+  mesh:
+    mesh_x: 8
+    mesh_y: 8
+  depth_angstrom: 5.0
+  slice_boundaries_fractional:
+  - 0.0
+  - 0.5
+  - 1.0
+  debye_waller:
+  - species: Si
+    value_angstrom_squared: 0.3
+  dsap_inverse_angstrom: 0.5
+  beams:
+  - id: beam-0
+    lattice_coordinates:
+    - 0
+    - 0
+  - id: beam-1
+    lattice_coordinates:
+    - 1
+    - 0
+  - id: beam-2
+    lattice_coordinates:
+    - -1
+    - 0
+  - id: beam-3
+    lattice_coordinates:
+    - 0
+    - 1
+  - id: beam-4
+    lattice_coordinates:
+    - 0
+    - -1
+  - id: beam-5
+    lattice_coordinates:
+    - 1
+    - 1
+  - id: beam-6
+    lattice_coordinates:
+    - 1
+    - -1
+  - id: beam-7
+    lattice_coordinates:
+    - -1
+    - 1
+  - id: beam-8
+    lattice_coordinates:
+    - -1
+    - -1
+  scan_basis_transform:
+  - - 1
+    - 0
+  - - 0
+    - -1
+  absorption:
+    enabled: false

@@ -1,5 +1,8 @@
 # YAML configuration frontend (schema version 1)
 
+[Documentation index](README.md) · [Current architecture](ARCHITECTURE.md) ·
+[Researcher manual](user_manual.md)
+
 Install the optional frontend with `pip install -e '.[yaml]'`. The development
 conda environment already declares `pyyaml`. Numerical modules and the Python
 configuration API do not import or require PyYAML.
@@ -370,3 +373,31 @@ path, not a new compiled-Fortran comparison. `git diff --check` passed.
 No numerical kernels, canonical dataclasses, compiler, dynamic layout, experimental
 reader, legacy parser or production runner were changed for this frontend. FOR007
 retirement/export and GUI implementation remain deferred.
+
+## Crystallography-derived mode (B4b)
+
+The optional `crystallography` section selects original-structure input with
+`sample: null`. In this mode, omit scan `basis_1/basis_2` and experimental
+`beam_indices_hk`; these are derived. Required original hkl basis, beam coordinates,
+explicit physical slicing, thermal factors and source-loading rules are documented
+in [the crystallography schema](crystallography.md#b4b-production-configuration-integration).
+See `examples/crystallography_config.yml`. Legacy YAML remains supported unchanged.
+The GUI editor does not yet support this mode (B4c).
+
+## Modern A/B/C document frontend
+
+Modern Save/Save As now uses `schema_version: 2` with `data_prep`, `atomic_model`
+and `qcbed`; see [the schema and versioned defaults](modern_yaml.md). This frontend
+constructs the same `QcbedConfig`; the version-1 schema documented above remains
+the legacy/verbose compatibility input. Prepared arrays and interactive provenance
+are referenced externally, not embedded in user YAML.
+
+### Compact modern search defaults
+
+A selected entry in `qcbed.refinement.targets` may be `{}` to use the documented
+[reference search profile](modern_refinement_catalogue.md). `range_factors` and
+`step_size` are optional overrides, resolved into the same typed ParameterBinding.
+Compact Save omits each value only when exactly equal to its canonical default;
+old explicit compact and verbose configurations still load unchanged. Bounds
+remain separate in `qcbed.refinement.bounds`; no physical bounds are inferred.
+Defaults are stable frontend metadata, not changes to optimizer algorithms.

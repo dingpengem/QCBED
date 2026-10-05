@@ -46,8 +46,8 @@ def test_spawn_run_snapshot_progress_resume_and_equivalence(tmp_path):
     assert any(k == 'progress' for k,p in events)
     assert controller.result['checkpoint']
     assert controller.result['final_state']
-    assert any(i.code == 'output_exists' for i in readiness(config,tmp_path))
-    with pytest.raises(ValueError, match='new output directory'):
+    assert not any(i.code == 'output_exists' for i in readiness(config,tmp_path))
+    with pytest.raises(ValueError, match='Confirm replacement'):
         controller.start(config,base_directory=tmp_path)
     assert not [i for i in readiness(config,tmp_path,resume=True) if i.severity == 'error']
     controller.start(config,base_directory=tmp_path,resume=True)

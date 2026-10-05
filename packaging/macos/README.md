@@ -118,3 +118,118 @@ and [macOS build/distribution notes](https://pyinstaller.org/en/stable/feature-n
 See [the measured local validation record](VALIDATION.md) for the actual build
 versions, frozen-run checks, numerical comparison, signature audit and remaining
 manual acceptance items.
+
+## Modern crystallography closure
+
+The package extra now includes ASE. The same spec explicitly collects ASE's
+runtime-selected readers, its spacegroup data, crystallography modules and modern
+worker/Results adapters. extxyz and CIF are covered by frozen acceptance; support
+for other ASE formats is not established by those tests. Structure files and
+experimental datasets remain external document inputs, never bundle-relative.
+Open `examples/fcc_al_grouped_gui.yml` with its matching prepared gradient body;
+see [modern workflow and capability limits](../../docs/modern_grouped_gui.md).
+
+For an isolated build-tool install (without changing conda packages):
+
+```sh
+python -m pip install --target build/macos/packager 'PyInstaller==6.22.3'
+PYTHONPATH="$PWD/build/macos/packager" python packaging/macos/build.py
+codesign --force --deep --sign - dist/QCBED.app
+codesign --verify --deep --strict --verbose=2 dist/QCBED.app
+```
+
+The environment report includes UTC build time, Git revision/dirty status, Python,
+architecture, dependency versions and a source/spec SHA-256 fingerprint. Retain it
+with the test report; the revision alone does not identify an uncommitted build.
+
+The existing smoke entry also accepts `modern: true`, `reference_yaml`, `run_yaml`,
+`conventional_yaml` and a new absolute `output` directory. Modern acceptance uses
+real prepared gradient/conventional inputs with a small explicit optimizer budget.
+It exercises structure/projection displays, dynamic extxyz/CIF readers, B editing,
+Save/Save As/reload, incompatible resume rejection, spawned ANNEAL/AMOEBA, cancel
+after a completed evaluation, retained Results, history and masked patterns. The
+legacy manifest/harness remains supported. Neither harness is normal startup code.
+Modern export must report unsupported provenance without trying to fabricate it.
+
+Ad-hoc signing provides local bundle integrity, not Developer ID identification or
+notarization. Literal Finder clicks/native file-picker interaction and deployment
+on other macOS versions remain separate manual/distribution checks.
+
+## Compact-schema initialization-only acceptance
+
+For a lightweight check, use a JSON smoke manifest with `modern: true`,
+`compact_only: true`, absolute `reference_yaml`, `interactive_yaml`, `verbose_yaml`,
+`legacy_yaml`, and a new absolute `output` directory. The interactive input must
+have recorded manual exclusions and origin/overview metadata. Launch with:
+
+```sh
+open -n -a "$PWD/dist/QCBED.app" --args --smoke-test /absolute/manifest.json
+```
+
+This checks compact load, external assets, A/B/C displays, Save/Save As/reload,
+and older input compatibility. It calls the canonical runner but intercepts stage
+dispatch before optimizer entry. The runner writes a genuine initialization
+checkpoint, records the deliberate smoke exception as `failed`, and releases its
+lock. This is a zero-evaluation setup test, not a completed or resumable refinement
+claim. The interception exists only in the opt-in packaging harness.
+
+## Live Data Prep smoke
+
+Use `{"modern": true, "live_only": true, "output": "/absolute/new/directory"}`
+with the existing `--smoke-test` launcher. This constructs a fresh synthetic raw
+pattern and drives the real spawned preparation worker, not a prepared fixture.
+It checks aperture geometry preview, manual geometry, ROI confirmation, live
+beam output, masking and Validate A. No refinement executes. Detector/noise
+scientific tests and real-pattern failure checks run in the source test suite.
+
+
+For real live A/B/C initialization acceptance, the opt-in smoke manifest supports
+`modern: true`, `live_abc_only: true`, absolute `pattern`, `structure`, and new
+`output` paths, plus explicit `radius_px` and `symmetry_roi`. It builds a fresh
+preparation, confirms/masks A, applies FCC Al B/C controls, validates all stages,
+checks replay, and deliberately stops before optimizer entry (zero evaluations).
+No historical prepared manifest is accepted as input to this check.
+
+For final new-user interaction acceptance add `interactive: true` and explicit
+`diameter_endpoints` (two detector x/y points) to the real A/B/C smoke manifest.
+The harness drives diameter/ROI Accept controls, the spawned preparation worker,
+linked beam displays and weight-only masking, then a separate zero-evaluation
+initialization worker. This is automated Qt event acceptance, not a refinement run.
+
+## Accepted milestone artifacts
+
+The parameter-classification usability smoke uses `usability: true`,
+`require_frozen: true`, absolute `pattern`, `structure` and new `output` paths,
+plus `diameter_endpoints` and `symmetry_roi` in detector x/y pixels. Run it with
+the existing `--smoke-test /absolute/manifest.json` entry point. It checks live
+A preparation, explicit B input, the three C tabs plus D-only Advanced execution settings, visible and valid
+`0, 1` one-slice boundaries, physical refinement targets, Save/reload, and canonical
+initialization cancelled before any optimizer evaluation. This is automated
+widget acceptance, not a refinement campaign or manual Finder check.
+
+See [release closure](../../docs/reconstruction_milestone.md) and
+[the accepted build provenance](RELEASE_PROVENANCE.json). The provenance records
+the original dirty build base and exact source/artifact fingerprints; documentation
+closure does not require a rebuild. Distribution remains ad-hoc signed, not notarized.
+
+The usability smoke also checks the fresh 1000 Å thickness, the exact FCC Al
+basis-edit → site-group Apply → Validate B sequence, and D's visible Run/Resume/
+Cancel states. It saves `dashboard.png` as well as the optimizer view. Actual
+small Run/Cancel/Resume button transitions and retained Results are exercised by
+`tests/test_gui_modern_qt.py`; the packaged smoke still stops before evaluation.
+The one-slice check also saves `simulation.png` showing required Slice boundaries
+outside the collapsed Advanced mesh/cutoff panel.
+## Current researcher release
+
+Use the [installation guide](../../docs/INSTALLATION.md) and
+[current release report](../../docs/RELEASE_REPORT.md) as the distribution entry
+points. Earlier validation sections are historical measurements, not instructions
+to use old machine-local campaign YAMLs.
+
+The usability manifest optionally accepts `example_project` pointing to the raw
+`examples/fcc_al.yml` and `study_depth: 1000`. The harness copies the template to
+its new output workspace, prepares the real pattern, validates A/B/C, verifies
+D-only Advanced Batched/64 visibility, saves and reopens the project, revalidates D,
+and initializes a cancellable checkpoint with zero optimizer evaluations. It must
+use a new output workspace per invocation. The final app/ZIP is signed and verified
+after the build; no Finder quarantine/notarization acceptance is implied.

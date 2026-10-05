@@ -126,7 +126,7 @@ scan:
   - -0.407641
   - -0.508156
 experiment:
-  path: /Users/dingpeng/EM_code/QCBED/tmp/configuration_reference/in_body.dat
+  path: ../tmp/configuration_reference/in_body.dat
   beam_indices_hk:
   - - 0
     - 0
@@ -205,8 +205,8 @@ execution:
   execution_backend: batched
   batch_size: 64
 run:
-  output_directory: /Users/dingpeng/EM_code/QCBED/tmp/full_refinement
-  output_filename: /Users/dingpeng/EM_code/QCBED/examples/out.dat
+  output_directory: ../tmp/full_refinement/test
+  output_filename: out.dat
   snapshot_every: 25
   checkpoint_every: 25
   max_total_evaluations: 150
@@ -215,6 +215,6 @@ legacy_export:
   dsmax_inverse_angstrom: 0.5
   filename: null
   title_raw: null
-  output_filename_raw: '/Users/dingpeng/EM_code/QCBED/examples/out.dat   '
+  output_filename_raw: 'out.dat   '
   experimental_filename_raw: null
 schema_version: 1

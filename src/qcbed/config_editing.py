@@ -98,6 +98,10 @@ def reorder_objects(config,collection_path,ordered_ids):
 def _target_references(config,target):
     """Identifier positions and scoped object addresses, not vector indices."""
     ids,c = target.identifiers,target.category.value
+    if config.crystallography is not None:
+        if c in ('debye_waller','absorption') and ids and ids[0]=='site_group':
+            return ((1,('crystallography','site_groups',Id(ids[1]))),)
+        if c=='depth' and ids==('sample','requested_depth'): return ()
     from .refinement_categories import PARAMETER_SEMANTICS
     arity = 1 if c == 'constant_vacancy' else PARAMETER_SEMANTICS[c].target_arity
     if len(ids) != arity:

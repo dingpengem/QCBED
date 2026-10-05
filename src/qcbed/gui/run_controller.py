@@ -25,10 +25,11 @@ def _worker(snapshot, resume, connection, cancel_event=None):
     os.environ['MPLBACKEND'] = 'Agg'
     started = time.monotonic()
     effective = None
+    modern = snapshot.compiled.crystallography is not None and bool(snapshot.compiled.crystallography.site_groups)
     def observe(event):
         nonlocal effective
         connection.send(('progress', event))
-        if effective is None and cancel_event is not None and cancel_event.is_set():
+        if not modern and effective is None and cancel_event is not None and cancel_event.is_set():
             effective = dict(message='Cancellation became effective; canonical retained-boundary finalization follows',
                 boundary=event['classification'],
                 evaluation=event['global_evaluation_index'], stage=event['stage'])
@@ -51,8 +52,12 @@ def _worker(snapshot, resume, connection, cancel_event=None):
                 final_state=(directory/'final_parameters.json').exists())))
             return
         with redirect_stdout(_Stream(connection)), redirect_stderr(_Stream(connection)):
-            result = run_snapshot(snapshot, resume=resume,
-                progress_hook=observe)
+            options = dict(resume=resume,progress_hook=observe)
+            if modern:options['cancel_requested']=cancel_event.is_set if cancel_event is not None else None
+            result = run_snapshot(snapshot,**options)
+        if modern and result.status=='cancelled':
+            effective=dict(message='Cancellation effective before a new grouped evaluation; completed journal preserved',boundary='completed_evaluation')
+            connection.send(('cancellation_effective',effective))
         directory = Path(snapshot.compiled.configuration.run.output_directory)
         if effective is None and cancel_event is not None and cancel_event.is_set():
             connection.send(('log', 'Cancellation arrived after the last safe progress boundary; canonical execution finished.'))
@@ -83,18 +88,30 @@ class RunController:
     @property
     def active(self): return self.process is not None
 
-    def start(self, config, *, base_directory, resume=False):
+    def start(self, config, *, base_directory, resume=False, replace_outputs=False):
         if self.active: raise RuntimeError('A run is already active')
         issues = readiness(config, base_directory, resume=resume)
         errors = [i.message for i in issues if i.severity == 'error']
         if errors: raise ValueError('\n'.join(errors))
+        modern=config.crystallography is not None
+        if modern:
+            from .output_paths import validate_output_directory,modern_execution_config
+            validate_output_directory(config.run.output_directory,base_directory,create=True)
+            config=modern_execution_config(config,base_directory,resume=resume)
         self.snapshot = prepare_run_snapshot(config, base_directory=base_directory)
+        backups=()
+        if not resume and not modern:
+            from .output_paths import existing_outputs,backup_outputs
+            if existing_outputs(config,base_directory):
+                if not replace_outputs:raise ValueError('Confirm replacement of previous outputs before Fresh Run')
+                backups=backup_outputs(config,base_directory)
         context = multiprocessing.get_context('spawn')
         receiver, sender = context.Pipe(duplex=False)
         cancel_event = context.Event()
         process = context.Process(target=_worker, args=(self.snapshot, resume, sender, cancel_event))
         try: process.start()
         except BaseException:
+            for path,backup in reversed(backups):backup.rename(path)
             receiver.close()
             sender.close()
             raise

@@ -1,4 +1,4 @@
-"""Pure canonical-to-existing-state adapter. No file reads or physics execution."""
+"""Pure canonical-to-existing-state adapter. No file reads or objective execution."""
 from dataclasses import asdict, dataclass, replace
 
 from .configuration import QcbedConfig, ParameterTarget, ParameterCategory, ExperimentalDataConfig
@@ -24,6 +24,8 @@ class CompiledConfig:
     bound_rules: RefinementBoundRules
     runner: FullRefinementConfig
     experiment: ExperimentalDataConfig
+    crystallography: object | None = None
+    source_configuration: QcbedConfig | None = None
 
     @property
     def parameter_count(self):
@@ -101,7 +103,7 @@ def _target_map(config, coefficients):
     return targets
 
 
-def compile_config(config: QcbedConfig) -> CompiledConfig:
+def compile_config(config: QcbedConfig, *, structure=None) -> CompiledConfig:
     """Resolve stable references/masks in source order, retaining input values.
 
     Bounds use the existing mapped-start resolver on a separate state. The raw
@@ -110,6 +112,11 @@ def compile_config(config: QcbedConfig) -> CompiledConfig:
     """
     if not isinstance(config, QcbedConfig):
         raise TypeError('config must be QcbedConfig')
+    if config.crystallography is not None:
+        from .crystallography_config import compile_crystallography_config
+        return compile_crystallography_config(config, structure=structure)
+    if config.sample is None:
+        raise ValueError('sample is required without crystallography')
     if config.schema_version != 1:
         raise ValueError('unsupported configuration schema_version')
     s, ref = config.sample, config.refinement

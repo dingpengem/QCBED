@@ -47,7 +47,7 @@ class ResultsView(QWidget):
         self.summary.setReadOnly(True)
         self.summary.setPlainText('No completed evaluation yet. Open an existing run or start a run.')
         self.tabs.addTab(self.summary, 'Overview')
-        self.parameters = table(['Physical target', 'Category', 'Initial', 'Displayed evaluation value', 'Delta', 'Units', 'Resolved bounds'])
+        self.parameters = table(['Physical target', 'Category', 'Initial', 'Displayed evaluation value', 'Delta', 'Units', 'Resolved bounds', 'Latest', 'Best', 'Retained'])
         self.tabs.addTab(self.parameters, 'Refined Parameters')
         history_page = QWidget()
         history_layout = QVBoxLayout(history_page)
@@ -58,6 +58,16 @@ class ResultsView(QWidget):
         self.history = table(['Evaluation', 'Objective', 'Stage', 'Loop', 'Event', 'Execution segment', 'Elapsed seconds'])
         history_layout.addWidget(self.history)
         self.tabs.addTab(history_page, 'χ² History')
+        self.modern_history=table(['Evaluation','YNORM','Requested depth Å','Effective depth Å','Debye–Waller B Å²'])
+        physical_page=QWidget();physical_layout=QVBoxLayout(physical_page)
+        self.physical_target=QComboBox();physical_layout.addWidget(self.physical_target)
+        self.physical_target.currentIndexChanged.connect(self.plot_physical_history)
+        self.physical_figure=Figure(figsize=(7,4),layout='constrained')
+        self.physical_canvas=FigureCanvasQTAgg(self.physical_figure)
+        physical_layout.addWidget(self.physical_canvas);physical_layout.addWidget(self.modern_history)
+        self.tabs.addTab(physical_page,'Physical / YNORM history')
+        self.beam_details=table(['Beam identity','Active samples','Squared-objective contribution','Fraction of squared objective'])
+        self.tabs.addTab(self.beam_details,'Beam details')
         comparison_page = QWidget()
         comparison_layout = QVBoxLayout(comparison_page)
         self.pattern_status = QLabel('Pattern unavailable.')
@@ -102,6 +112,9 @@ class ResultsView(QWidget):
         self.evaluations.blockSignals(False)
         self.parameters.setRowCount(0)
         self.history.setRowCount(0)
+        self.modern_history.setRowCount(0)
+        self.beam_details.setRowCount(0)
+        self.physical_figure.clear();self.physical_canvas.draw_idle()
         self.beams.clear()
         self.show_beam(-1)
         self.history_figure.clear()
@@ -131,6 +144,12 @@ class ResultsView(QWidget):
                 ('Output directory', str(result.directory)),
                 ('Checkpoint', summary['checkpoint_status']), ('Final-state artifact', summary['final_state_status'])):
             lines.append(f'{label}: {value}')
+        if 'signal_mode' in summary:
+            for key in ('signal_mode','initial_parameters','requested_depth','effective_depth','best','last_evaluated','retained_final','optimizer_result','convergence'):
+                value=summary.get(key)
+                if isinstance(value,dict):
+                    value={k:v for k,v in value.items() if k in ('requested_depth','effective_depth','B','objective','ynorm','stage','global_evaluation_index','stop_reason','converged','convergence','evaluations','iterations')}
+                lines.append(f'{key}: {value}')
         lines.extend('Note: ' + warning for warning in result.warnings)
         self.summary.setPlainText('\n'.join(lines))
         events = completed_events(result.history)
@@ -143,21 +162,47 @@ class ResultsView(QWidget):
         self.evaluations.setCurrentIndex(max(0, self.evaluations.findData(evaluation)))
         self.evaluations.blockSignals(False)
         fill(self.parameters, [(p['label'], p['category'], p['initial'], p['final'], p['delta'], p['units'],
-                               p['bounds'] if p['bounds'] else 'Unbounded / not recorded') for p in result.parameters])
+                               p['bounds'] if p['bounds'] else 'Unbounded / not recorded',p.get('latest'),p.get('best'),p.get('retained')) for p in result.parameters])
         fill(self.history, [(r['global_evaluation_index'], r.get('objective'), r.get('stage'),
                             r.get('loop_index'), 'BOUND REJECTION' if r['classification'] == 'bound_rejection' else r['classification'],
                             r.get('restart_count'), r.get('elapsed_seconds')) for r in result.history])
+        self.modern_history.setColumnCount(2+len(result.parameters))
+        self.modern_history.setHorizontalHeaderLabels(['Evaluation','YNORM']+[p['label'] for p in result.parameters])
+        fill(self.modern_history,[(r['global_evaluation_index'],r.get('ynorm'),*r.get('physical_active_vector',r.get('active_vector',[]))) for r in events])
+        previous=self.physical_target.currentText()
+        self.physical_target.blockSignals(True);self.physical_target.clear()
+        self.physical_target.addItems([p['label'] for p in result.parameters])
+        self.physical_target.setCurrentIndex(max(0,self.physical_target.findText(previous)))
+        self.physical_target.blockSignals(False)
+        self.plot_physical_history()
+        comparison=result.comparison or {}
+        fill(self.beam_details,[(str(m),b['active_count'],b['squared_objective_contribution'],b['fraction_of_total_error'])
+            for m,b in zip(comparison.get('beam_metadata',()),comparison.get('per_beam',()))])
         self.plot_history(events)
         self.beams.blockSignals(True)
         self.beams.clear()
         if result.comparison is not None:
             for index, beam in enumerate(result.comparison['beams']):
-                self.beams.addItem(f'Beam ({beam[0]}, {beam[1]}) — ordered entry {index + 1}')
+                metadata=result.comparison.get('beam_metadata')
+                self.beams.addItem((f"{metadata[index]['stable_id']} — original hkl {metadata[index]['original_hkl']}" if metadata else f'Beam ({beam[0]}, {beam[1]}) — ordered entry {index + 1}'))
         self.beams.setCurrentIndex(max(0, min(old_beam, self.beams.count()-1)))
         self.beams.blockSignals(False)
         self.show_beam(self.beams.currentIndex())
         for name, button in self.file_buttons.items():
             button.setEnabled((result.directory / name).exists())
+
+    def plot_physical_history(self, *_):
+        if not self.results: return
+        result=self.results;index=self.physical_target.currentIndex()
+        rows=[r for r in completed_events(result.history) if r.get('physical_active_vector') is not None]
+        self.physical_figure.clear()
+        first,second=self.physical_figure.subplots(2,1)
+        if 0<=index<len(result.parameters):
+            first.plot([r['global_evaluation_index'] for r in rows],[r['physical_active_vector'][index] for r in rows],'.-')
+            first.set_ylabel(result.parameters[index]['label'])
+        second.plot([r['global_evaluation_index'] for r in rows],[r.get('ynorm') for r in rows],'.-')
+        second.set_ylabel('YNORM');second.set_xlabel('Recorded evaluation')
+        self.physical_canvas.draw_idle()
 
     def select_evaluation(self, index):
         if self.results is not None:
@@ -219,10 +264,12 @@ class ResultsView(QWidget):
             except (ValueError, TypeError):
                 coordinates = None
         self.pattern_status.setText('Stored scaled objective-space intensity (includes GRADIENT if used). '
-            'Residual = calculated − experimental; colors affect display only. '
+            'Residual = calculated − experimental; excluded support is NaN/hidden; colors affect display only. '
             + ('Axes: undilated reciprocal H/K.' if coordinates is not None else 'Axes: stored scan column/row; physical geometry unavailable.'))
-        lo, hi = min(experimental.min(), calculated.min()), max(experimental.max(), calculated.max())
-        limit = max(float(np.max(np.abs(residual))), np.finfo(float).eps)
+        finite=np.concatenate((experimental[np.isfinite(experimental)],calculated[np.isfinite(calculated)]))
+        lo,hi=(float(finite.min()),float(finite.max())) if finite.size else (0.,1.)
+        finite_residual=residual[np.isfinite(residual)]
+        limit=max(float(np.max(np.abs(finite_residual))) if finite_residual.size else 0.,np.finfo(float).eps)
         for ax, values, title in zip(self.pattern_figure.subplots(1, 3),
                                     (experimental, calculated, residual),
                                     ('Experimental', 'Calculated', 'Residual')):

@@ -8,7 +8,10 @@ htmlcov/
 # Environments
 .venv/
 venv/
-.env/
+.env
+.env.*
+!.env.example
+.conda/
 
 # Build
 build/
@@ -24,3 +27,18 @@ tmp/
 temp/
 
 .vscode/
+# Non-destructive GUI experimental snapshots
+.qcbed-data/
+
+# Local runs, generated inspection images and build/test metadata
+runs/
+.ruff_cache/
+*.backup-*
+/pattern_dat_inspection.png
+/examples/al_out.dat
+/examples/out.dat
+
+# Local logs; keep intentional scientific/reference fixtures eligible for Git
+*.log
+!reference_data/**/*.log
+!tests/data/**/*.log

@@ -14,17 +14,23 @@ def resolve_config_paths(config, *, base_directory):
     base = Path(base_directory)
     if not base.is_absolute():
         raise ValueError('base_directory must be absolute')
-    compile_config(config)
+    if config.crystallography is None:
+        compile_config(config)
     def resolved(value):
         return None if value is None else str((base / value).resolve())
     def raw_path(raw, value):
         return None if raw is None else resolved(value)+raw[len(raw.rstrip()):]
     result = replace(config,
         experiment=replace(config.experiment,path=resolved(config.experiment.path)),
-        run=replace(config.run,output_directory=resolved(config.run.output_directory),
+        run=replace(config.run,output_directory=('' if config.crystallography is not None and not config.run.output_directory.strip()
+                                               else resolved(config.run.output_directory)),
                     output_filename=resolved(config.run.output_filename)),
         legacy_export=replace(config.legacy_export,filename=resolved(config.legacy_export.filename),
             experimental_filename_raw=raw_path(config.legacy_export.experimental_filename_raw,config.experiment.path),
             output_filename_raw=raw_path(config.legacy_export.output_filename_raw,config.run.output_filename)))
-    compile_config(result)
+    if result.crystallography is not None:
+        result = replace(result,crystallography=replace(result.crystallography,
+            structure=replace(result.crystallography.structure,path=resolved(result.crystallography.structure.path))))
+    else:
+        compile_config(result)
     return result

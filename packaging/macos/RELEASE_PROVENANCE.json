@@ -1,0 +1,69 @@
+{
+  "source_sha256": "9a687a938ddd1ec94905ace540dc7bf2771fcd236d25b8baf54a0d9ffed4953d",
+  "built_at_utc": "2026-10-05T22:07:00.655442+00:00",
+  "git_commit": "e4288b3aeab273df3ff02b118ccc4d8e086602e4",
+  "git_dirty": true,
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "executable": "/opt/miniconda3/envs/qcbed-python/bin/python",
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "architecture": "arm64",
+  "versions": {
+    "qcbed": "0.1.0",
+    "pyinstaller": "6.22.3",
+    "pyinstaller-hooks-contrib": "2026.8",
+    "PySide6": "6.11.2",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "h5py": "3.16.0",
+    "matplotlib": "3.11.2",
+    "psutil": "7.2.2",
+    "PyYAML": "6.0.3",
+    "ase": "3.29.0"
+  },
+  "acceptance_status": "PASS",
+  "full_suite": {
+    "passed": 2965,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 225,
+    "seconds": 422.22
+  },
+  "acceptance": {
+    "current_packaged_smoke": "PASS",
+    "final_frozen_smoke": "PASS",
+    "yaml_round_trip": "PASS",
+    "optimizer_evaluations": 0,
+    "hygiene": "PASS",
+    "zip_integrity": "PASS"
+  },
+  "signing": {
+    "type": "ad-hoc",
+    "deep_strict_verification": "passed",
+    "notarized": false
+  },
+  "artifacts": {
+    "dist/QCBED.app/Contents/MacOS/QCBED": {
+      "bytes": 17505168,
+      "sha256": "641df736f364120867ab652c201bf8e3a71b26488258e68443520fc9fd59bfaf"
+    },
+    "dist/QCBED-arm64.zip": {
+      "bytes": 109884010,
+      "sha256": "233f97843a17cbb74a05c60c3af7efa3d5008974d1c2af304c830eb585d8133f"
+    }
+  },
+  "example_inputs": {
+    "reference_data/pattern.dat": "f6bb8ac456aba94ddbfabb544d22711d13e5c87f45f1b1dec888ce538aaa7ad6",
+    "reference_data/Al_FCC.cif": "448dd2c9dcee8287f9582ebd5373fc3a94866470a420144d1fcc4a5630a85321",
+    "examples/fcc_al.yml": "89e926c33a239b162d05fd2c5486022d9b50a9a81250290da0f39efdb56c933c"
+  },
+  "release_commit": null,
+  "release_tag": null,
+  "limitations": [
+    "arm64 macOS package only",
+    "Ad-hoc signed; not notarized",
+    "Instructional FCC Al example; no convergence claim",
+    "Unsupported targets documented in modern_refinement_catalogue.md",
+    "External project input/cache dependencies",
+    "No project-wide redistribution license supplied"
+  ]
+}

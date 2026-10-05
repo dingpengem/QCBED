@@ -56,15 +56,10 @@ def _prepare_trial(state, *, original_voltage):
     for i, r in enumerate(state.regions):
         applied.extend(SliceAppliedParameters(r.debye_waller, 0.0, 1.0) for _ in range(r.slice_count))
         region_ids.extend([i]*r.slice_count)
-        thickness, occurrence = 0.0, 0
-        while thickness < r.depth_angstrom:
-            index = offset + occurrence % r.slice_count
-            step = state.model.slices[index].thickness_angstrom
-            if step <= 0 or thickness+step == thickness:
-                raise ValueError("slice thickness must advance the source sequence")
-            sequence.append(index)
-            thickness += step
-            occurrence += 1
+        from .depth_geometry import requested_depth_to_sample_geometry
+        extent = requested_depth_to_sample_geometry(r.depth_angstrom,
+            (g.thickness_angstrom for g in state.model.slices[offset:offset+r.slice_count]))
+        sequence.extend(offset+i for i in extent.sequence)
         offset += r.slice_count
     coefficients = tuple(AbsorptionCoefficients(*row) for row in state.absorption) if state.model.absorption_enabled else None
     # Beam order supplied by the experimental dataset at the public boundary.

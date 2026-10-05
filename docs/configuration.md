@@ -1,5 +1,8 @@
 # Canonical Python configuration — Stages 1–5
 
+[Documentation index](README.md) · [Current architecture](ARCHITECTURE.md) ·
+[Researcher manual](user_manual.md)
+
 `qcbed.configuration` defines immutable, typed user configuration objects.
 `qcbed.compile_config(config)` translates them into existing internal objects
 without reading files, loading experimental arrays, constructing physics, or
@@ -336,3 +339,29 @@ choices; `python -m qcbed.legacy export --config ... --destination ... --bundle`
 creates separate legacy input/data files and an omissions report. See
 [legacy migration and export](legacy_migration.md). Canonical configuration,
 compilation, YAML loading and production execution remain unchanged.
+
+## Crystallographic source compilation
+
+`compile_config(config, structure=AtomicStructureModel(...))` is the pure B4b
+entry point. `compile_config_from_sources(config)` is the explicit file-reading
+frontend for document-resolved paths. The result includes a crystallography bundle,
+resolved pre-sliced execution configuration and original source configuration.
+See [B4b schema and restrictions](crystallography.md#b4b-production-configuration-integration).
+No legacy field is reinterpreted as an original-cell hkl basis.
+
+## B7a physical site groups
+
+Opt-in `crystallography.site_groups` owns original physical sites and their B,
+occupancy and independent absorption metadata. The existing target catalogue and
+compiler resolve group B aliases into the existing dynamic layout; no simulation
+atom index is user input. Recast/slab copies retain original index and group ID.
+See [B7 bring-up](b7_refinement_bringup.md) for the implemented schema, one-group-per-
+element limitation, explicit bounds, exact baseline tests and version2 identity.
+Existing non-group semantics and checkpoint identities remain unchanged.
+Group optimizer/resume execution and GUI editing are deferred.
+
+Modern editable documents use the [A/B/C frontend](modern_yaml.md). This is a
+serialization boundary over the existing typed model, not a second configuration
+model. Compilers and immutable run snapshots retain derived runtime state; GUI
+Save writes only user inputs and a preparation-descriptor reference. Equivalent
+verbose and compact documents preserve checkpoint identity.

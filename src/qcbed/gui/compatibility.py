@@ -17,6 +17,12 @@ def import_document(source, experimental, policy):
 
 def compatibility_report(config, *, base_directory, bundle=True, filename_limits=None):
     resolved = resolve_config_paths(config,base_directory=base_directory)
+    if resolved.crystallography is not None:
+        from qcbed import ValidationIssue, ValidationLocation
+        issue = ValidationIssue('crystallography_export_unsupported','error',ValidationPhase.EXPORT,
+            ValidationLocation('crystallography',('crystallography',),None),
+            'Original structure/hkl/site-group provenance is not representable; modern FOR007 export is deferred')
+        return dict(represented=(),omissions={},diagnostics=(issue,),errors=(issue,))
     diagnostics = validate_config(resolved,phases=(ValidationPhase.EXPORT,),
                                   export_bundle=bundle,filename_limits=filename_limits)
     omissions = legacy_export_report(compile_config(resolved))

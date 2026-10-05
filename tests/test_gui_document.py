@@ -158,16 +158,11 @@ def test_existing_output_is_readiness_only(document, tmp_path):
     from qcbed import validate_config, ValidationPhase
     assert document.apply({('run','output_directory'):str(tmp_path)})
     document.validate(check_files=True)
-    issue = next(i for i in document.issues if i.code == 'output_exists' and i.field == 'output_directory')
-    assert diagnostic_presentation(issue) == ('Run blocker', 'Execution readiness',
-        'The output directory already exists but does not contain a resumable checkpoint. Choose a new output directory or remove/rename the existing directory.')
-    assert issue.phase == ValidationPhase.FILES  # Underlying API unchanged.
-    assert issue.severity == 'error'
+    assert not any(i.code=='output_exists' for i in document.issues)
     assert not validate_config(document.config, phases=(ValidationPhase.FIELD, ValidationPhase.COMPILE))
     summary = document.summary()
     assert summary['configuration'].startswith('Valid')
     assert summary['compile'].startswith('Valid')
-    assert summary['execution'] == 'Blocked'
-    assert summary['files'] == 'Blocked'
+    assert summary['execution'] != 'Blocked'
     document.save(tmp_path/'editable.yml')
     assert load_yaml_config(tmp_path/'editable.yml') == document.config

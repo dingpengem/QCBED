@@ -14,6 +14,15 @@ import traceback
 
 def main(manifest_path):
     manifest = json.loads(Path(manifest_path).read_text())
+    if manifest.get('usability'):
+        from usability_smoke import main as usability_main
+        return usability_main(manifest)
+    if manifest.get('optimizer_editor'):
+        from optimizer_smoke import main as optimizer_main
+        return optimizer_main(manifest)
+    if manifest.get('modern'):
+        from modern_smoke import main as modern_main
+        return modern_main(manifest)
     output = Path(manifest['output'])
     if not output.is_absolute(): raise ValueError('Smoke output must be absolute')
     output.mkdir(parents=True,exist_ok=False)
@@ -82,6 +91,11 @@ def main(manifest_path):
                 assert 'classification' in window.run_log.toPlainText()
                 (output/'run-gui-log.txt').write_text(window.run_log.toPlainText())
                 record('spawn_run_progress_checkpoints_outputs')
+                window.show_results()
+                assert window.results_view.results is not None
+                assert window.results_view.results.history
+                assert window.results_view.results.comparison is not None
+                record('legacy_results_history_patterns')
                 assert window.resume_action.isEnabled()
                 window.start_run(True); stage = 'resume'
             elif stage == 'resume':

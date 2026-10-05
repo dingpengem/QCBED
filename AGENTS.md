@@ -81,3 +81,15 @@ After changing numerical code:
 - Run Fortran-reference equivalence tests if reference data are available.
 - Report numerical errors and test results.
 - Report benchmark results only when measured.
+
+## Current GUI and release workflow
+
+- Follow `docs/user_manual.md` and `docs/ARCHITECTURE.md` for current A/B/C/D ownership.
+- C has Simulation Setup, Refinement Targets and Optimizer only. D owns output
+  validation and Advanced execution; do not duplicate controls or validation state.
+- New GUI projects use Batched/64. Preserve existing YAML execution settings and
+  generic API defaults. Canonical execution does not expose standalone worker counts.
+- Preserve one-stored-slice [0, 1] support and strict transverse periodicity.
+- For release work, run focused checks before one full suite; verify the frozen app,
+  YAML reload and signatures. Avoid expensive refinement campaigns for usability work.
+- Preserve reference data, scientific regressions and historical provenance during cleanup.

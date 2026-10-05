@@ -1,0 +1,31 @@
+# Raw-input teaching project: open in the GUI, then complete Data Preparation.
+# Example study settings/bounds, not a converged result or universal Al defaults.
+schema_version: 2
+data_prep:
+  pattern: ../reference_data/pattern.dat
+atomic_model:
+  structure: {path: ../reference_data/Al_FCC.cif, format: cif}
+  zone_axis: [0, 0, 1]
+  cbed_basis: {g1_hkl: [2, 0, 0], g2_hkl: [0, 2, 0]}
+  site_groups:
+    - {id: Al_fcc, element: Al, sites: [0, 1, 2, 3], debye_waller_b: 0.86, occupancy: 1.0}
+qcbed:
+  title: FCC Al instructional study
+  accelerating_voltage_kv: 200.0
+  signal_mode: gradient
+  requested_depth_angstrom: 1000.0
+  numerics:
+    mesh: {mesh_x: 16, mesh_y: 16}
+    slice_boundaries_fractional: [0.0, 1.0]
+    reciprocal_cutoff_inverse_angstrom: 2.5
+  workflow: [AMOEBA]
+  refinement:
+    targets:
+      sample.requested_depth: {}
+      site_group.Al_fcc.debye_waller_b: {}
+    bounds:
+      sample.requested_depth: [600.0, 1200.0]
+      site_group.Al_fcc.debye_waller_b: [0.5, 1.5]
+  execution: {execution_backend: batched, batch_size: 64}
+  # Explicit teaching safety limit: two evaluations per invocation, not convergence.
+  output: {directory: ../runs/fcc_al, max_total_evaluations: 2, max_wall_time_seconds: 60.0}

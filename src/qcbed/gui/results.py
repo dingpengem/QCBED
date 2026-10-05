@@ -40,6 +40,13 @@ class RunResults:
 
 def load_results(directory, *, evaluation=None):
     directory = Path(directory).resolve()
+    try:
+        header=json.loads((directory/'checkpoint_latest.json').read_text())
+        if header.get('format')=='qcbed-grouped-run':
+            from .grouped_results import load_grouped_results
+            return load_grouped_results(directory,evaluation=evaluation)
+    except (OSError,ValueError,AttributeError,KeyError,TypeError,IndexError) as exc:
+        raise ValueError(f'Cannot inspect canonical run {directory}: {exc}') from exc
     def read(name):
         with (directory / name).open(encoding='utf-8') as stream:
             value = json.load(stream)

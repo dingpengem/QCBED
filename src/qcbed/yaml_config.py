@@ -12,6 +12,8 @@ from .config_compiler import compile_config
 def _decode(value, annotation, path):
     origin, args = get_origin(annotation), get_args(annotation)
     if origin is UnionType:
+        if value is not None and type(None) in args:
+            return _decode(value,next(t for t in args if t is not type(None)),path)
         for option in args:
             try:
                 return _decode(value, option, path)
@@ -22,6 +24,8 @@ def _decode(value, annotation, path):
         if not isinstance(value, list):
             raise ValueError(f'{path}: expected a YAML sequence')
         types = (args[0],)*len(value) if len(args) == 2 and args[1] is Ellipsis else args
+        if len(types) == 3 and len(value) == 4 and ('hkl' in path or 'zone_axis' in path):
+            raise ValueError(f'{path}: 4-index Miller–Bravais notation is not supported; provide canonical 3-index input')
         if len(types) != len(value):
             raise ValueError(f'{path}: expected {len(types)} entries')
         return tuple(_decode(v,t,f'{path}[{i}]') for i,(v,t) in enumerate(zip(value,types)))
@@ -45,13 +49,8 @@ def _decode(value, annotation, path):
     return _typed(value,annotation,path)
 
 
-def load_yaml_config(path: str | Path) -> QcbedConfig:
-    """Load one strict YAML document; resolve paths against its directory.
-
-    PyYAML is imported only on use. Safe scalar/mapping/sequence tags only;
-    aliases and merge keys are rejected. No expressions or substitutions.
-    Compilation validates references without I/O or changing the input values.
-    """
+def read_yaml_document(path):
+    """Strict inert document parsing shared with an unprepared GUI draft."""
     import yaml
 
     class Loader(yaml.SafeLoader):
@@ -74,6 +73,27 @@ def load_yaml_config(path: str | Path) -> QcbedConfig:
     Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,mapping)
     source = Path(path).resolve()
     with source.open(encoding='utf-8') as stream:
-        config = _decode(yaml.load(stream,Loader=Loader),QcbedConfig,'config')
+        value=yaml.load(stream,Loader=Loader)
+    return value
+
+
+def load_yaml_config(path: str | Path) -> QcbedConfig:
+    """Load one strict YAML document; resolve paths against its directory.
+
+    PyYAML is imported only on use. Safe scalar/mapping/sequence tags only;
+    aliases and merge keys are rejected. No expressions or substitutions.
+    Legacy compilation remains I/O-free. Opt-in crystallography validates its
+    external structure through the explicit source-loading frontend.
+    """
+    value=read_yaml_document(path)
+    source=Path(path).resolve()
+    if isinstance(value,dict) and any(k in value for k in ('data_prep','atomic_model','qcbed')):
+        from .modern_yaml import decode_modern
+        config=decode_modern(value,source.parent)
+    else:config=_decode(value,QcbedConfig,'config')
     from .config_paths import resolve_config_paths
-    return resolve_config_paths(config, base_directory=source.parent)
+    resolved = resolve_config_paths(config, base_directory=source.parent)
+    if resolved.crystallography is not None:
+        from .crystallography_config import compile_config_from_sources
+        compile_config_from_sources(resolved)
+    return resolved

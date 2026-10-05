@@ -78,7 +78,8 @@ def resolved_bound_rows(config):
     """Present compiler-resolved limits and the configured rule responsible."""
     from qcbed import compile_config, available_refinement_targets
     from .document import target_label
-    compiled = compile_config(config)
+    from qcbed.crystallography_config import compile_config_from_sources
+    compiled = compile_config_from_sources(config)
     bounds = {(b.category,b.target):b for b in compiled.bounds.entries}
     rules = config.refinement.bounds
     rows = []

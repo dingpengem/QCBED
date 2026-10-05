@@ -108,7 +108,7 @@ def _line_regions():
             found[name] = matches[0]
         return found
     chunk = lines(series._chunk, dict(propagation='sequence =', extraction='return reciprocal['))
-    setup = lines(trial._prepare_trial, dict(start='thickness, occurrence =', end='offset +='))
+    setup = lines(trial._prepare_trial, dict(start='extent = requested_depth_to_sample_geometry(', end='offset +='))
     return {series._chunk.__code__: lambda line: (
         'beam_extraction' if line == chunk['extraction'] else
         'propagator_construction' if line < chunk['propagation'] else 'propagation'),

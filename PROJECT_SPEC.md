@@ -1,87 +1,53 @@
-# Multislice QCBED Python Rewrite
+# QCBED project specification
 
-## Objective
+QCBED is a CPU Python implementation of the legacy multislice calculation with
+experimental preparation, crystallographic model construction, physical refinement
+and a Qt researcher workflow. Scientific conventions remain governed by executable
+reference tests and [source provenance](docs/source_provenance.md).
 
-Rewrite the existing Fortran multislice QCBED program in Python.
+## Current contract
 
-Current priorities:
+- A. Data Prep owns raw measurements, calibration, extraction, uncertainty, mask
+  layers and the confirmed origin. Prepared inputs retain immutable provenance.
+- B. Atomic Model owns the structure, original zone/basis indices, physical site
+  groups, Debye–Waller B, fixed occupancy and explicit absorption.
+- C. Main QCBED Parameters has exactly Simulation Setup, Refinement Targets and
+  Optimizer. Validation of C is independent of output selection.
+- D. Run & Results owns output validation, execution settings and Run/Resume/Cancel.
+  A writable existing or creatable directory is sufficient. Fresh modern runs use
+  unique managed children; existing unrelated files remain untouched. Resume checks
+  a compatible checkpoint separately from directory validity.
+- New GUI projects use Batched execution with batch size 64. Generic configuration
+  defaults remain backward compatible. Canonical modern execution has no worker
+  count control; the standalone process API is a separate scheduling interface.
+- Slice boundaries [0, 1] describe one stored slice; [0, 0.5, 1] describe two.
+  Strict transverse periodicity and whole-slice depth semantics remain enforced.
+- Mesh X/Y samples the transverse simulation cell, not detector pixels.
+- Schema-version-2 YAML stores editable inputs and references, not validation
+  receipts, generated matrices or optimizer history. Raw projects must complete A.
+- Supported targets and optimizer capabilities are defined by the
+  [refinement catalogue](docs/modern_refinement_catalogue.md).
 
-1. Reproduce the Fortran numerical results.
-2. Create a readable and modular implementation.
-3. Parallelize independent incident tilts on CPU.
-4. Optimize FFT-based propagation.
-5. Preserve a path for future GPU acceleration.
+## Engineering constraints
 
-## Known Fortran entry point
+Use NumPy/SciPy CPU kernels and preserve coordinates, units, FFT signs, array
+orientation and normalization. No GPU dependencies or speculative numerical
+changes belong in GUI/release work. Keep kernels separate from scheduling and I/O.
+Legacy FOR007/pre-sliced compatibility remains supported within its documented
+limits. Do not infer missing physical inputs or reinterpret legacy vacancy as
+chemical occupancy. Preserve original scientific inputs and meaningful regressions.
 
-- Main source file: `private predecessor implementation`
-- Main program name: `REPLACE_WITH_PROGRAM_NAME`
-- Primary input file: `REPLACE_WITH_INPUT_FILENAME`
-- Primary output file: `REPLACE_WITH_OUTPUT_FILENAME`
+The repository layout and module boundaries are in [Architecture](docs/ARCHITECTURE.md).
+Follow [AGENTS.md](AGENTS.md) for numerical changes. Release changes require focused
+checks, one complete regression suite, installed/frozen workflow validation and
+signed artifact verification; report limitations rather than claiming convergence.
+Normal release validation must not launch an expensive refinement campaign.
 
-## Current execution procedure
+## Documentation and status
 
-Describe the existing procedure here:
-
-1. ...
-2. ...
-3. ...
-
-## Known physical workflow
-
-The expected high-level workflow is:
-
-1. Read microscope and specimen parameters.
-2. Read atomic structure or potential parameters.
-3. Construct the projected potential.
-4. Construct transmission functions.
-5. Construct reciprocal-space propagators.
-6. Generate the incident wave for each tilt.
-7. Propagate through successive slices.
-8. Calculate the exit-wave diffraction intensity.
-9. Integrate or save QCBED intensities.
-
-Codex must verify this workflow against the source code.
-
-## Parallelization target
-
-Each incident tilt is assumed to be independent.
-
-The intended CPU design is:
-
-- one process handles one or several tilts;
-- each process runs sequential multislice propagation;
-- large tilt-independent arrays should be read-only and shared or loaded
-  once per worker;
-- internal FFT/BLAS thread count should be limited to one.
-
-Codex must verify that no mutable state couples different tilts before
-parallelizing them.
-
-## Numerical validation
-
-Reference cases are stored under `reference_data/`.
-
-Important comparisons include:
-
-- projected potential;
-- transmission functions;
-- wavefunction after selected slices;
-- exit wave;
-- diffraction intensity;
-- integrated disk intensities.
-
-## Known conventions
-
-Fill in everything currently known:
-
-- Electron energy:
-- Wavelength convention:
-- Coordinate convention:
-- Tilt convention:
-- FFT sign:
-- FFT normalization:
-- Array order:
-- Boundary conditions:
-- Absorptive potential:
-- Units:
+[Documentation index](docs/README.md), [release report](docs/RELEASE_REPORT.md),
+and [packaging history](packaging/macos/VALIDATION.md) distinguish current instructions
+from measured historical evidence. [The former specification](docs/history/PROJECT_SPEC_HISTORY.md)
+is retained for provenance; its dated deferred-feature statements are not current
+capability claims. The present macOS distribution is arm64 and ad-hoc signed,
+not Developer ID signed or notarized. There is no claim of a public hosted release.

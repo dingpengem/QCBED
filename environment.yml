@@ -13,5 +13,6 @@ dependencies:
   - psutil
   - pip
   - pip:
-      - -e .
+      - -e .[gui]
   - pyyaml
+  - ase>=3.23,<4

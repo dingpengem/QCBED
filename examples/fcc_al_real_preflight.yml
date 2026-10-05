@@ -1,0 +1,137 @@
+# B6a only. See docs/b6a_input_preflight.md for physical provenance.
+# Experimental body is written by the preflight wrapper; no objective is run.
+title: "Confirmed conventional FCC Al [001] \u2014 B6a preflight only"
+microscope:
+  energy_kv: 200.0
+  zone_axis:
+  - 0
+  - 0
+  - 1
+sample: null
+scan:
+  scan_columns: 38
+  scan_rows: 38
+  corner_a:
+  - -0.50623966320854
+  - 0.4005412719891745
+  corner_b:
+  - 0.39497819876710266
+  - 0.5006765899864682
+  corner_c:
+  - -0.39497819876710266
+  - -0.5006765899864682
+experiment:
+  path: ../tmp/b6a_real_input_preflight/conventional_body.dat
+  gradient_option: 0
+  header: absent
+refinement:
+  optimizer:
+    method: ANSI
+    loops: 1
+    maxfsimp: 20
+    maxfpara: 3
+    ftol: 1.0e-06
+    chimin: 1.0e-06
+    maxtemp: 100.0
+    mintemp: 1.0
+    coolrate: 0.9
+    seed: 2026
+    paraopt: 1
+    loud: 1
+  parameters: []
+  iref: -1.0
+  objective_mode: masked
+  invalid_trial_policy: reject
+  active_categories: null
+  bounds:
+    policy: none
+execution:
+  execution_backend: batched
+  batch_size: 64
+run:
+  output_directory: ../tmp/fcc_al_future_run
+  output_filename: out.dat
+  snapshot_every: 25
+  checkpoint_every: 25
+  max_total_evaluations: 150
+  max_wall_time_seconds: 1800.0
+legacy_export: {}
+schema_version: 1
+crystallography:
+  structure:
+    path: fcc_al_conventional.extxyz
+    format: extxyz
+  zone_axis:
+  - 0
+  - 0
+  - 1
+  cbed_basis:
+    g1_hkl:
+    - 2
+    - 0
+    - 0
+    g2_hkl:
+    - 0
+    - 2
+    - 0
+  mesh:
+    mesh_x: 16
+    mesh_y: 16
+  depth_angstrom: 840.0
+  slice_boundaries_fractional:
+  - 0.0
+  - 0.5
+  - 1.0
+  debye_waller:
+  - species: Al
+    value_angstrom_squared: 0.86
+  dsap_inverse_angstrom: 2.5
+  beams:
+  - id: lattice_0_0
+    lattice_coordinates:
+    - 0
+    - 0
+  - id: lattice_-1_0
+    lattice_coordinates:
+    - -1
+    - 0
+  - id: lattice_1_0
+    lattice_coordinates:
+    - 1
+    - 0
+  - id: lattice_0_-1
+    lattice_coordinates:
+    - 0
+    - -1
+  - id: lattice_0_1
+    lattice_coordinates:
+    - 0
+    - 1
+  - id: lattice_-1_-1
+    lattice_coordinates:
+    - -1
+    - -1
+  - id: lattice_1_1
+    lattice_coordinates:
+    - 1
+    - 1
+  - id: lattice_-1_1
+    lattice_coordinates:
+    - -1
+    - 1
+  - id: lattice_1_-1
+    lattice_coordinates:
+    - 1
+    - -1
+  scan_basis_transform:
+  - - 1
+    - 0
+  - - 0
+    - -1
+  absorption:
+    enabled: true
+    coefficients:
+    - species: Al
+      a: 0.0
+      b: 1.0
+      c: 1.0

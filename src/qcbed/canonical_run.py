@@ -12,11 +12,25 @@ from .full_runner import run_full_refinement
 
 def canonical_checkpoint_identity(compiled):
     # Compiled layout is authoritative: declaration order of bindings is irrelevant.
-    return dict(format='qcbed-canonical-run', version=1,
+    identity = dict(format='qcbed-canonical-run', version=1,
         digest=hashlib.sha256(json.dumps(dict(state=asdict(compiled.state),
             runner=asdict(compiled.runner), layout=asdict(compiled.layout),
             experiment=asdict(compiled.experiment), run=asdict(compiled.configuration.run)),
             sort_keys=True,allow_nan=False).encode()).hexdigest())
+    if compiled.crystallography is not None and compiled.crystallography.site_groups:
+        # Opt-in ownership is part of identity even when numerical arrays match.
+        ownership = dict(original_lattice=compiled.crystallography.original_structure.direct_lattice.vectors.tolist(),
+            original_sites=[asdict(s) for s in compiled.crystallography.original_structure.sites],
+            zone_axis=compiled.crystallography.zone_axis.uvw,
+            original_basis=(compiled.crystallography.reflection_basis.hkl_1,compiled.crystallography.reflection_basis.hkl_2),
+            groups=[asdict(g) for g in compiled.crystallography.site_groups],
+            target_aliases=[(asdict(a),asdict(b)) for a,b in compiled.crystallography.target_aliases
+                if a.category.value == "debye_waller" or any(
+                    p.category == a.category.value for p in compiled.layout.parameters)])
+        return dict(format='qcbed-canonical-run',version=2,
+            digest=hashlib.sha256(json.dumps(dict(base=identity,ownership=ownership),
+                sort_keys=True,allow_nan=False).encode()).hexdigest())
+    return identity
 
 
 @dataclass(frozen=True)
@@ -35,14 +49,18 @@ class RunSnapshot:
 
 
 def prepare_run_snapshot(config, *, base_directory):
-    compiled = compile_config(resolve_config_paths(config,base_directory=base_directory))
+    from .crystallography_config import compile_config_from_sources
+    compiled = compile_config_from_sources(resolve_config_paths(config,base_directory=base_directory))
     return RunSnapshot(compiled,load_experimental_data(compiled,base_directory=base_directory))
 
 
-def run_snapshot(snapshot: RunSnapshot, *, resume=False, progress_hook=None):
+def run_snapshot(snapshot: RunSnapshot, *, resume=False, progress_hook=None, cancel_requested=None):
     if not isinstance(snapshot,RunSnapshot):
         raise TypeError('snapshot must be RunSnapshot')
     compiled = snapshot.compiled
+    if compiled.crystallography is not None and compiled.crystallography.site_groups:
+        from .grouped_run import run_grouped
+        return run_grouped(snapshot,resume=resume,progress_hook=progress_hook,cancel_requested=cancel_requested)
     from .config_targets import available_refinement_targets, target_label
     targets = [dict(label=target_label(compiled.configuration, i), category=i.category.value,
                     identifiers=i.target.identifiers, units=i.units)

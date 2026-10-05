@@ -1,6 +1,11 @@
-# Production refinement from YAML
+# Canonical CLI refinement from YAML
 
-The recommended entry point is now:
+This developer guide describes the exact-directory CLI and legacy/pre-sliced
+example. For the modern researcher workflow, use the [User Manual](user_manual.md)
+and [FCC Al study](EXAMPLE_FCC_AL.md). GUI output containers intentionally have
+different Fresh Run path management.
+
+The canonical CLI entry point is:
 
 ```sh
 python -m qcbed.run --config examples/qcbed_config.yml

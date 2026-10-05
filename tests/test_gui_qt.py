@@ -143,19 +143,9 @@ def test_common_widgets_and_revert_clear_draft_errors(window, tmp_path):
 def test_existing_output_readiness_presentation(window, tmp_path):
     window.widgets[('run','output_directory')].setText(str(tmp_path))
     window.validate_document()
-    item = next(window.issues.topLevelItem(i) for i in range(window.issues.topLevelItemCount())
-        if window.issues.topLevelItem(i).data(0, Qt.ItemDataRole.UserRole).code == 'output_exists'
-        and window.issues.topLevelItem(i).data(0, Qt.ItemDataRole.UserRole).field == 'output_directory')
-    assert item.text(0) == 'Run blocker'
-    assert item.text(1) == 'Execution readiness'
-    assert item.text(3) == ('The output directory already exists but does not contain a resumable checkpoint. '
-                           'Choose a new output directory or remove/rename the existing directory.')
-    summary = window.summary.toPlainText()
-    assert 'Configuration validity: Valid' in summary
-    assert 'Compile validity: Valid' in summary
-    assert 'Execution readiness: Blocked' in summary
-    window.navigate_issue(item)
-    assert window.navigation.currentItem().text(0) == 'Outputs'
+    assert not any(i.code=='output_exists' for i in window.document.issues)
+    assert not window.run_action.isEnabled()  # A/B/C confirmation is still required.
+    assert 'Configuration validity: Valid' in window.summary.toPlainText()
     assert window.save_document(tmp_path/'valid.yml')
 
 
@@ -163,7 +153,7 @@ def test_run_readiness_controls(window, tmp_path):
     window.widgets[('run','output_directory')].setText(str(tmp_path))
     window.validate_document()
     assert not window.run_action.isEnabled()
-    assert 'does not contain a resumable checkpoint' in window.run_action.toolTip()
+    assert 'Validate the current configuration' in window.run_action.toolTip()  # Legacy fixture has no modern A/B/C receipts.
     assert not window.resume_action.isEnabled()
     assert window.resume_action.toolTip()
 
@@ -175,6 +165,7 @@ def test_gui_spawn_responsive_completion(window, app, tmp_path):
     from qcbed.gui.document import EditorDocument
     window.document = EditorDocument(run_config_fixture(tmp_path),tmp_path/'config.yml')
     window.refresh()
+    for stage in range(3):window.workflow.accept(stage,window.document.config)
     window.validate_document()
     assert window.run_action.isEnabled()
     window.start_run()
@@ -215,6 +206,7 @@ def test_cooperative_cancel_restores_gui(window,app,tmp_path):
     from qcbed.gui.document import EditorDocument
     window.document = EditorDocument(run_config_fixture(tmp_path),tmp_path/'cancel.yml')
     window.refresh()
+    for stage in range(3):window.workflow.accept(stage,window.document.config)
     assert not window.cancel_action.isEnabled()
     window.start_run()
     assert window.cancel_action.isEnabled()
@@ -232,7 +224,8 @@ def test_cooperative_cancel_restores_gui(window,app,tmp_path):
         ticks += 1
         assert time.monotonic() < deadline
         time.sleep(.005)
-    assert ticks > 1
+    # A pre-evaluation cancellation may finish in the first event-loop turn.
+    assert ticks >= 1
     assert window.controller.state == 'Cancelled'
     assert window.run_status.text().startswith('Cancelled')
     assert window.pages.isEnabled()
@@ -261,13 +254,14 @@ def test_output_directory_run_resume_states(window, tmp_path, state):
     before = {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
     window.document = EditorDocument(config, tmp_path / 'config.yml')
     window.refresh()
+    for stage in range(3):window.workflow.accept(stage,window.document.config)
     window.validate_document()
-    assert window.run_action.isEnabled() == (state == 'absent')
+    assert window.run_action.isEnabled()
     assert window.resume_action.isEnabled() == (state == 'compatible')
     text = window.run_action.toolTip() + window.resume_action.toolTip()
     assert 'FileNotFoundError' not in text and '[Errno 2]' not in text
     if state == 'missing':
-        assert 'does not contain a resumable checkpoint' in text
+        assert 'Resume: Not available — no previous run found' in text
         assert 'or use Resume' not in text
     if state == 'incompatible':
         assert 'identity mismatch' in text
