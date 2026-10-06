@@ -10,7 +10,7 @@ from test_legacy_config import ROOT,policy
 
 
 def fill_import(dialog,tmp_path):
-    values = dict(source=str(ROOT/'reference_data/FOR007.DAT'),experimental=str(ROOT/'reference_data/in.dat'),
+    values = dict(source=str(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT'),experimental=str(ROOT/'tests/fixtures/legacy_reference/in.dat'),
         seed='123',batch_size='8',execution='batched',objective='masked',invalid='reject',bounds='none',
         output_directory=str(tmp_path/'run'),output_filename=str(tmp_path/'out.dat'),
         snapshot_every='0',checkpoint_every='1',max_evaluations='50',max_seconds='60')
@@ -40,7 +40,7 @@ def test_explicit_policy_import_and_save_as(window,tmp_path,monkeypatch):
     assert chosen.invalid_trial_policy == 'reject'
     window.import_legacy_document(source,experimental,chosen)
     assert window.document.dirty and window.document.needs_save_as
-    assert 'Active parameters: 18' in window.summary.toPlainText()
+    assert 'Optimizer parameters: 18' in window.summary.toPlainText()
     requests = []
     monkeypatch.setattr(window,'choose_save_as',lambda: requests.append('save_as') or True)
     assert window.save_current()
@@ -53,14 +53,14 @@ def test_explicit_policy_import_and_save_as(window,tmp_path,monkeypatch):
 def test_import_failure_preserves_current_document(window,tmp_path):
     original = window.document
     source = tmp_path/'bad.dat'
-    source.write_text((ROOT/'reference_data/FOR007.DAT').read_text()+'\nAMBIGUOUS\n')
+    source.write_text((ROOT/'tests/fixtures/legacy_reference/FOR007.DAT').read_text()+'\nAMBIGUOUS\n')
     with pytest.raises(ValueError,match='trailing'):
-        window.import_legacy_document(source,ROOT/'reference_data/in.dat',policy(tmp_path))
+        window.import_legacy_document(source,ROOT/'tests/fixtures/legacy_reference/in.dat',policy(tmp_path))
     assert window.document is original
 
 
 def test_export_actions_review_omissions_and_protect_history(window,tmp_path,monkeypatch):
-    window.document = import_document(ROOT/'reference_data/FOR007.DAT',ROOT/'reference_data/in.dat',policy(tmp_path))
+    window.document = import_document(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT',ROOT/'tests/fixtures/legacy_reference/in.dat',policy(tmp_path))
     window.refresh()
     config = window.document.config
     history = list(window.document.undo_stack)
@@ -97,7 +97,7 @@ def test_export_actions_review_omissions_and_protect_history(window,tmp_path,mon
 def test_readonly_report_blocks_unsupported_export(app,tmp_path):
     from dataclasses import replace
     from qcbed.configuration import LegacyExportConfig
-    document = import_document(ROOT/'reference_data/FOR007.DAT',ROOT/'reference_data/in.dat',policy(tmp_path))
+    document = import_document(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT',ROOT/'tests/fixtures/legacy_reference/in.dat',policy(tmp_path))
     report = compatibility_report(replace(document.config,legacy_export=LegacyExportConfig()),base_directory=tmp_path)
     dialog = ReportDialog(report,exporting=True)
     assert dialog.text.isReadOnly()

@@ -211,7 +211,7 @@ def test_rule_resolution_uses_source_mapped_start():
 
 
 def test_all_reference_parameters_and_subset_without_per_target_configuration():
-    state, cfg = parse_legacy_refinement(Path(__file__).parents[1]/"reference_data/FOR007.DAT", seed=2026)
+    state, cfg = parse_legacy_refinement(Path(__file__).parents[1]/"tests/fixtures/legacy_reference/FOR007.DAT", seed=2026)
     rules = RefinementBoundRules(category_bounds={"depth": (600., 1200.), "absorption": (.5, 1.5),
         "debye_waller": (.5, 1.5), "reflection_multiplier": (.5, 1.5)},
         category_relative_bounds={"scan_coordinate": .2},

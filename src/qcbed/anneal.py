@@ -55,7 +55,7 @@ def _integer(value, name):
 
 
 def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
-         minimum_temperature, cooling_rate, rng, allow_invalid=False):
+         minimum_temperature, cooling_rate, rng, allow_invalid=False, iteration_hook=None):
     """Private control-flow seam for independent scalar-objective tests."""
     best = initial.copy()
     chi = np.float64(1e20)
@@ -84,6 +84,7 @@ def _run(initial, project, evaluate, *, max_iterations, maximum_temperature,
     temperature = np.float64(maximum_temperature)
     amplitudes = np.full(len(best), temperature, dtype=np.float64)
     while steps <= max_iterations and temperature > minimum_temperature:
+        if iteration_hook is not None:iteration_hook(steps)
         steps += 1
         proposal = np.empty_like(best)
         trial_amplitudes = np.empty_like(best)

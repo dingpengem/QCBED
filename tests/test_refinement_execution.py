@@ -113,7 +113,7 @@ def test_multiple_stored_slices_and_reflection_corrections(method):
 def test_reference_absorption_and_nonunit_elastic_absorptive_multipliers():
     from qcbed.refinement_io import parse_refinement_state
     from qcbed.refinement import build_refinement_parameter_layout
-    original = parse_refinement_state(Path(__file__).parents[1] / "reference_data" / "FOR007.DAT")
+    original = parse_refinement_state(Path(__file__).parents[1] / "tests/fixtures/legacy_reference" / "FOR007.DAT")
     s = replace(original, dsap=.1,
         regions=(replace(original.regions[0], depth_angstrom=6.074),),
         scan=replace(original.scan, scan_rows=2, scan_columns=2))

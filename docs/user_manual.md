@@ -5,12 +5,25 @@
 
 ## 1. Purpose and scientific scope
 
-QCBED compares experimentally prepared CBED signals with CPU multislice simulations
-and refines selected physical parameters. The modern workflow separates measurement
-preparation, the atomic model, simulation/refinement settings, and execution.
-The program preserves established numerical conventions and records enough state to
-inspect and resume a run. It does not decide whether a model, mask, bound interval,
-mesh or convergence budget is scientifically appropriate for your specimen.
+QCBED integrates automated CBED preparation with user-reviewed geometry and physical
+inputs, plane-wave multislice simulation, visual refinement-target selection, and
+interactive results inspection. Its Python workflow runs on CPU: modern refinement
+uses batched evaluation, while simulation APIs also support process-based parallelism
+across independent tilts. Normal use requires neither a GPU nor a Fortran compiler.
+
+Select supported physical parameters from the [target catalogue](modern_refinement_catalogue.md) and inspect their starting values, hard bounds
+and activation status before choosing ANNEAL, AMOEBA, PARAMIN, SIMPARA or a supported
+multi-stage workflow. Checkpointing and compatible-run Resume support continued
+work; recorded parameter/objective histories and per-beam pattern comparisons let
+you inspect available latest, best and retained states, including after cancellation.
+Basic / Advanced / Expert controls keep routine work accessible while preserving
+access to numerical, optimizer and execution settings.
+
+The A → B → C → D workflow separates measurement preparation, the atomic model,
+simulation/refinement settings, and execution. It preserves established numerical
+conventions but does not decide whether a model, mask, bound interval, mesh or
+convergence budget is scientifically appropriate for your specimen. Structure and
+site-group choices still require user review; the teaching example is instructional.
 
 The maintained application is an Apple Silicon macOS package. Source installation
 also provides numerical APIs and a CLI. See the installation guide for the tested
@@ -54,7 +67,7 @@ The four workflow tabs are:
 |---|---|---|
 | A. Data Prep | Experimental signals, geometry, origin and masks | Validate A |
 | B. Atomic Model | Structure, zone/basis, site groups and physical factors | Apply Site-Group Parameters; Validate B |
-| C. Main QCBED Parameters | Simulation Setup, Refinement Targets, Optimizer | Validate Simulation Setup; Validate Refinement Targets; Validate C |
+| C. Main QCBED Parameters | Simulation Setup, Refinement Targets, Optimizer | Validate Simulation Setup; Validate Refinement Targets; Validate Optimizer |
 | D. Run & Results | Output directory, execution settings, Run/Resume readiness and actions | Validate Output Directory; Validate Execution / Run Readiness |
 
 Basic controls stay visible. **Advanced** exposes numerical/execution choices;
@@ -99,7 +112,7 @@ project, choose a project folder for its cache. Preparation runs in a separate
 process; wait for completion. Inspect the full-pattern overview, beam catalogue and
 selected reference beam. Use **Confirm recorded zone-axis position** once correct,
 or select the symmetry centre on the full pattern and inspect the revised mapping.
-Click **Validate A** only after these measurements and masks are accepted.
+Click **Validate Data Prep** only after these measurements and masks are accepted.
 
 Changing the signal-mode selector does not transform a saved experimental file.
 A gradient simulation requires its matching gradient-prepared signal and variance;
@@ -138,7 +151,7 @@ validation. Legacy nonbinary weights can be inspected but not edited by this too
 
 ### CIF, zone axis and reciprocal basis
 
-Load **Structure file**. CIF and extxyz are covered by packaged acceptance; other
+Load **Structure file** and remain on Structure. Inspect lattice/atoms and projections, confirm orientation and g1/g2, then use **Next: Configure Site Groups**. CIF and extxyz are covered by packaged acceptance; other
 ASE formats are available through ASE but not all are certified by release tests.
 The source cell and original site order are the physical reference. Inspect the
 atomic-cell/projection views and the strict transverse-periodicity diagnostics.
@@ -167,7 +180,7 @@ optional and uses explicit supported coefficients; do not enable it without an
 appropriate model. Modern voltage refinement with absorption, linked-C absorption,
 and multiple groups of the same element remain restricted.
 
-Click **Apply Site-Group Parameters**, then **Validate B**. A pending table edit is
+Click **Apply Site-Group Parameters**, then **Validate Atomic Model**. A pending table edit is
 not yet the model used for refinement. Source-site indices and derived mappings
 are available in Expert/diagnostic views.
 
@@ -211,6 +224,22 @@ Click **Validate Simulation Setup** to compile the physical model and expose its
 supported target catalogue. Geometry errors remain errors; the GUI does not
 silently substitute a non-periodic or full-period projection.
 
+### Projected Elastic Coefficients
+
+**Projected elastic coefficient $E_g^{(s)}$**: the slice-resolved transverse
+Fourier coefficient of the elastic potential in the zone-axis-oriented
+multislice simulation cell. Reflections are displayed using their original
+crystallographic hkl identities.
+
+QCBED currently refines the slice-resolved projected elastic Fourier coefficients
+used directly by the multislice calculation. The dedicated C → Refinement Targets
+section identifies each coefficient by original hkl and physical slice interval.
+Choose Real only, Complex (Re + Im), or Magnitude only; supply physical component
+bounds and use Reset to IAM to restore the current atomic model. Elastic Friedel
+pairs are linked; absorption remains separate. Explicit overrides become stale
+after upstream model changes. These are not conventional 3D unit-cell structure
+factors. See the [complete E_g workflow and Results guide](projected_elastic_coefficients.md).
+
 ### Refinement Targets and hard bounds
 
 The table shows **Physical target**, **Refine**, **Committed starting value**, **Hard lower
@@ -220,10 +249,15 @@ means editing its owning physical control, not a second copy of the parameter.
 
 Choose any nonempty supported subset: requested depth, group B, supported enabled
 absorption coefficients, voltage without absorption, or six scan-coordinate
-components. Depth is optional. Unavailable quantities are not secretly fitted.
+components, and slice-resolved **Projected elastic coefficient E_g** targets. Depth
+is optional. Unavailable quantities are not secretly fitted.
 The [refinement catalogue](modern_refinement_catalogue.md) lists exact domains and
-limitations; occupancy, original-site positions, reflection factors and physical
-lattice/strain refinement are not implemented in the modern path.
+limitations. Chemical occupancy, original-site positions, reflection-specific
+elastic/absorptive multipliers (`reflection_multiplier`), and physical lattice/strain
+refinement are unavailable in the modern path. Reflection multipliers are supported
+by the pre-sliced compatibility backend/editor, not the modern physical-target GUI;
+they scale computed structure factors for fixed reflection records, rather than
+refining absolute structure factors.
 
 Every selected target needs finite ordered **physical hard bounds** containing the
 starting value. Domain rules still apply (positive depth, nonnegative thermal
@@ -241,7 +275,7 @@ search metadata; it does not choose scientifically optimal budgets or bounds.
 **Advanced optimizer settings** holds loops, temperatures, tolerances, seed and
 stage/search budgets. Irrelevant controls are disabled for the selected workflow.
 Loaded explicit overrides are preserved until you request recommended values.
-Click **Validate C** after completing setup, targets and optimizer configuration.
+Click **Validate Optimizer** after completing setup, targets and optimizer configuration.
 
 In **Expert / Legacy settings — per-target search metadata**, D1/D2 are dimensionless
 search/scaling factors and PLAMDA is optimizer metadata, **not hard bounds**.
@@ -365,3 +399,98 @@ cadence, and the target restrictions above. The app does not prove mesh/slice
 convergence, experimental calibration quality, parameter identifiability or fit
 uncertainty. See the [release report](RELEASE_REPORT.md) for current validation and
 [developer architecture](ARCHITECTURE.md) for implementation boundaries.
+
+## Equality groups and termination reporting
+
+In Projected Elastic Coefficients, select owner rows and use **Share One Refinement Parameter** / **Make Independent** for optional user equality groups. Real-only shares Re while keeping each Im fixed; Complex shares Re and Im; Magnitude-only shares magnitude while retaining each IAM phase. Groups require compatible starts, intersecting bounds and the same slice. Results and D report **Iterations**, **Objective evaluations** and **Stop reason** separately; see the [termination audit](25_iteration_audit.md).
+
+
+### Resolved refinement parameter layout
+
+After **Validate Refinement Targets**, the **Resolved Refinement Parameter Layout**
+shows each shared group, its original hkl/slice members, mode, optimizer coordinates,
+starting values and intersected hard bounds. Independent targets and mandatory
+Friedel relationships are listed separately. The summary and D dashboard distinguish
+**Active physical targets** from **Optimizer parameters** using the compiled layout.
+Depth plus two shared Real-only coefficients therefore has three physical targets
+and two optimizer coordinates. Multiple groups remain separate; Complex groups
+contribute two coordinates each. Draft edits require revalidation.
+
+Coefficient-only selections are supported, including category-filtered configurations:
+the model preview may contain zero ordinary coordinates before elastic coordinates
+are appended. Sharing remains enforced in the optimizer layout and writeback, not
+by copying independently optimized results afterward. YAML and Resume use the
+existing physical identities and group representation.
+
+
+### Sharing through the validation buttons
+
+**Validate Refinement Targets** commits the visible coefficient checkboxes, modes,
+starting values and bounds before validating the complete layout. No separate
+**Apply Projected Elastic Coefficients** step is required. **Share One Refinement
+Parameter** and **Make Independent** immediately commit the sharing change, clear
+refinement/C validation and disable Run/Resume readiness. Their feedback reports
+the actual compiled vector length before and after the change and asks for
+revalidation. For depth plus two Real-only coefficients this is **3 → 2 → 3**.
+
+
+### Navigation, drafts and validation state
+
+The A/B/C/D workflow strip uses icons, text and color for Not started, Ready to
+validate, In progress, Valid, Needs revalidation and Blocked. The active stage has
+an emphasized border. The persistent **Next step** message guides the next action.
+
+Site Groups explicitly belongs to the loaded structure. It shows Applied/Modified
+state, keeps the user in place after Apply, and provides Back: Structure and
+Validate Atomic Model. Applying thermal/occupancy/absorption inputs preserves
+orientation/basis drafts and safe projection-view limits.
+
+C is sequential: Simulation Setup → Refinement Targets → Optimizer. Local Validate
+buttons report in place. Next buttons become enabled after validation and navigate
+only. Sharing, Make Independent, Reset to IAM and target validation retain the
+Refinement Targets tab. Compatible target drafts are restored by physical identity
+when widgets regenerate; missing hkl/slice identities are flagged for review.
+
+The compact shared-parameter summary shows membership, mode and counts. Expand
+Shared parameter groups for starts/bounds and component semantics; expand Resolved
+Refinement Parameter Layout for the validated coordinate list. Draft counts are explicitly estimates; validated counts and the
+resolved layout come from compilation. Changing parameterization retains compatible
+starting components; new/incompatible component bounds must be supplied explicitly.
+D exposes readiness states, physical/optimizer counts and return links to each
+incomplete configuration section. See the [quick-start screenshots](QUICK_START.md#workflow-guidance-and-shared-parameters).
+
+Compatible target drafts also survive the temporary absence of the catalogue during B → C revalidation. Explicit **Revert drafts** and **Clear saved coefficient targets** intentionally discard the affected drafts; ordinary navigation does not.
+
+
+### Independent versus shared coefficient parameters
+
+For independent Real-only `(200)` and `(020)` refinement:
+
+1. Check **Refine** for both coefficient targets and enter valid starting values/bounds.
+2. Leave their sharing state **Independent**, then **Validate Refinement Targets**.
+3. Each reflection has its own real optimizer coordinate: two coordinates, or three
+   with sample depth. Choose this when you want the measured reflections to vary independently.
+
+To impose a user-selected equality constraint:
+
+1. Check **Refine**, then separately select both rows using Ctrl/Cmd or Shift.
+2. Click **Share One Refinement Parameter**, name the group and review confirmation.
+3. Confirm the group members/mode and dimension change beside the buttons.
+4. **Validate Refinement Targets** using the persistent bottom action area.
+
+Both Real-only targets now use one shared real coordinate: one parameter, or two
+with sample depth. Choose sharing when your refinement model intentionally assumes
+those real components should agree; it reduces dimensionality, but is not automatic
+space-group symmetry enforcement. **Make Independent** restores separate coordinates.
+Real-only members retain their own fixed imaginary parts; Complex shares Re and Im
+(two coordinates); Magnitude-only shares magnitude with each member's phase fixed.
+The nearby **Example** expands these distinctions and the 3 → 2 depth example.
+**Friedel partner — automatic physical constraint** remains separate and mandatory.
+
+C keeps long explanations, IAM/component details, numerical information and the
+resolved layout collapsed by default. Select a coefficient and expand **Selected
+coefficient details** to inspect IAM, phase, Friedel identity or reset it to IAM.
+Simulation Setup keeps its physical inputs visible; Optimizer keeps workflow,
+budgets/convergence and the recommended-settings toggle visible. Advanced settings
+remain available. Bottom action rows stack when space is insufficient; tables
+scroll horizontally for remaining columns without moving the primary actions.

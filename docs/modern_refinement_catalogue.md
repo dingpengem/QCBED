@@ -10,6 +10,22 @@ order. Initial values come from the committed physical model, not a second copy
 in a binding. All active modern targets require finite explicit lower/upper
 rejection bounds; out-of-bound trials are rejected, never clipped.
 
+## Modern selectable parameters
+
+| Physical group | Selectable parameters | Conditions |
+|---|---|---|
+| Sample | Requested depth (thickness), Å | Positive; effective propagated depth is derived from whole slices |
+| Atomic model | Site-group Debye–Waller B, Å²; absorption a, b, c | B nonnegative (positive with absorption); explicit enabled absorption, nonnegative coefficients, independent c; currently one group per element |
+| Microscope | Accelerating voltage, kV | Positive; absorption disabled |
+| Experimental geometry | Scan corners A, B, C × first/second component (six targets) | Signed reciprocal-basis coefficients; measured arrays and weights remain fixed |
+| Diffraction / reflections | Projected elastic coefficient E_g per original hkl and physical slice interval | Real-only, Complex (Re + Im), Magnitude-only; linked Friedel partners; (000) read-only |
+
+All selected modern targets need finite explicit hard bounds. Chemical occupancy
+(fixed input only), original-site coordinates, reflection multipliers, vacancy/profile
+parameters, vacancy-coupling DILATION, and physical lattice/strain refinement remain
+unsupported/deferred in modern refinement. Independent same-element thermal groups
+and linked absorption c are also outside the current modern bridge.
+
 ## Implementation audit
 
 | Target | Canonical source / units | Physical mapping and domain | Modern execution / GUI |
@@ -22,7 +38,7 @@ rejection bounds; out-of-bound trials are rejected, never clipped.
 | Scan A/B/C first/second | `scan.corner_a/b/c`, reciprocal-basis coefficients | Existing six scan-corner targets; signed, unchanged basis convention | Available by explicit selection; experimental arrays/weights remain fixed |
 | Chemical occupancy | Site-group occupancy, fraction | Static occupancy propagates; no dynamic physical occupancy binding exists | Fixed input only; not interchangeable with legacy vacancy |
 | Atom x/y | Legacy stored-slice fractional coordinates | Legacy propagation implemented; modern original-site-to-recast coordinate update absent | Unavailable in modern refinement; must not bind simulation-copy indices as physical sites |
-| Reflection multipliers | Ordered legacy reflection records, dimensionless | Legacy elastic/absorptive factors implemented, duplicate records retain identity | Modern strict bridge uses unity factors and has no original-hkl multiplier mapping; unavailable |
+| Reflection-specific elastic/absorptive multipliers (`reflection_multiplier`) | Ordered pre-sliced reflection records, dimensionless | Scale computed elastic/absorptive structure factors; fixed reflection identity; first matching record wins | Supported in compatibility backend/editor only; modern strict bridge uses unity and lacks original-hkl mapping |
 | Constant/profile vacancy | Legacy region vacancy records | Layout/mapping preserved, nonzero vacancy evaluator unsupported | Unavailable |
 | DILATION | Legacy vacancy-coupling coefficient, dimensionless | Existing folding semantics; not lattice dilation/strain | Deferred: nonzero vacancy propagation unsupported; zero-vacancy scale is unity |
 
@@ -31,6 +47,60 @@ execution reuses those engines through a physical-vector evaluation adapter;
 no optimizer equations are replaced. PARAMIN/SIMPARA now use the same durable
 journal and safe cancellation boundaries as ANNEAL/AMOEBA. The legacy two-target
 B7 diagnostic adapter remains separately supported.
+
+## Projected elastic coefficients
+
+**Projected elastic coefficient $E_g^{(s)}$**: the slice-resolved transverse
+Fourier coefficient of the elastic potential in the zone-axis-oriented
+multislice simulation cell. Reflections are displayed using their original
+crystallographic hkl identities.
+
+QCBED currently refines the slice-resolved projected elastic Fourier coefficients
+used directly by the multislice calculation. They are separate from absorption and
+are not conventional 3D unit-cell structure factors. See the [physical convention,
+GUI, optimizer coordinates, YAML and Results guide](projected_elastic_coefficients.md).
+The dynamic layout category is `projected_elastic`; physical component bounds can
+be signed, with nonnegative magnitude bounds. These modern records are independent
+of the legacy multiplier bindings described below.
+
+## Reflection multipliers: exact meaning and support
+
+The canonical category is **`reflection_multiplier`**, presented as a
+**reflection-specific elastic multiplier** or **absorptive multiplier**. Each is a
+dimensionless scalar multiplying the corresponding computed structure factor for a
+fixed two-dimensional `(h, k)` reflection record. It is not an absolute structure
+factor, a free complex structure factor, or refinement of reflection indices.
+It is supported end-to-end in the **pre-sliced compatibility workflow**, including
+its editor, but **not selectable in the modern crystallographic refinement GUI**.
+This is a missing physical mapping, not an accidentally hidden control.
+
+The implementation trace is:
+
+- **Catalogue and binding:** [config_targets.py](../src/qcbed/config_targets.py) and
+  [config_compiler.py](../src/qcbed/config_compiler.py) identify a target by
+  `(region_id, reflection_id, "elastic" or "absorptive")`. The starting value comes
+  from that record's `elastic` or `absorptive` field.
+- **Optimizer vector:** [refinement.py](../src/qcbed/refinement.py) enumerates selected
+  components in region/record/component order and writes trial values back to the
+  same record. Binding declaration order does not reorder this vector.
+- **Reflection identity and evaluation:** [refinement_trial.py](../src/qcbed/refinement_trial.py)
+  multiplies computed elastic/absorptive structure factors before forming phase
+  gratings. Exact `(h, k)` matching precedes configured symmetry matching; the first
+  matching record wins. Duplicate h/k records retain distinct IDs and bindings,
+  but a later duplicate does not independently control the same grid reflection.
+- **Results:** [canonical_run.py](../src/qcbed/canonical_run.py) stores catalogue labels
+  such as `Region <id> → reflection (h, k) [<reflection_id>] → elastic multiplier`.
+  [Results](../src/qcbed/gui/results.py) reuses that metadata; older runs without it
+  fall back to category and legacy vector-target indices.
+- **YAML:** canonical pre-sliced YAML preserves ordered reflection records with
+  `id`, `h`, `k`, `elastic`, and `absorptive`, plus category/identifier bindings and
+  their optimizer metadata/bounds. The [modern compact YAML](../src/qcbed/modern_yaml.py)
+  uses the modern physical catalogue and provides no original-hkl multiplier binding.
+- **GUI:** [window.py](../src/qcbed/gui/window.py) disables unavailable catalogue targets.
+  The [crystallography bridge](../src/qcbed/crystallography_config.py) creates no
+  reflection records/aliases for these targets; its strict simulation uses unity
+  multipliers. Modern absolute E_g refinement now has a separate original-hkl/slice
+  target path; it does not enable or relabel this legacy multiplier control.
 
 ## D1, D2, PLAMDA: exact meanings
 
@@ -65,7 +135,7 @@ making additional targets available does not invalidate older two-target IDs.
 Unsupported families remain unavailable with reasons. In particular this change
 does not implement symmetry-aware coordinate refinement, independent same-element
 thermal species, vacancy physics, lattice dilation, or modern original-hkl
-reflection-factor ownership.
+reflection-multiplier ownership.
 
 ## Recommended frontend metadata (stable defaults)
 
@@ -91,8 +161,9 @@ loaded/custom budgets, temperatures and tolerances are not reset by this UI chan
 
 ## C-stage editor sequence
 
-C has four sub-tabs: **Simulation Setup**, **Refinement Targets**, **Optimizer**,
-and **Execution / Output**. Validate A and B, then Validate Simulation Setup to
+C has three sub-tabs: **Simulation Setup**, **Refinement Targets**, and **Optimizer**.
+D owns **Execution & Output** and **Advanced execution settings**.
+Validate A and B, then Validate Simulation Setup to
 generate targets from committed physical inputs. Select targets and hard bounds;
 recommended metadata constructs the existing binding objects automatically.
 Changing setup requires re-validation and preserves compatible committed bindings.
@@ -102,10 +173,14 @@ usage and editable overrides when recommendations are unchecked. Selecting
 recommendations explicitly replaces per-target overrides; merely opening a file
 or changing workflow never does. Inactive fields need no manual input.
 
-**Validate C / Run Readiness** commits targets and validates execution settings
-and external paths. Existing-output replacement remains an explicit confirmation
-condition, separate from physical validity. No output filename input is required.
-No optimizer evaluations occur during these validations.
+**Validate C** validates simulation, refinement-target and optimizer configuration;
+it does not require an output directory. In D, **Validate Output Directory** checks
+that a selected directory can be created if needed and written to. Existing files
+and previous outputs do not invalidate it; Fresh Run uses a managed run subdirectory
+and preserves unrelated files. Run readiness additionally requires valid A/B/C and
+genuine runtime inputs. Resume separately checks compatible run/checkpoint data; a
+fresh directory reports **Resume: Not available — no previous run found**. No output
+filename input or optimizer evaluations are required for these validations.
 
 High-level search budgets and tolerances are in **Advanced optimizer settings**;
 per-target D1/D2/PLAMDA are explicitly **Expert / Legacy**. Fresh modern drafts use
@@ -139,3 +214,27 @@ Unsupported families remain disabled.
 Unchanged inherited category/relative bounds stay as rules in compact YAML;
 the GUI does not duplicate them into a specific bound for every row. Edited bounds
 are saved as target-specific overrides. Existing specific bounds retain priority.
+
+## Equality groups and termination reporting
+
+Optional **Shared refinement parameter groups** share real components, complex components or magnitudes according to mode, within one slice. Independent remains the default; mandatory Friedel conjugacy remains separate. See [group semantics](projected_elastic_coefficients.md#optional-user-equality-groups).
+
+Use **Share One Refinement Parameter** or **Make Independent** in the coefficient editor. Its live counts distinguish physical targets from optimizer coordinates; Complex sharing uses two coordinates.
+
+
+### Resolved refinement parameter layout
+
+After **Validate Refinement Targets**, the **Resolved Refinement Parameter Layout**
+shows each shared group, its original hkl/slice members, mode, optimizer coordinates,
+starting values and intersected hard bounds. Independent targets and mandatory
+Friedel relationships are listed separately. The summary and D dashboard distinguish
+**Active physical targets** from **Optimizer parameters** using the compiled layout.
+Depth plus two shared Real-only coefficients therefore has three physical targets
+and two optimizer coordinates. Multiple groups remain separate; Complex groups
+contribute two coordinates each. Draft edits require revalidation.
+
+Coefficient-only selections are supported, including category-filtered configurations:
+the model preview may contain zero ordinary coordinates before elastic coordinates
+are appended. Sharing remains enforced in the optimizer layout and writeback, not
+by copying independently optimized results afterward. YAML and Resume use the
+existing physical identities and group representation.

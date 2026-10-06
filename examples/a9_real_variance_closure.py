@@ -39,7 +39,7 @@ def variance_statistics(dataset):
 
 
 def prepare_reference_variance(*, pattern_path=ROOT/'reference_data/pattern.dat',
-        sigma_path=ROOT/'reference_data/sigma.dat',
+        sigma_path=ROOT/'tests/fixtures/legacy_reference/sigma.dat',
         geometry_path=ROOT/'tests/data/real_variance/geometry.json',
         catalogue_path=ROOT/'tests/data/real_variance/beam_catalogue.csv'):
     context=json.loads(Path(geometry_path).read_text())

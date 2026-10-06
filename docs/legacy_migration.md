@@ -15,7 +15,7 @@ rejection behavior or run budgets. The import command requires explicit choices:
 
 ```sh
 python -m qcbed.legacy import \
-  --for007 reference_data/FOR007.DAT --experimental reference_data/in.dat \
+  --for007 tests/fixtures/legacy_reference/FOR007.DAT --experimental tests/fixtures/legacy_reference/in.dat \
   --yaml migrated.yml --seed 2026 --execution batched --batch-size 64 \
   --objective masked --invalid-trial-policy reject --bounds none \
   --output-directory tmp/migrated_run --output-filename tmp/migrated_out.dat \

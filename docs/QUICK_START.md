@@ -1,5 +1,11 @@
 # Quick Start: first QCBED project
 
+Prepare CBED data, define a crystallographic model, select physical refinement
+targets visually, and compare experimental and simulated patterns in one Python
+workflow. This guide uses batched CPU plane-wave multislice simulation and
+recommended optimizer settings; no GPU or Fortran compiler is needed. Advanced
+and Expert controls remain available when you need more control.
+
 [Install first](INSTALLATION.md). Allow roughly 5–10 minutes to read this guide;
 data preparation and runs take additional time. For repeatable selections and
 values use the [FCC Al study](EXAMPLE_FCC_AL.md). No Advanced/Expert settings are
@@ -31,30 +37,36 @@ Use **Save As** for your own copy of a shipped example.
    Click **Confirm recorded zone-axis position** when correct. Inspect each beam's
    Pattern, Sigma and Final Weight. Exclude detector defects if appropriate;
    exclusion changes weight, not the measured signal.
-6. Click **Validate A**. Fix preparation/selection errors before proceeding.
+6. Click **Validate Data Prep**. Fix preparation/selection errors before proceeding.
 
 ## 3. B. Atomic Model
 
-1. Load the structure file. In the study it is `reference_data/Al_FCC.cif`.
+1. Load the structure file and remain on **Structure**. In the study it is `reference_data/Al_FCC.cif`.
 2. Set zone axis **0, 0, 1**, **g1 hkl = 2, 0, 0**, and **g2 hkl = 0, 2, 0** for
    this example. These indices refer to the supplied conventional cell.
-3. Inspect the atomic model and site groups. For the Al group, enter
+3. Inspect the structure views, then click **Next: Configure Site Groups**. For the Al group, enter
    **Debye–Waller B = 0.86 Å²** only as the example's reference value; it is not
    inferred from the CIF or a universal aluminium constant.
-4. Click **Apply Site-Group Parameters**, then **Validate B**. A different specimen
+4. Click **Apply Site-Group Parameters** (the page stays on Site Groups), then **Validate Atomic Model**. A different specimen
    requires its own lattice, basis, thermal factors, occupancy and absorption model.
 
 ## 4. C. Main QCBED Parameters
 
 1. **Simulation Setup:** check voltage, signal mode, requested depth and slice
    boundaries. The teaching project uses **200 kV**, **gradient**, **1000 Å** and
-   **0, 1** (one stored slice). Click **Validate Simulation Setup**.
+   **0, 1** (one stored slice). Click **Validate Simulation Setup**, then **Next: Refinement Targets**.
 2. **Refinement Targets:** select the physical quantities to refine and supply hard
    lower/upper bounds containing each starting value. The example selects depth
    with **600–1200 Å** and Al-group B with **0.5–1.5 Å²**. These are **example study
-   bounds**, not universal recommendations. Click **Validate Refinement Targets**.
+   bounds**, not universal recommendations. Click **Validate Refinement Targets**; inspect the resolved layout on the same page, then **Next: Optimizer**.
 3. **Optimizer:** use **AMOEBA** for the teaching example and leave recommended
-   settings selected. Click **Validate C**.
+   settings selected. Click **Validate Optimizer**, then **Next: Run & Results**.
+
+For other specimens, the [modern target catalogue](modern_refinement_catalogue.md)
+lists supported targets and their conditions. Reflection-specific elastic/absorptive
+multipliers belong to the pre-sliced compatibility workflow. The modern GUI instead
+provides [Projected Elastic Coefficients E_g](projected_elastic_coefficients.md),
+identified by original hkl and physical slice interval.
 
 A/B/C can all be Valid without an output directory. C does not contain output or
 execution controls. Changing scientific inputs invalidates the relevant later
@@ -88,3 +100,22 @@ has no fitted pattern to display.
 It continues the recorded run. **Run QCBED** starts a new independent run. Neither a
 short run nor a smooth history proves a physically correct or converged refinement.
 Continue with the [User Manual](user_manual.md) and [FCC Al study](EXAMPLE_FCC_AL.md).
+
+
+## Workflow guidance and shared parameters
+
+The persistent A/B/C/D strip combines text/icons and restrained status colors.
+**Next step** identifies the next required action. Validation never advances a
+C sub-tab automatically; use the explicit Next/Back buttons. Editing invalidates
+receipts and Run readiness while preserving compatible values.
+
+**Shared Refinement Parameters** stays above the coefficient table and updates
+membership, mode and compact counts while editing. Detailed bounds and component
+semantics are expandable. **Draft optimizer layout** is
+an estimate; **Validated optimizer layout** uses the compiled vector. After validation,
+expand **Resolved Refinement Parameter Layout** on the same page.
+C validation and Next/Back actions stay at the bottom outside the scrolling content. D shows the final readiness
+checklist with links back to incomplete sections.
+
+
+![Shared groups and workflow guidance](images/workflow-shared-groups.png)

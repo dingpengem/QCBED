@@ -136,7 +136,7 @@ def test_deep_immutability_and_dynamic_count():
 
 @pytest.mark.parametrize("filename", ["FOR007.DAT", "STARTINGFOR007.DAT"])
 def test_reference_exact_layout(filename):
-    s = parse_refinement_state(Path(__file__).parents[1]/"reference_data"/filename)
+    s = parse_refinement_state(Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/filename)
     expected = [("depth", (0,)), ("absorption", (0, 1)), ("absorption", (0, 2)), ("debye_waller", (0, 0))]
     expected += [("scan_coordinate", (i, j)) for i in range(3) for j in range(2)]
     expected += [("reflection_multiplier", (0, i, 0)) for i in range(8)]
@@ -267,7 +267,7 @@ def test_trial_preflight_rejections():
 
 
 def test_parser_range_error_has_record_context(tmp_path):
-    source = Path(__file__).parents[1]/"reference_data"/"FOR007.DAT"
+    source = Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT"
     lines = source.read_text().splitlines()
     lines[-1] = "NaN 0.95"
     target = tmp_path/"bad.dat"
@@ -292,7 +292,7 @@ def test_region_sequence_cycles_until_depth_is_reached():
 def test_reference_problem_short_trial_supported_path():
     # Keep all 18 source-selected categories but shorten geometry/scan for a
     # focused integration test. This is not a reference-executable comparison.
-    original = parse_refinement_state(Path(__file__).parents[1]/"reference_data"/"FOR007.DAT")
+    original = parse_refinement_state(Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT")
     s = replace(original, dsap=.1,
         regions=(replace(original.regions[0], depth_angstrom=2.0245),),
         scan=replace(original.scan, scan_rows=2, scan_columns=2))

@@ -22,7 +22,7 @@ from qcbed.validation_report import generate_refinement_validation_report
 
 def main():
     root=Path(__file__).resolve().parents[1]
-    source=root/"reference_data"/"FOR007.DAT"
+    source=root/"tests/fixtures/legacy_reference"/"FOR007.DAT"
     destination=root/"tmp"/"end_to_end_validation"
     destination.mkdir(parents=True,exist_ok=True)
     state,original=parse_legacy_refinement(source,seed=2026)
@@ -61,7 +61,7 @@ def main():
     notes=["LOOPS overridden to zero: initial and final maps coincide; no refinement improvement is claimed.",
            "Diagnostic trial evaluation only. The attempted existing driver rejected the reference objective at its CHISMIN guard. "
            "Zero variances cause undefined source objective arithmetic even where weights are zero; no masking/repair was applied.",
-           "reference_data/out.dat is empty; generated out.dat is source-derived, not a historical equivalence result."]
+           "tests/fixtures/legacy_reference/out.dat is empty; generated out.dat is source-derived, not a historical equivalence result."]
     # firstout.dat is a distinct pre-stage artifact, not a substitute final reference.
     historical=source.parent/"firstout.dat"
     try:

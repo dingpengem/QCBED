@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+from private_reference import private_reference_root
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("source_inventory", ROOT/"tools/legacy_source_inventory.py")
@@ -10,7 +11,7 @@ spec.loader.exec_module(inventory)
 
 
 def test_clean_sources_and_unique_project_definitions():
-    m = inventory.build_manifest()
+    m = inventory.build_manifest(private_reference_root())
     assert len(m['files']) == 14
     assert all(f['readable'] and not f['nul'] and not f['truncation_flags'] for f in m['files'])
     assert all(len(v) == 1 for v in m['routines'].values())
@@ -20,7 +21,7 @@ def test_clean_sources_and_unique_project_definitions():
 
 
 def test_critical_signatures_and_checked_manifest():
-    m = inventory.build_manifest()
+    m = inventory.build_manifest(private_reference_root())
     expected = {
         'ATOMICSCATFACT':'ATNUM,STL,OPTION', 'FFT':'ISIGN',
         'CDFT':'N,ISGN,A,IP,W', 'CDFT2D':'N1MAX,N1,N2,ISGN,A,T,IP,W',
@@ -34,7 +35,7 @@ def test_critical_signatures_and_checked_manifest():
         assert m['routines'][name][0]['arguments'] == (args.split(',') if args else [])
     assert 'FFT2D' not in m['routines']  # actual 2-D entry is CDFT2D
     assert 'SCAL' not in m['routines']   # shared parameter-coordinate array
-    saved = json.loads((ROOT/'docs/legacy_source_manifest.json').read_text(encoding='utf-8'))
+    saved = json.loads((private_reference_root()/'docs/legacy_source_manifest.json').read_text(encoding='utf-8'))
     semantic = lambda x: {k:[(u['file'],u['type'],u['arguments']) for u in v] for k,v in x['routines'].items()}
     assert semantic(m) == semantic(saved)  # harmless line/whitespace changes allowed
 
@@ -49,7 +50,7 @@ def test_continuations_nested_arguments_and_comment_exclusion():
 
 
 def test_known_abi_hazards_are_visible_not_silently_declared_safe():
-    m = inventory.build_manifest()
+    m = inventory.build_manifest(private_reference_root())
     assert any(c['caller']=='ANNEAL' and c['callee']=='NRANDO' and c['visible_kind_disagreements'] for c in m['calls'])
     assert any(c['caller']=='MULTIS' and c['callee']=='AMOEBA' and c['visible_kind_disagreements'] for c in m['calls'])
     assert any(c['caller']=='SIMPARA' and c['callee']=='NRANDO' and c['visible_kind_disagreements'] for c in m['calls'])

@@ -14,6 +14,7 @@ CAPABILITIES=(
     ('Absorption a/b/c','READY','site-group/species','legacy coefficients','Explicit group coefficients or disabled','Explicit nonnegative target bounds','One group per element; linked C not supported in modern bridge; explicit independent coefficient refinement'),
     ('Accelerating voltage','READY WITHOUT ABSORPTION','global','kV','Microscope','Explicit positive target bounds','Legacy absorption voltage update is unsupported; voltage refinement requires absorption disabled'),
     ('Scan A/B/C','READY','scan','basis coefficients','Prepared A10 geometry','Explicit signed target bounds','Explicit opt-in refinement of six A10 basis coefficients; preparation arrays remain fixed'),
+    ('Projected elastic coefficient E_g','READY','original hkl / physical slice interval','source-scaled projected coefficient','Same IAM as phase-grating construction','Explicit component bounds','Real / Complex / Magnitude; linked elastic Friedel pairs, absorption separate'),
     ('Reflection multipliers','NOT APPROPRIATE FOR CURRENT MODERN PATH','reflection','dimensionless','Unity in B5','Legacy only','No original-HKL multiplier binding in strict bridge'),
     ('Atom x/y','NOT APPROPRIATE FOR CURRENT MODERN PATH','original sites','fractional','Original structure','None','No symmetry-aware physical coordinate mode'),
     ('Legacy DILATION','DEFERRED','vacancy coupling','dimensionless','Legacy coefficient0','Coefficient domain0–1 only','Vacancy coupling, not lattice scale/strain; unit applied scale at zero vacancy'),
@@ -54,7 +55,7 @@ def validate_modern(config,base_directory,*,check_files=False,resume=False,execu
     root=Path(__file__).resolve().parents[2]
     for field in ('output_directory','output_filename'):
         path=Path(getattr(resolved.run,field))
-        if any(path.is_relative_to(root/n) for n in ('legacy_fortran','reference_data')):
+        if any(path.is_relative_to(root/n) for n in ('legacy_fortran','reference_data','tests/fixtures')):
             found.append(issue('protected_output','Output is in protected source/reference data',field,ValidationPhase.FILES,'run'))
         if not resume and path.exists():found.append(issue('output_exists','Fresh run requires a new output path',field,ValidationPhase.FILES,'run'))
         parent=path.parent

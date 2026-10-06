@@ -99,6 +99,7 @@ def encode_modern(config,destination):
         workflow=WORKFLOWS[method])
     if optimizer:qcbed['optimizer']=optimizer
     ref={}
+    if c["projected_elastic"]:ref["projected_elastic"]=[{k:v for k,v in r.items() if k!="equality_group" or v is not None} for r in c["projected_elastic"]]
     if config.refinement.parameters:
         from .optimizer_defaults import recommended_binding
         ref['targets']={}
@@ -122,7 +123,7 @@ def encode_modern(config,destination):
     if ref:qcbed['refinement']=ref
     if raw['execution']!={'execution_backend':'serial','batch_size':None}:qcbed['execution']=raw['execution']
     output=dict(directory=config.run.output_directory)
-    defaults=dict(snapshot_every=100,checkpoint_every=25,max_total_evaluations=1000,max_wall_time_seconds=3600.)
+    defaults=dict(snapshot_every=100,checkpoint_every=25,max_total_evaluations=1000,max_wall_time_seconds=3600.,max_stage_iterations=None)
     for field,default in defaults.items():
         if raw['run'][field]!=default:output[field]=raw['run'][field]
     qcbed['output']=output
@@ -199,8 +200,8 @@ def decode_modern(value,base):
     optimizer_input=_mapping(q.get('optimizer',{}),OPTIMIZER_NAMES.values(),path='qcbed.optimizer')
     optimizer={key:optimizer_input[name] for key,name in OPTIMIZER_NAMES.items() if name in optimizer_input}
     ref=_mapping(q.get('refinement',{}),('targets','bounds','iref','objective_mode','invalid_trial_policy','active_categories',
-        'bounds_policy','category_bounds','relative_bounds'),path='qcbed.refinement')
-    output=_mapping(q['output'],('directory','filename','output_file','snapshot_every','checkpoint_every','max_total_evaluations','max_wall_time_seconds'),
+        'bounds_policy','category_bounds','relative_bounds','projected_elastic'),path='qcbed.refinement')
+    output=_mapping(q['output'],('directory','filename','output_file','snapshot_every','checkpoint_every','max_total_evaluations','max_wall_time_seconds','max_stage_iterations'),
         ('directory',),path='qcbed.output')
     directory=_resolve(base,output['directory']) if output['directory'].strip() else ''
     run={k:v for k,v in output.items() if k not in ('directory','filename','output_file')}
@@ -209,7 +210,7 @@ def decode_modern(value,base):
     if isinstance(structure,str):structure=dict(path=structure)
     crystal=dict(structure=structure,zone_axis=atomic['zone_axis'],cbed_basis=atomic['cbed_basis'],
         site_groups=[{('site_indices' if k=='sites' else k):v for k,v in _mapping(g,('id','element','sites','debye_waller_b','occupancy','absorption'),('id','element','sites','debye_waller_b'),path='atomic_model.site_groups').items()} for g in atomic.get('site_groups',[])],debye_waller=atomic.get('thermal_factors',[]),
-        absorption=atomic.get('absorption',{}),mesh=numerics['mesh'],
+        absorption=atomic.get('absorption',{}),projected_elastic=ref.get('projected_elastic',[]),mesh=numerics['mesh'],
         depth_angstrom=q['requested_depth_angstrom'],slice_boundaries_fractional=numerics['slice_boundaries_fractional'],
         dsap_inverse_angstrom=numerics['reciprocal_cutoff_inverse_angstrom'],beams=descriptor['beams'],scan_basis_transform=descriptor['scan_basis_transform'])
     raw=dict(title=q.get('title','QCBED'),sample=None,microscope=dict(energy_kv=q['accelerating_voltage_kv'],zone_axis=atomic['zone_axis']),

@@ -30,8 +30,8 @@ from qcbed.legacy_io import _parse_for007_records
 
 ROOT = Path(__file__).resolve().parents[1]
 
-INPUT_FILE = ROOT / "reference_data" / "FOR007.DAT"
-EXPERIMENTAL_FILE = ROOT / "reference_data" / "in.dat"
+INPUT_FILE = ROOT / "tests/fixtures/legacy_reference" / "FOR007.DAT"
+EXPERIMENTAL_FILE = ROOT / "tests/fixtures/legacy_reference" / "in.dat"
 
 
 # ============================================================

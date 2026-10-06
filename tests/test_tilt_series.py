@@ -260,7 +260,7 @@ def test_batch_backend_validation(bad):
 
 
 def reference_sample():
-    path = Path(__file__).parents[1]/"reference_data"/"FOR007.DAT"
+    path = Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT"
     model = parse_for007(path)
     lines = path.read_text().splitlines()
     assert list(map(float, lines[10].split())) == [840., 1.]

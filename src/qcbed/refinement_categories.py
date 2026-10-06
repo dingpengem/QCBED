@@ -19,6 +19,7 @@ class ParameterCategory(str, Enum):
     ATOM_COORDINATE = 'atom_coordinate'
     SCAN_COORDINATE = 'scan_coordinate'
     REFLECTION_MULTIPLIER = 'reflection_multiplier'
+    PROJECTED_ELASTIC = 'projected_elastic'
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ PARAMETER_SEMANTICS = MappingProxyType({
     'atom_coordinate': ParameterSemantics(3, 6),
     'scan_coordinate': ParameterSemantics(2, 7),
     'reflection_multiplier': ParameterSemantics(3, 8),
+    'projected_elastic': ParameterSemantics(2, 9),
 })
 
 # Existing adapter guard, NOT a compiler/layout limit or allocation size.

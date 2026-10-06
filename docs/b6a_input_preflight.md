@@ -14,7 +14,7 @@ implement this assignment; the user-editable canonical example is unchanged.
 
 Physical provenance:
 
-- `reference_data/FOR007.DAT` record 4 gives layer spacing 2.0245 Å. For the
+- `tests/fixtures/legacy_reference/FOR007.DAT` record 4 gives layer spacing 2.0245 Å. For the
   confirmed FCC [001] half-period planes, a0=2*2.0245=4.049 Å. This is a
   crystallographic derivation from the reference spacing, not an independently
   measured lattice constant. Its a0/sqrt(2)=2.863075359... Å agrees with the

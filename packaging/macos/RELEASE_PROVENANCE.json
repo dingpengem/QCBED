@@ -1,10 +1,10 @@
 {
-  "source_sha256": "9a687a938ddd1ec94905ace540dc7bf2771fcd236d25b8baf54a0d9ffed4953d",
-  "built_at_utc": "2026-10-05T22:07:00.655442+00:00",
-  "git_commit": "e4288b3aeab273df3ff02b118ccc4d8e086602e4",
+  "source_sha256": "beff8b9abf7528a76cbb7d120b51dfe5c580fd0b1ba83a831b1b4304704c4da9",
+  "built_at_utc": "2026-10-06T07:26:41.941554+00:00",
+  "git_commit": "5d4534d8939e82b7c0e38e2e12f6896f0546b223",
   "git_dirty": true,
   "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
-  "executable": "/opt/miniconda3/envs/qcbed-python/bin/python",
+  "executable": "python",
   "platform": "macOS-26.3.1-arm64-arm-64bit",
   "architecture": "arm64",
   "versions": {
@@ -21,34 +21,53 @@
     "ase": "3.29.0"
   },
   "acceptance_status": "PASS",
+  "milestone": "Final projected coefficient refinement, input-only data cleanup and GitHub publication",
   "full_suite": {
-    "passed": 2965,
+    "passed": 3027,
     "failed": 0,
     "skipped": 0,
-    "warnings": 225,
-    "seconds": 422.22
+    "warnings": 289,
+    "seconds": 441.75,
+    "scope": "Complete suite directly from cleaned working tree",
+    "private_fixtures": "Five optional original evidence checks read an external maintainer directory; no private evidence restored to repository",
+    "source_sha256": "beff8b9abf7528a76cbb7d120b51dfe5c580fd0b1ba83a831b1b4304704c4da9"
+  },
+  "focused_tests": {
+    "passed": 413,
+    "failed": 0,
+    "scope": "Relocated numerical/parser fixtures and external provenance checks"
   },
   "acceptance": {
-    "current_packaged_smoke": "PASS",
-    "final_frozen_smoke": "PASS",
+    "final_frozen_smoke": "PASS (startup only)",
     "yaml_round_trip": "PASS",
     "optimizer_evaluations": 0,
     "hygiene": "PASS",
-    "zip_integrity": "PASS"
+    "zip_integrity": "PASS",
+    "termination_audit": "PASS",
+    "coefficient_equality_groups": "PASS",
+    "parameter_sharing_ui": "PASS",
+    "resolved_refinement_layout": "PASS",
+    "actual_sharing_widgets": "PASS",
+    "scope": "Current cleaned tree: complete suite, one exact compact YAML/state/checkpoint/Results round-trip and packaged startup only; earlier visual workflow evidence remains historical",
+    "workflow_navigation": "PASS",
+    "responsive_c_layout": "PASS",
+    "sharing_guidance": "PASS",
+    "minimal_gui_state": "PASS"
   },
   "signing": {
     "type": "ad-hoc",
     "deep_strict_verification": "passed",
     "notarized": false
   },
+  "native_binary_count": 331,
   "artifacts": {
     "dist/QCBED.app/Contents/MacOS/QCBED": {
-      "bytes": 17505168,
-      "sha256": "641df736f364120867ab652c201bf8e3a71b26488258e68443520fc9fd59bfaf"
+      "bytes": 17595760,
+      "sha256": "baff9f0aad4a8152682e53d6025465e1e03407a04f8859ff2345ecb2671b275e"
     },
     "dist/QCBED-arm64.zip": {
-      "bytes": 109884010,
-      "sha256": "233f97843a17cbb74a05c60c3af7efa3d5008974d1c2af304c830eb585d8133f"
+      "bytes": 110229656,
+      "sha256": "2b9c35473506bd4a5755a7e8b4d33a65aeac43bf39b475f5f53983af1942d993"
     }
   },
   "example_inputs": {
@@ -59,11 +78,24 @@
   "release_commit": null,
   "release_tag": null,
   "limitations": [
-    "arm64 macOS package only",
+    "Apple Silicon macOS app only",
     "Ad-hoc signed; not notarized",
-    "Instructional FCC Al example; no convergence claim",
-    "Unsupported targets documented in modern_refinement_catalogue.md",
-    "External project input/cache dependencies",
-    "No project-wide redistribution license supplied"
-  ]
+    "Instructional FCC Al example, not a converged refinement",
+    "Conventional 3D structure-factor mapping and automatic space-group links deferred",
+    "Chemical occupancy/coordinate/lattice-strain/vacancy refinement deferred; voltage with absorption and modern linked-C absorption unsupported",
+    "Five provenance checks require private maintainer fixtures"
+  ],
+  "data_policy": {
+    "inputs": [
+      "reference_data/pattern.dat",
+      "reference_data/Al_FCC.cif"
+    ],
+    "permanent_references": [
+      "tests/fixtures/legacy_reference",
+      "tests/fixtures/synthetic",
+      "tests/data"
+    ],
+    "private_source_distributed": false,
+    "generated_binaries_tracked": false
+  }
 }

@@ -9,7 +9,7 @@ from qcbed import LegacyScanDefinition, parse_for007_scan, generate_scan_tilts, 
 from qcbed.legacy_io import LegacyInputParseError
 
 
-REFERENCE = Path(__file__).parents[1]/"reference_data"
+REFERENCE = Path(__file__).parents[1]/"tests/fixtures/legacy_reference"
 
 
 def definition(**changes):

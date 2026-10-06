@@ -25,7 +25,7 @@ the first optimizer evaluation; it does not manufacture a new convergence histor
 The CIF lists four explicit sites using a P1 symmetry listing; their coordinates
 form the conventional FCC motif. Do not replace the supplied cell with a primitive
 cell while retaining the same hkl labels. The study uses the **manual disk-diameter
-path**, with **no aperture or detector PSF correction file**. `reference_data/sigma.dat`
+path**, with **no aperture or detector PSF correction file**. `tests/fixtures/legacy_reference/sigma.dat`
 and legacy output files are preserved reference material, not substitutes for the
 newly prepared gradient uncertainty.
 
@@ -63,7 +63,7 @@ validation receipts, editable output filename or preparation arrays. Later choos
    **Geometric Mask**, **Processing Validity** and **Manual Mask** separately.
    For this baseline study add no manual exclusions. If you add exclusions for a
    scientific reason, record them and treat the resulting dataset as a different
-   input state. Click **Validate A**.
+   input state. Click **Validate Data Prep**.
 
 The prepared image, uncertainty, ordered beam data, origin and mask provenance are
 written into `.qcbed-data` beside the project. Numerical signal values and final
@@ -82,9 +82,9 @@ The template references **Al_FCC.cif** with:
 - **Debye–Waller B = 0.86 Å²**, occupancy **1**, absorption **disabled**.
 
 If building the project from a blank session instead, browse to that CIF, enter
-these basis vectors and manually enter B = 0.86 Å². Loading the CIF alone does not
+these basis vectors in Structure, then choose **Next: Configure Site Groups** and manually enter B = 0.86 Å². Loading the CIF alone does not
 supply a universal thermal factor. Inspect the lattice/sites and group membership,
-click **Apply Site-Group Parameters**, then **Validate B**. Confirm that g1/g2 stay
+click **Apply Site-Group Parameters**, then **Validate Atomic Model**. Confirm that g1/g2 stay
 [2,0,0]/[0,2,0] after applying the group.
 
 ## C. Simulation Setup
@@ -128,7 +128,7 @@ values come from B and Simulation Setup. Click **Validate Refinement Targets**.
 Choose **AMOEBA** and retain **Use recommended optimizer settings**. The compact
 YAML target entries `{}` request the existing target-specific metadata, avoiding
 redundant D1/D2/PLAMDA in the teaching file. No optimizer mathematics or defaults
-are changed. Click **Validate C**. A/B/C can now be valid before choosing output.
+are changed. Click **Validate Optimizer**. A/B/C can now be valid before choosing output.
 
 ## D. Output, execution and Run
 
@@ -177,3 +177,89 @@ preparation/provenance and budgets; they are not outputs of this new tutorial an
 are not evidence that this two-evaluation study converged. The user need not possess
 those local campaign directories to complete preparation, save/reload or the
 bounded teaching workflow here.
+
+## Projected elastic coefficient refinement
+
+**Projected elastic coefficient $E_g^{(s)}$**: the slice-resolved transverse
+Fourier coefficient of the elastic potential in the zone-axis-oriented
+multislice simulation cell. Reflections are displayed using their original
+crystallographic hkl identities.
+
+This optional instructional extension uses **C → Refinement Targets → Projected
+Elastic Coefficients** and the one-slice `[0,1]` model. QCBED currently refines the
+slice-resolved projected elastic Fourier coefficients used directly by the
+multislice calculation, not conventional 3D unit-cell structure factors.
+
+The actual teaching CIF (a = 4.03893 Å, B = 0.86 Å², occupancy 1, absorption off)
+gives the following IAM values using the production atomic sum. Units are the
+source-scaled projected coefficient, with the documented V·Å interpretation.
+
+| Original hkl | IAM E_g for slice [0,1] | Ownership |
+|---|---|---|
+| (000) | 69.13611558002403 + 0i | Read-only |
+| (200), (-200) | 19.591754648483377 ∓ 1.7592060e-9 i | One linked pair |
+| (020), (0-20) | 19.591754648483377 ∓ 1.7592060e-9 i | One linked pair |
+| (220), (-2-20) | 11.731316291670417 ∓ 2.1067845e-9 i | One linked pair |
+| (2-20), (-220) | 11.73131629158207 + 0i | One linked pair |
+
+The imaginary residuals are below 1e-8, so **Real only** is the basic default; the
+small imaginary component stays fixed, rather than being discarded. Select a
+noncentral owner and enter specimen-appropriate real lower/upper bounds. No
+universal E_g bounds or converged fitted values are supplied. Apply the coefficient
+selection, then validate Refinement Targets and C.
+
+**Complex (Re + Im)** is available for advanced use with separate component bounds;
+**Magnitude only** fixes the IAM phase. Reset to IAM restores the atomic-model
+coefficient. Results distinguish IAM, initial, latest, best and retained E_g, and
+provide component histories and the matching beam diagnostics. See the [full guide](projected_elastic_coefficients.md).
+
+These values were calculated without optimization. Reconstructing the baseline
+phase grating from the IAM arrays gives maximum difference 0.0. The older
+`fcc_al_conventional.extxyz` has a different lattice constant and different IAM
+values; it is not the source of this table. This remains an instructional study,
+not a scientifically converged refinement.
+
+## Equality groups and termination reporting
+
+For this instructional model, `(200)` and `(020)` may optionally be placed in a **Shared refinement parameter group** using **Share One Refinement Parameter**. Real-only linking reduces depth + these two coefficients from three optimizer coordinates to two. Independent refinement remains valid and is the default; no space-group equality is imposed automatically. This option does not establish convergence or explain the historical 25-evaluation stop.
+
+
+### Guided workflow
+
+CIF loading stays in Structure. Site-group Apply stays in Site Groups, and C
+validation stays on the current sub-tab. Use the explicit Next controls after each
+validation. Optional Axial `{(200),(020)}` and Diagonal `{(220),(2-20)}` groups can
+remain separate. With depth and both Real-only groups selected, five physical
+targets contribute three optimizer coordinates. These are user-defined equality
+constraints, not automatic symmetry enforcement. Inspect the live group summary
+and validated resolved layout before proceeding to Optimizer and D. This remains
+an instructional setup, not a claim of scientific convergence.
+
+
+### Try independent or shared `(200)` / `(020)` parameters
+
+In C → Refinement Targets, check **Refine** for `(200)` and `(020)`, both Real-only,
+with the same physical slice `[0,1]`. Enter valid starts and hard bounds. Leave
+**Independent** and validate if you want each measured reflection's real coefficient
+to vary independently: two coefficient coordinates, plus one for depth if selected.
+
+For an optional common real value, select both rows (separately from their Refine
+checkboxes), click **Share One Refinement Parameter**, name the group and confirm.
+Check its members and the immediate count change, then validate with the bottom
+button. This uses one shared `Re(E_g⁽ˢ⁾)` coordinate: **2 → 1**, or **3 → 2** with
+depth. Use this only when equality is an intentional assumption of your refinement;
+**Make Independent** reverses it. No space-group equality is imposed automatically.
+
+Real-only retains each imaginary part; Complex shares both Re and Im, and
+Magnitude-only shares magnitude while retaining each phase. Mandatory Friedel
+partners remain a separate physical constraint. Expand **Example** or **Resolved
+Refinement Parameter Layout** for details. This exercise demonstrates configuration,
+not convergence or evidence that the coefficients must be equal experimentally.
+
+### Input-only distribution
+
+Only the raw `reference_data/pattern.dat` and `reference_data/Al_FCC.cif` are
+required to start this tutorial. Data Prep regenerates geometry, variance/masks
+and prepared descriptors. Historical sigma/intensity snapshots under
+`tests/fixtures/` are regression evidence, not tutorial prerequisites. No hidden
+preparation cache is supplied or required.

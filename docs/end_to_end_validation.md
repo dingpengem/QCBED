@@ -150,7 +150,7 @@ raw/processed/scaled maps, map reconstruction, unchanged baseline and numeric
 output round-trip can still be checked. Small synthetic integration tests also
 exercise actual ANNEAL/AMOEBA driver stages with finite objective data.
 
-`reference_data/out.dat` is empty, so historical final-output equivalence cannot
+`tests/fixtures/legacy_reference/out.dat` is empty, so historical final-output equivalence cannot
 be tested. `firstout.dat` is a separate pre-stage artifact: the script attempts
 a strict single-dataset parse and records maximum absolute and relative L2
 differences when possible, without treating it as trusted final output.

@@ -65,7 +65,7 @@ def _parabola(central, inverse, trial, c0, c1, c2, counter):
 
 
 def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
-         low_temperature, cooling, random_order, rng, allow_invalid=False):
+         low_temperature, cooling, random_order, rng, allow_invalid=False, iteration_hook=None):
     """Literal cycle order; evaluate may mutate its vector as ONEITPARA does."""
     out = initial.copy()
     n = len(out)
@@ -101,6 +101,7 @@ def _run(initial, uncertainty, evaluate, *, max_evaluations, high_temperature,
     central = out.copy()
     change = 0
     while evaluations <= max_evaluations and temperature >= low_temperature*cooling:
+        if iteration_hook is not None:iteration_hook(cycles)
         cycles += 1
         if random_order:
             order, used = [], set()

@@ -15,8 +15,8 @@ from test_multiregion_configuration import configuration
 
 
 def test_import_unsaved_export_roundtrip_and_readonly_reports(tmp_path):
-    source = ROOT/'reference_data/FOR007.DAT'
-    experimental = ROOT/'reference_data/in.dat'
+    source = ROOT/'tests/fixtures/legacy_reference/FOR007.DAT'
+    experimental = ROOT/'tests/fixtures/legacy_reference/in.dat'
     original_data = experimental.read_bytes()
     document = import_document(source,experimental,policy(tmp_path))
     assert document.dirty and document.needs_save_as
@@ -70,7 +70,7 @@ def test_dynamic_multiregion_linked_export(tmp_path,count):
 
 
 def test_export_protection_and_unexportable_report(tmp_path):
-    document = import_document(ROOT/'reference_data/FOR007.DAT',ROOT/'reference_data/in.dat',policy(tmp_path))
+    document = import_document(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT',ROOT/'tests/fixtures/legacy_reference/in.dat',policy(tmp_path))
     existing = tmp_path/'existing.dat'; existing.write_text('keep me')
     with pytest.raises(FileExistsError): export_document(document,existing,filename_limits=(4096,4096))
     assert existing.read_text() == 'keep me'
@@ -84,13 +84,13 @@ def test_export_protection_and_unexportable_report(tmp_path):
 
 def test_ambiguous_input_rejected(tmp_path):
     source = tmp_path/'FOR007.dat'
-    source.write_text((ROOT/'reference_data/FOR007.DAT').read_text()+'\nUNKNOWN LEGACY SETTING\n')
+    source.write_text((ROOT/'tests/fixtures/legacy_reference/FOR007.DAT').read_text()+'\nUNKNOWN LEGACY SETTING\n')
     with pytest.raises(ValueError,match='trailing'):
-        import_document(source,ROOT/'reference_data/in.dat',policy(tmp_path))
+        import_document(source,ROOT/'tests/fixtures/legacy_reference/in.dat',policy(tmp_path))
 
 
 def test_missing_canonical_data_path_is_not_an_export_destination(tmp_path):
-    document = import_document(ROOT/'reference_data/FOR007.DAT',ROOT/'reference_data/in.dat',policy(tmp_path))
+    document = import_document(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT',ROOT/'tests/fixtures/legacy_reference/in.dat',policy(tmp_path))
     missing = tmp_path/'missing-input.dat'
     assert document.apply({('experiment','path'):str(missing)})
     with pytest.raises(ValueError,match='canonical experimental'):

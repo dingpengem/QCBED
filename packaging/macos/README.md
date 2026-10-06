@@ -83,8 +83,8 @@ not import pytest or execute external scripts. The manifest has absolute paths:
 {
   "reference_yaml": "/project/examples/qcbed_config.yml",
   "run_yaml": "/scratch/small-fast-canonical-test.yml",
-  "for007": "/project/reference_data/FOR007.DAT",
-  "experimental": "/project/reference_data/in.dat",
+  "for007": "/project/tests/fixtures/legacy_reference/FOR007.DAT",
+  "experimental": "/project/tests/fixtures/legacy_reference/in.dat",
   "output": "/scratch/NEW-acceptance-directory"
 }
 ```

@@ -119,7 +119,7 @@ def test_pattern_plot_duplicate_beams_and_history(recorded):
     view = ResultsView()
     view.load(directory)
     assert [view.tabs.tabText(i) for i in range(view.tabs.count())] == [
-        'Overview', 'Refined Parameters', 'χ² History', 'Physical / YNORM history', 'Beam details', 'Pattern Matching', 'Report / Files']
+        'Overview', 'Refined Parameters', 'Projected Elastic Coefficients', 'χ² History', 'Physical / YNORM history', 'Beam details', 'Pattern Matching', 'Report / Files']
     assert view.beams.count() == 2
     assert view.beams.itemText(0) != view.beams.itemText(1)
     assert 'Beam (0, 0)' in view.beams.itemText(1)

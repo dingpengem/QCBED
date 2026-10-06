@@ -49,6 +49,9 @@ class ResultsView(QWidget):
         self.tabs.addTab(self.summary, 'Overview')
         self.parameters = table(['Physical target', 'Category', 'Initial', 'Displayed evaluation value', 'Delta', 'Units', 'Resolved bounds', 'Latest', 'Best', 'Retained'])
         self.tabs.addTab(self.parameters, 'Refined Parameters')
+        self.elastic=table(['Original hkl','Slice','Mode','IAM E_g','Initial','Latest','Best','Retained','Displayed','Re(E_g)','Im(E_g)','Magnitude','Phase (rad)','Bounds','Parameter sharing / mandatory Friedel relation'])
+        self.tabs.addTab(self.elastic,'Projected Elastic Coefficients')
+        self.elastic.cellClicked.connect(self.select_elastic)
         history_page = QWidget()
         history_layout = QVBoxLayout(history_page)
         self.history_figure = Figure(figsize=(7, 3), layout='constrained')
@@ -111,6 +114,7 @@ class ResultsView(QWidget):
         self.evaluations.clear()
         self.evaluations.blockSignals(False)
         self.parameters.setRowCount(0)
+        self.elastic.setRowCount(0)
         self.history.setRowCount(0)
         self.modern_history.setRowCount(0)
         self.beam_details.setRowCount(0)
@@ -150,6 +154,10 @@ class ResultsView(QWidget):
                 if isinstance(value,dict):
                     value={k:v for k,v in value.items() if k in ('requested_depth','effective_depth','B','objective','ynorm','stage','global_evaluation_index','stop_reason','converged','convergence','evaluations','iterations')}
                 lines.append(f'{key}: {value}')
+        if 'stop_reason' in summary:
+            lines.extend([f"Iterations: {summary['iterations'] if summary['iterations'] is not None else 'Not recorded'}",f"Objective evaluations: {summary['objective_evaluations']}",f"Stop reason: {summary['stop_reason']}"])
+            for stage in summary['stage_termination']:
+                lines.append(f"Stage {stage['stage']} {stage['optimizer']}: {stage['stop_reason']}; iterations={stage['iterations']}; objective evaluations={stage['objective_evaluations']}")
         lines.extend('Note: ' + warning for warning in result.warnings)
         self.summary.setPlainText('\n'.join(lines))
         events = completed_events(result.history)
@@ -175,6 +183,8 @@ class ResultsView(QWidget):
         self.physical_target.setCurrentIndex(max(0,self.physical_target.findText(previous)))
         self.physical_target.blockSignals(False)
         self.plot_physical_history()
+        fill(self.elastic,[(r['hkl'],r['interval'],r['mode'],r['iam'],r['initial'],r['latest'],r['best'],r['retained'],r['displayed'],r['real'],r['imaginary'],r['magnitude'],r['phase_radians'],r['bounds'],
+            (('Shared refinement parameter group '+r['equality_group']+' — '+{'real':'Shared real component; ','complex':'Shared complex coefficient; ','magnitude':'Shared magnitude, own IAM phase; '}[r['mode']]) if r.get('equality_group') else 'Independent; ')+('Im(E_g) fixed; ' if r['imaginary_fixed'] else '')+'Friedel-linked to '+str(r['linked_hkl'])) for r in summary.get('projected_elastic',())])
         comparison=result.comparison or {}
         fill(self.beam_details,[(str(m),b['active_count'],b['squared_objective_contribution'],b['fraction_of_total_error'])
             for m,b in zip(comparison.get('beam_metadata',()),comparison.get('per_beam',()))])
@@ -190,6 +200,16 @@ class ResultsView(QWidget):
         self.show_beam(self.beams.currentIndex())
         for name, button in self.file_buttons.items():
             button.setEnabled((result.directory / name).exists())
+
+    def select_elastic(self,row,column=0):
+        if not self.results:return
+        entries=self.results.summary.get('projected_elastic',())
+        if not 0<=row<len(entries):return
+        record=entries[row]
+        self.physical_target.setCurrentIndex(record['parameter_indices'][0])
+        for i,beam in enumerate((self.results.comparison or {}).get('beam_metadata',())):
+            if tuple(beam['original_hkl'])==record['hkl']:
+                self.beams.setCurrentIndex(i);break
 
     def plot_physical_history(self, *_):
         if not self.results: return

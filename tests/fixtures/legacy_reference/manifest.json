@@ -1,0 +1,42 @@
+{
+  "FOR0013.DAT": {
+    "sha256": "39d703bc9c2e0cdf0bbfee651c06addeeae3aeb8dc333435cf3427fb32d87db7",
+    "purpose": "Recorded potential/scattering/phase-grating numerical reference."
+  },
+  "FOR007.DAT": {
+    "sha256": "acad63c57cb44b3483f3af6111237cffc3be83a2e93eb7c51b9f3287061ba04d",
+    "purpose": "Historical model and refinement/parser contract reference."
+  },
+  "STARTINGFOR007.DAT": {
+    "sha256": "cf68501a871099b39a30718976d5850821a6d6e3b104d2b81088a4fffae5f836",
+    "purpose": "Starting-state parsing and scan/refinement reference."
+  },
+  "bestin.dat": {
+    "sha256": "a372b99ee4e96405ece81faf2e96a8b6028b899ccff42ddee35d2b340c0e8849",
+    "purpose": "Historical experimental/intensity scaling reference."
+  },
+  "firstout.dat": {
+    "sha256": "4497b0b1fd37e379b59c5d2452900c7f9ef6edbc7c676350a4c425aac8f83803",
+    "purpose": "Recorded intensity objective/output comparison reference."
+  },
+  "in.dat": {
+    "sha256": "a372b99ee4e96405ece81faf2e96a8b6028b899ccff42ddee35d2b340c0e8849",
+    "purpose": "Prepared intensity/header compatibility and objective reference."
+  },
+  "inputparams.dat": {
+    "sha256": "5ac206151749d1a3339a6fd1026b7d0d7321136b5d3aab74efb9e6331c4a3620",
+    "purpose": "Recorded scan-coordinate conversion reference."
+  },
+  "sigma.dat": {
+    "sha256": "2ffba07c1087e73b7d1cd430ec30430d3d4dafadd7d380af005f9698495e532c",
+    "purpose": "Recorded empirical noise association reference (not a modern preparation prerequisite)."
+  },
+  "startingin.dat": {
+    "sha256": "a372b99ee4e96405ece81faf2e96a8b6028b899ccff42ddee35d2b340c0e8849",
+    "purpose": "Starting experimental/intensity normalization reference."
+  },
+  "out.dat": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "purpose": "Empty historical result used to distinguish absent executable-reference evidence."
+  }
+}

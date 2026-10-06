@@ -109,7 +109,7 @@ does not affect the readable affine formula.
 ## Immutable Python data flow
 
 ```python
-state = parse_refinement_state("reference_data/FOR007.DAT")
+state = parse_refinement_state("tests/fixtures/legacy_reference/FOR007.DAT")
 layout = build_refinement_parameter_layout(state)
 physical_vector = pack_refinement_parameters(state)
 mapped = apply_refinement_parameters(state, physical_vector)

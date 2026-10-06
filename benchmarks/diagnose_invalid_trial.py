@@ -115,7 +115,7 @@ def main():
     root = Path(__file__).resolve().parents[1]
     out = root / "tmp" / "invalid_trial_audit"
     out.mkdir(exist_ok=True)
-    source = root / "reference_data" / "FOR007.DAT"
+    source = root / "tests/fixtures/legacy_reference" / "FOR007.DAT"
     state, original = parse_legacy_refinement(source, seed=2026)
     records = _CaptureRecords(source); _parse_for007_records(records)
     beam = records.values["output beam count and indices"]

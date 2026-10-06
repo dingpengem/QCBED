@@ -32,6 +32,7 @@ class CompiledCrystallography:
     scan_config: CrystalScanConfig
     site_groups: tuple = ()
     target_aliases: tuple = ()
+    projected_elastic: tuple = ()
 
     @property
     def diagnostics(self):
@@ -174,6 +175,12 @@ def compile_crystallography_config(config, *, structure):
         tuple(AtomConfig(f'site-{index}',site.symbol,*site.fractional_position[:2],site.occupancy)
               for index,site in zip(slab.source_indices,slab.sites)))
         for i,(geometry,slab) in enumerate(zip(sample.model.slices,sample.depth_sample.slices)))
+    # Coefficient coordinates are appended after the legacy model preview. An
+    # explicitly coefficient-only selection has no ordinary preview coordinates.
+    # Avoid the legacy subset helper's nonempty-vector requirement at this stage.
+    selected=effective_refinement.active_categories
+    if selected is not None and not any(b.target.category in selected for b in effective_refinement.parameters):
+        effective_refinement=replace(effective_refinement,parameters=(),active_categories=None)
     derived = replace(config,crystallography=None,refinement=effective_refinement,
         microscope=replace(config.microscope,zone_axis=zone.uvw),
         sample=SampleConfig(c.mesh,tuple(SpeciesConfig(s,s,sp.atomic_number)
@@ -195,4 +202,8 @@ def compile_crystallography_config(config, *, structure):
     bundle = CompiledCrystallography(structure,zone,CrystalOrientation(structure.direct_lattice,zone),
         cell,basis,sample,c.structure.path,c.scan_basis_transform,config.scan,
         c.site_groups,aliases)
-    return replace(compiled,crystallography=bundle,source_configuration=config)
+    result = replace(compiled,crystallography=bundle,source_configuration=config)
+    if c.projected_elastic:
+        from .projected_elastic import attach_coefficients
+        result = attach_coefficients(result)
+    return result

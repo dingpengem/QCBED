@@ -100,7 +100,8 @@ def test_one_slice_does_not_bypass_geometry_proof():
 def test_compiled_original_fortran_sequence_loop(tmp_path):
     compiler=shutil.which('gfortran')
     if compiler is None:pytest.skip('gfortran unavailable for executable source-loop comparison')
-    source=(Path(__file__).resolve().parents[1]/'legacy_fortran/oneit.f').read_text()
+    from private_reference import private_reference_root
+    source=(private_reference_root()/'legacy_fortran/oneit.f').read_text()
     source=source.split('C DETERMINE THE SLICE SEQUENCE FOR THE WHOLE SPECIMEN',1)[1]
     body=source[source.index('          K=0'):source.index('          MS=K')]+ '          MS=K\n'
     harness='''program sequence_reference

@@ -190,7 +190,7 @@ def test_unrepresentable_phase_rejected():
 
 
 def test_supplied_fortran_elastic_listing():
-    root = Path(__file__).resolve().parents[1] / "reference_data"
+    root = Path(__file__).resolve().parents[1] / "tests/fixtures/legacy_reference"
     parsed = parse_for007(root / "FOR007.DAT")
     geometry = parsed.slices[0]
     reciprocal = grid(a=geometry.cell_a_angstrom, b=geometry.cell_b_angstrom,

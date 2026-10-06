@@ -110,7 +110,7 @@ def profile_case(state, vector, experimental):
 
 def main():
     root=Path(__file__).resolve().parents[1]
-    source=root/'reference_data'/'FOR007.DAT'
+    source=root/'tests/fixtures/legacy_reference'/'FOR007.DAT'
     baseline,_=parse_legacy_refinement(source,seed=2026)
     original=repr(baseline)
     state,index=thickness_only(baseline)

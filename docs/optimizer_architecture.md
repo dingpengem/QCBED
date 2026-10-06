@@ -215,7 +215,7 @@ scripts/docs. No recorded -r8, -real-size 64, -fdefault-real-8,
 -freal-4-real-8, /autodouble, -autodouble, -xtypemap, -dbl, /real_size,
 FFLAGS/FCFLAGS or equivalent documented default-real promotion was found.
 The file named Makefile is ELF, not build instructions. No usable compiler
-project/batch configuration was found. reference_data/pacbedr.slurm loads
+project/batch configuration was found. An archived predecessor scheduler script loaded
 an Intel module and runs executables; it does not compile them or specify
 precision options. The padqcbed log contains Intel-runtime-style errors from
 distcorr, which cannot establish qcbedms precision settings.

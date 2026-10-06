@@ -2468,7 +2468,7 @@ separate positivity validation before using that pixel on active support.
 `load_legacy_sigma_map(path, expected_shape=...)` reads whitespace-delimited saved
 sigma images, retaining row/column orientation and dynamic shape. It does not
 identify an arbitrary file's physical units by filename and does not square its
-output. `reference_data/sigma.dat` is accepted as a saved legacy per-pixel **sigma**
+output. `tests/fixtures/legacy_reference/sigma.dat` is accepted as a saved legacy per-pixel **sigma**
 map: 256×256, 65,536 finite positive values, range 46.5183–122206.0. Its variance
 is the square, not the unsquared file and not sigma squared twice.
 

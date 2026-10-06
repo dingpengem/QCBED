@@ -28,7 +28,7 @@ import qcbed.refinement_trial as trial
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    source = root/"reference_data/FOR007.DAT"
+    source = root/"tests/fixtures/legacy_reference/FOR007.DAT"
     state, _ = parse_legacy_refinement(source, seed=2026)
     current_depth = state.regions[0].depth_angstrom
     state = replace(state, regions=(replace(state.regions[0], depth_angstrom=840.),)+state.regions[1:])

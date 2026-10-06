@@ -8,7 +8,7 @@ signal/weight manifests from the previous Patch A closure. Original paths and
 SHA256 hashes are recorded; large A8 search traces and synthetic objective reports
 are deliberately omitted.
 
-The original pattern/sigma stay in read-only `reference_data`; their hashes are
+The raw pattern stays in `reference_data`; the recorded sigma map is retained in `tests/fixtures/legacy_reference`; their hashes are
 verified. No physical hkl indexing is asserted. Tests and the diagnostic example
 use these fixtures so they do not depend on local temporary run directories.
 Do not regenerate them to hide a geometry, beam-order or signal regression.

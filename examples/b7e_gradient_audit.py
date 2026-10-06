@@ -32,7 +32,7 @@ def run_audit():
         raise ValueError('Canonical configuration changed')
     return dict(status='PASS (audit only)', dilation_status='DEFERRED',
         signal_mode='gradient', optimizer_executed=False,
-        legacy_semantics=dict(source='legacy_fortran/oneit.f:893-916',
+        legacy_semantics=dict(source='private predecessor gradient convention audit',
             units='dimensionless vacancy-coupling coefficient',
             coefficient_domain=[0., 1.], baseline_coefficient=compiled.state.dilation,
             applied_scale='(1 - VAC * DILATION) ** (1/3) when 0 < VAC*DILATION <= 0.5 and RTYPE=S; otherwise 1',
@@ -58,7 +58,7 @@ def main():
     (args.output/'audit_summary.md').write_text(
         '# B7e gradient audit: PASS (audit only)\n\n'
         'Dilation **DEFERRED**. '+report['gate_reason']+'\n\n'
-        'Source: `legacy_fortran/oneit.f:893–916`; dimensionless coefficient domain 0–1; '
+        'Source: the private predecessor gradient convention audit; dimensionless coefficient domain 0–1; '
         'baseline coefficient 0, applied scale 1. This domain is not a global lattice-scale bound.\n\n'
         f"Gradient baseline: {b['active_count']} active points, weights [1.0], "
         f"YNORM {b['ynorm']!r}, objective {b['objective']!r}. "

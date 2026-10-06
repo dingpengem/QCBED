@@ -127,7 +127,7 @@ def test_yaml_snapshot_and_checkpoint_identity(compiled,tmp_path):
     assert canonical_checkpoint_identity(compile_config_from_sources(renamed))!=canonical_checkpoint_identity(compiled)
     legacy=compile_config_from_sources(load_yaml_config(ROOT/'examples/fcc_al_real_preflight.yml'))
     payload=dict(state=asdict(legacy.state),runner=asdict(legacy.runner),layout=asdict(legacy.layout),
-        experiment=asdict(legacy.experiment),run=asdict(legacy.configuration.run))
+        experiment=asdict(legacy.experiment),run={k:getattr(legacy.configuration.run,k) for k in ("output_directory","output_filename","snapshot_every","checkpoint_every","max_total_evaluations","max_wall_time_seconds")})
     assert canonical_checkpoint_identity(legacy)==dict(format='qcbed-canonical-run',version=1,
         digest=hashlib.sha256(json.dumps(payload,sort_keys=True,allow_nan=False).encode()).hexdigest())
     from examples.a9_real_variance_closure import prepare_reference_variance

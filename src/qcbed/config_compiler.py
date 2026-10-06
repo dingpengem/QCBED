@@ -35,6 +35,10 @@ class CompiledConfig:
     @property
     def packed_starting_vector(self):
         """Existing ARRANGEPARS projection; never written into raw configuration."""
+        if self.crystallography is not None and self.crystallography.projected_elastic:
+            import numpy as np
+            from .crystallography_refinement import physical_target_layout
+            return np.array([p['initial_value'] for p in physical_target_layout(self)], dtype=np.float64)
         return pack_refinement_parameters(self.state)
 
     @property
@@ -43,6 +47,8 @@ class CompiledConfig:
 
     @property
     def range_factors(self):
+        if self.crystallography is not None and self.crystallography.projected_elastic:
+            return tuple(p.range_factors for p in self.layout.parameters)
         return self.state.ranges
 
     @property

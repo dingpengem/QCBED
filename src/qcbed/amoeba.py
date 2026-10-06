@@ -86,7 +86,7 @@ def _rank(y):
     return lo, hi, nhi
 
 
-def _run(simplex, evaluate, *, ftol, max_evaluations, fmin, allow_invalid=False):
+def _run(simplex, evaluate, *, ftol, max_evaluations, fmin, allow_invalid=False, iteration_hook=None):
     """Private scalar-objective seam; source loops retain summation order."""
     p = simplex.copy()
     n = p.shape[1]
@@ -107,6 +107,7 @@ def _run(simplex, evaluate, *, ftol, max_evaluations, fmin, allow_invalid=False)
     y = np.array([visit(row) for row in p], dtype=np.float64)
     numf = iterations = 0
     while True:
+        if iteration_hook is not None:iteration_hook(iterations)
         lo, hi, nhi = _rank(y)
         with np.errstate(divide="ignore", invalid="ignore", over="raise"):
             rtol = 2.0*abs(y[hi]-y[lo])/(abs(y[hi])+abs(y[lo]))

@@ -129,7 +129,7 @@ def test_empty_beams_and_nonboolean_gradient(tmp_path):
 def test_reference_three_modes_setup_and_objective_equivalence(tmp_path):
     # Reference header is one line; production reader tests above separately
     # exercise multi-line logical headers. Reference files are never rewritten.
-    source = ROOT/'reference_data/in.dat'
+    source = ROOT/'tests/fixtures/legacy_reference/in.dat'
     body = tmp_path/'body.dat'
     body.write_text(''.join(source.read_text().splitlines(keepends=True)[1:]))
     raw = example('reference_configuration').reference_configuration()
@@ -139,7 +139,7 @@ def test_reference_three_modes_setup_and_objective_equivalence(tmp_path):
     state,runner = legacy_full()
     old = parse_experimental_intensities(source,beam_indices_hk=absent.experiment.beam_indices_hk,scan=state.scan)
     new = load_experimental_data(absent,base_directory=tmp_path)
-    transitional = load_experimental_data(validate,base_directory=ROOT/'reference_data')
+    transitional = load_experimental_data(validate,base_directory=ROOT/'tests/fixtures/legacy_reference')
     assert_data(old,new)
     assert_data(old,transitional)
     assert new.intensities.shape == (1521,9)

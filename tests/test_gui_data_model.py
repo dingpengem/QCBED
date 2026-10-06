@@ -63,7 +63,7 @@ def test_legacy_duplicate_beams_and_header_are_preserved(tmp_path):
     from qcbed.config_paths import resolve_config_paths
     c=reference_configuration(legacy_header=True)
     root=Path(__file__).resolve().parents[1]
-    c=replace(c,experiment=replace(c.experiment,path=str(root/"reference_data/in.dat")),legacy_export=replace(c.legacy_export,experimental_filename_raw=None))
+    c=replace(c,experiment=replace(c.experiment,path=str(root/"tests/fixtures/legacy_reference/in.dat")),legacy_export=replace(c.legacy_export,experimental_filename_raw=None))
     c=resolve_config_paths(c,base_directory=root)
     c=replace(c,experiment=replace(c.experiment,beam_indices_hk=c.experiment.beam_indices_hk[:-1]+c.experiment.beam_indices_hk[:1]))
     data=read_data(c,root)

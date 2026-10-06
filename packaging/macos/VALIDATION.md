@@ -536,3 +536,248 @@ Apple Silicon-only packaging, no notarization, instructional FCC Al results and
 unsupported physical target families remain explicit. No expensive campaign or
 Finder quarantine-distribution acceptance was performed. Evidence is retained in
 ignored `tmp/release_acceptance/`.
+
+## Projected elastic coefficient E_g milestone
+
+Final complete suite: **2,984 passed, zero failures/skips, 225 existing warnings,
+578.49 seconds**. The 19 focused E_g tests passed. Full validation used a temporary
+byte-identical source/test copy with the private fixtures required by five source
+provenance checks; private sources remain outside the shared tree and bundle.
+
+Source GUI smoke and signed frozen GUI smoke: **PASS**, **zero optimizer evaluations**.
+The frozen test selected original (200), slice [0,1], verified the Real-only IAM
+default, selected Complex mode with separate bounds, saved/reopened the compact
+YAML, and reconstructed E_g Results metadata from an initialization checkpoint.
+Existing A/B/C/D, [0,1], B, g1/g2, D-only writable output, Batched/64, Resume and
+Open Results checks also passed. Enable `projected_elastic: true` in the existing
+usability smoke manifest to exercise these assertions.
+
+The final app was rebuilt with the existing pinned packager dependency directory,
+ad-hoc signed, and passed `codesign --verify --deep --strict` after smoke. All
+**329 Mach-O binaries are arm64**. The refreshed symlink-preserving
+`dist/QCBED-arm64.zip` passed `unzip -t`. Exact source and artifact hashes are in
+[RELEASE_PROVENANCE.json](RELEASE_PROVENANCE.json). Local detailed logs are under
+`tmp/projected_elastic_milestone/`; they are not release inputs.
+
+Limitations: Apple Silicon macOS-only bundle, ad-hoc signed, **not notarized**.
+FCC Al is instructional, not scientifically converged. E_g uses the source-scaled
+projected convention (V·Å interpretation), not conventional 3D F_hkl. Space-group
+constraint inference and conventional 3D mapping are deferred. (000) is read-only;
+zero IAM has no magnitude-mode phase. Existing unsupported physical targets remain
+listed in the [catalogue](../../docs/modern_refinement_catalogue.md).
+
+Final E_g^(s) checklist closure: **PROJECTED ELASTIC COEFFICIENT REFINEMENT: PASS**.
+The app was rebuilt after the exact-definition wording and component-details /
+separate Complex-bound controls were added. The full suite remained at 2,984
+passes, and the new frozen smoke passed at zero optimizer evaluations. Local
+closure smoke records are in `tmp/projected_elastic_milestone/closure-frozen-smoke/`.
+Ad-hoc signing, deep/strict verification and ZIP integrity were repeated for this
+bundle; it is not notarized.
+
+## Optional equality groups and termination closure
+
+Final full suite: **3,007 passed**, zero failures/skips, 225 warnings,
+420.77 seconds. Focused tests: **169 passed**. The isolated validation copy
+used private fixtures for five provenance checks; the shared tree and bundle do
+not include those fixtures. Source and frozen GUI smoke both **PASS** with zero
+optimizer evaluations, including an optional linked Complex pair, compact YAML,
+shared vector dimension, member Results rows, iteration/evaluation counts,
+cancellation reason and Resume. Use `coefficient_groups: true` together with
+`projected_elastic: true` in the usability manifest.
+
+The app and ZIP were rebuilt. All **329 Mach-O binaries are arm64**. Ad-hoc signing,
+`codesign --verify --deep --strict`, and `unzip -t` passed. This is **not notarized**.
+See [release records](../../docs/RELEASE_REPORT.md) for limitations and the
+[real-run audit](../../docs/25_iteration_audit.md) for the verified 12-iteration /
+25-evaluation result. Exact current artifact hashes are in RELEASE_PROVENANCE.json.
+
+
+## Shared refinement parameter UI clarification
+
+The coefficient editor now uses **Share One Refinement Parameter**, **Make
+Independent**, and **Parameter sharing** (`Independent` / `Shared: Group 1`).
+Live counts distinguish physical targets from independent/shared optimizer
+coordinates; confirmation explains the mode and previews the count reduction.
+Results displays **Shared refinement parameter group**. Mandatory Friedel
+relations remain separate. Physics, optimizer coordinates, YAML keys and stored
+checkpoint identities are unchanged.
+
+Validation for this presentation patch: **52 passed**, zero failures, 48 Qt
+deprecation warnings (19.83 seconds). The previous **3,007-pass full suite** is the
+preceding milestone baseline; it was not rerun for this UI patch. Frozen GUI
+smoke **PASS**, including the packaged controls, Complex dimensionality 6 → 4,
+compact YAML reload, Results and Resume, with **zero optimizer evaluations**.
+
+Rebuilt app and ZIP: **PASS**. All **329 Mach-O binaries are arm64**; ad-hoc
+signing, deep/strict signature verification and ZIP integrity **PASS**.
+`git diff --check` and documentation/link/source hygiene checks passed.
+Local validation records are under `tmp/sharing_ui/`; artifact hashes are recorded
+in `RELEASE_PROVENANCE.json`.
+
+Limitations remain: Apple Silicon macOS only, ad-hoc signed and **not notarized**;
+FCC Al is instructional, not a converged refinement. No refinement campaign was
+run. Conventional 3D structure-factor refinement and automatic space-group
+constraints remain deferred.
+
+
+## Resolved refinement layout and dimension audit
+
+The audited shared-group backend already allocated one coordinate per shared
+Real/Magnitude component and two per Complex group. Duplicate optimizer coordinates
+were not reproduced. Ambiguous **Active parameters** displays were replaced by
+**Active physical targets** and **Optimizer parameters**, derived from compilation.
+Validation now exposes each group's members, coordinates, starts, intersected bounds,
+independent targets and mandatory Friedel relationships in a resolved layout.
+
+A separate compiler defect was fixed: category-filtered coefficient-only selections
+were rejected before coefficient coordinates could be appended to the model preview.
+See [the implementation audit](../../docs/shared_parameter_layout_audit.md) for the trace and
+scope. Stored group/YAML/checkpoint identities and propagation mathematics are unchanged.
+
+Focused regression: **119 passed**, zero failures, 200 Qt deprecation warnings,
+48.79 seconds. This includes multiple groups, a three-member group, GUI validation,
+coefficient-only dimensions, starts/bounds, writeback, YAML, checkpoint compatibility
+and Results identities. The prior **3,007-pass full suite** remains a baseline;
+it was not rerun for this focused change.
+
+Frozen GUI smoke **PASS**, zero optimizer evaluations: resolved layout, A/B/C/D,
+compact YAML, Results and Resume. Rebuilt app and ZIP **PASS**; all **329 Mach-O
+binaries are arm64**, ad-hoc signed, deep/strict signature verification and ZIP
+integrity passed. `git diff --check` and release hygiene checks passed. Local logs
+are in `tmp/resolved_layout/`; current package hashes are in release provenance.
+
+Limitations: Apple Silicon macOS only; **not notarized**. FCC Al remains instructional,
+not a converged scientific refinement. Conventional 3D structure factors and automatic
+space-group constraints remain deferred. No refinement campaign was run.
+
+
+## Actual sharing-button validation fix
+
+Fixed the missing coefficient commit in **Validate Refinement Targets**. Share and
+Make Independent now invalidate refinement/C readiness explicitly and show compiled
+dimension transitions. All visible optimizer counts use compiled dimensions.
+Actual frozen widget flow: **PASS**, Real/Magnitude with depth **3 → 2 → 3**,
+Complex **5 → 3 → 5**, zero optimizer evaluations. Final focused tests: **83 passed**,
+176 Qt deprecation warnings, 43.64 seconds. Full suite was not rerun.
+
+Rebuilt app/ZIP: **PASS**, **331 arm64 binaries**, ad-hoc signed, deep/strict and ZIP
+verification passed. Not notarized; Apple Silicon only. FCC Al remains instructional.
+No physics changes or refinement campaign. The earlier 3,007-pass full suite remains
+historical baseline evidence. Current hashes are in release provenance.
+See [the state-layer audit](../../docs/sharing_gui_state_audit.md) for the reproduced defect,
+exact compiled coordinates and receipts. The pre-fix diagnostic was intentionally
+not counted as a passing smoke; final results are under `tmp/sharing_actual/after/`.
+
+
+## GUI workflow and navigation usability
+
+CIF loading now stays in **Structure**. Users inspect lattice/composition and
+orientation, then explicitly continue to Site Groups. Apply stays in Site Groups;
+local validation and Back/Next actions preserve g1/g2 and compatible view state.
+Member sites are visible and read-only unless Advanced editing is enabled.
+
+C retains the active sub-tab during sharing, Make Independent, mode/bound edits
+and validation. Compatible drafts survive widget regeneration and upstream
+revalidation using physical target identities. Clear/Revert deliberately discard
+drafts. Coefficient edits explicitly invalidate C regardless of the visible
+parent tab; this also fixes a pending-draft flag surviving Save.
+
+The persistent A/B/C/D strip combines text, icons and muted state colors with a
+Next step message. Each C page validates in place and offers explicit Next
+navigation. Shared groups, component semantics and draft counts update in place;
+validated counts and the resolved layout come from compilation. D shows readiness
+and return links while keeping output validity separate from Resume availability.
+
+Final frozen navigation smoke: **PASS**, including two groups, **5 physical
+targets / 3 optimizer coordinates**, and Run readiness. Separate frozen
+YAML/Results/Resume smoke: **PASS**. Both used **zero optimizer evaluations**.
+Screenshots and instructions were refreshed in Quick Start, User Manual and the
+FCC Al tutorial. No numerical behavior change or refinement campaign was needed.
+
+Acceptance: **3,025 passed, zero failures**, 273 Qt deprecation warnings, 443.46
+seconds on the final source/test tree. Focused GUI/state regression: **51 passed**;
+the corrected member-site visibility/read-only assertions: **3 passed**. An initial
+full run found one stale hidden-column assertion; after correcting it, the entire
+suite was rerun to the green result above. Five provenance checks used private
+maintainer fixtures in a byte-identical temporary source/test copy; no private
+sources were restored to the shared tree or packaged app.
+
+Rebuilt **QCBED.app** and **QCBED-arm64.zip**: PASS. All **331 Mach-O binaries** are
+native arm64. Ad-hoc signing, deep/strict signature verification and ZIP integrity:
+PASS. Source fingerprints match the tested tree and bundle. `git diff --check`,
+local documentation links, generated-file and absolute-path hygiene checks: PASS.
+Acceptance logs are local under `tmp/workflow_usability/`; artifact hashes are in
+`packaging/macos/RELEASE_PROVENANCE.json`.
+
+Limitations remain: Apple Silicon macOS only; ad-hoc signed, **not notarized**;
+FCC Al is instructional, not a converged scientific refinement. Conventional 3D
+structure-factor refinement, automatic space-group constraints and the unsupported
+physical targets listed in the refinement catalogue remain deferred.
+
+
+## C-tab layout cleanup and explicit sharing guidance
+
+Released the old section scroll-area ownership before embedding C form bodies,
+fixing content that remained constrained to 602 px despite window resizing.
+Reproduced clipping, not a literal button-on-button collision. C now separates
+scrolling content from responsive bottom validation/navigation actions. Technical
+help, IAM/components, group bounds and the resolved layout are collapsed by default.
+Sharing steps remain visible and distinguish Refine checkboxes from row selection;
+live group/mode summaries and dimension changes remain immediate. The expandable
+example explains Real-only 2 → 1 coordinates, or 3 → 2 with depth, separately from
+mandatory Friedel constraints. No validation/scientific semantics changed.
+
+**46 focused tests passed**, zero failures, 96 Qt deprecation warnings, 43.09 seconds.
+The stricter geometry follow-up passed **2 tests**, 16 warnings, 5.70 seconds.
+Final frozen A/B/C/D, actual sharing and responsive C-page smoke: **PASS**, at
+960×720, 1250×850 and 1700×950, zero optimizer evaluations. The full suite was not
+rerun for this layout-only pass; 3,025 passed is the preceding milestone baseline.
+
+App/ZIP rebuilt: **PASS**. All **331 native binaries are arm64**; ad-hoc signing,
+deep/strict signature verification and ZIP integrity passed. Not notarized.
+User Manual, FCC Al tutorial, Quick Start and screenshots were updated.
+Local logs: `tmp/c_tab_cleanup/`. Current artifact hashes are in release provenance.
+Existing scientific/platform limitations remain unchanged; FCC Al is instructional.
+
+
+## Final input-only cleanup and publication acceptance — 2026-10-06
+
+The shared input directory now contains exactly **pattern.dat** (raw FCC Al CBED)
+and **Al_FCC.cif** (crystal structure), plus its README. The FCC Al project starts
+from these two inputs and regenerates preparation products; no hidden prepared
+cache or saved sigma map is required. Ten historical numerical/parser/provenance
+files moved byte-for-byte to `tests/fixtures/legacy_reference/`, with purpose and
+SHA-256 manifest. The synthetic demo intensity moved to `tests/fixtures/synthetic/`.
+Existing test-only geometry/catalogue fixtures remain documented. No tests were removed.
+
+Obsolete fit/result snapshots, weights/potential dumps, Linux executables,
+scheduler/crash records and preparation caches were archived locally in ignored
+storage. Build/dist were already untracked; app/ZIP outputs remain local. Ignore
+rules protect recurring caches/builds/logs and private source. Machine-specific
+text paths and two old screenshots were removed from publication. Current README
+Highlights cover projected coefficients and optional sharing; user/developer docs
+and example fixture paths were reconciled. No scientific equations changed.
+
+**Full suite: 3,027 passed, zero failures, zero skips**, 289 Qt deprecation warnings,
+441.75 seconds, run directly from the cleaned working tree. The five original
+private evidence checks passed against an external maintainer directory without
+copying private source into the repository. Shared users without that external
+setting see five explicit optional skips; numerical tests remain available.
+Focused data/provenance checks: **413 passed**. Minimal automated GUI/state and
+single compact YAML round-trip: **PASS**, zero objective evaluations. Exact user
+configuration, shared groups, physical identities, optimizer dimension, checkpoint
+identity, output validation and Results loading survived reload.
+
+Final packaged **startup-only smoke: PASS**, zero evaluations. The user's full
+manual workflow was not repeated. Rebuilt app/ZIP, **331 native arm64 binaries**,
+ad-hoc signing, deep/strict verification and ZIP integrity: **PASS**. No private
+source files are included. `git diff --check`, Markdown links, privacy and staged
+artifact audits passed. Source/artifact fingerprints are in release provenance;
+local detailed logs are under `tmp/final_cleanup/`.
+
+Limitations: Apple Silicon macOS app only; ad-hoc signed, **not notarized**; FCC Al
+remains instructional. Conventional 3D F_hkl refinement/mapping and automatic
+space-group equality remain deferred. Occupancy, atomic-coordinate, lattice-strain
+and vacancy refinement, voltage with absorption, and modern linked-C absorption
+remain unsupported as documented in the target catalogue. No refinement campaign
+or history rewrite was performed.

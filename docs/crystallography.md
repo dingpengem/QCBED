@@ -599,7 +599,7 @@ contains 207 passing tests. B4 performs no objective evaluation or optimization.
 
 ### Remaining real-data steps
 
-This task explicitly confirms `reference_data/sigma.dat` as a legacy per-pixel
+This task explicitly confirms `tests/fixtures/legacy_reference/sigma.dat` as a legacy per-pixel
 sigma map, so a future explicit integration uses variance=sigma². This supersedes
 the earlier Patch A closure's unresolved sigma-versus-variance status; historical
 reports remain unmodified. B4 does not load/square the file, fabricate A4 masks,

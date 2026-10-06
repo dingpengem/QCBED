@@ -80,7 +80,7 @@ controls = FullRefinementConfig(
 run = run_full_refinement(
     state, experimental, controls,
     output_directory="tmp/a_new_run",
-    input_paths=("reference_data/FOR007.DAT", "reference_data/in.dat"),
+    input_paths=("tests/fixtures/legacy_reference/FOR007.DAT", "tests/fixtures/legacy_reference/in.dat"),
 )
 ```
 

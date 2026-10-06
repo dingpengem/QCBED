@@ -268,7 +268,7 @@ def test_unrepresentable_inputs_fail_explicitly():
 
 
 def test_saved_fortran_absorption_listing():
-    root = Path(__file__).resolve().parents[1] / "reference_data"
+    root = Path(__file__).resolve().parents[1] / "tests/fixtures/legacy_reference"
     parsed = parse_for007(root / "FOR007.DAT")
     s = parsed.slices[0]
     reciprocal = grid(a=s.cell_a_angstrom, b=s.cell_b_angstrom, gamma=s.lattice_gamma_degrees,

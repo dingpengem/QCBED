@@ -13,6 +13,7 @@ Developer references:
 - [Architecture](ARCHITECTURE.md) and [project specification](../PROJECT_SPEC.md).
 - [Modern YAML](modern_yaml.md) and [typed configuration](configuration.md).
 - [Refinement catalogue](modern_refinement_catalogue.md).
+- [Projected elastic coefficient E_g refinement](projected_elastic_coefficients.md).
 - [Data preparation](data_preparation_algorithm.md) and [crystallography](crystallography.md).
 - [One-slice implementation](one_slice_simulation.md).
 - [Fortran architecture](fortran_architecture.md) and [source provenance](source_provenance.md).

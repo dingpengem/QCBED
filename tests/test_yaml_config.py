@@ -61,7 +61,7 @@ def test_reference_complete_equivalence_and_forward(tmp_path,monkeypatch):
     x,y = compare(loaded,expected_paths(direct,REFERENCE_YAML.parent))
     # Use a temporary body, never alter the reference input or require tmp artifacts.
     body = tmp_path/'body.dat'
-    body.write_text(''.join((ROOT/'reference_data/in.dat').read_text().splitlines(keepends=True)[1:]))
+    body.write_text(''.join((ROOT/'tests/fixtures/legacy_reference/in.dat').read_text().splitlines(keepends=True)[1:]))
     states = []
     for config in (loaded,expected_paths(direct,REFERENCE_YAML.parent)):
         compiled = compile_config(replace(config,experiment=replace(config.experiment,path=str(body))))
@@ -207,7 +207,7 @@ def test_title_only_change_preserves_compilation_and_numerical_outputs(tmp_path)
     assert first.range_factors == second.range_factors
     assert first.plamda == second.plamda
     body = tmp_path/'body.dat'
-    body.write_text(''.join((ROOT/'reference_data/in.dat').read_text().splitlines(keepends=True)[1:]))
+    body.write_text(''.join((ROOT/'tests/fixtures/legacy_reference/in.dat').read_text().splitlines(keepends=True)[1:]))
     results = []
     for config in (original,renamed):
         compiled = compile_config(replace(config,experiment=replace(config.experiment,path=str(body))))

@@ -238,7 +238,7 @@ def test_shifts_only_change_propagators_and_immutable_prepared_state():
 
 
 def test_reference_input_preparation_and_zero_tilt():
-    path = Path(__file__).parents[1]/"reference_data"/"FOR007.DAT"
+    path = Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT"
     m = parse_for007(path)
     lines = path.read_text().splitlines()
     # Explicit initial applied values are supported by these input records and

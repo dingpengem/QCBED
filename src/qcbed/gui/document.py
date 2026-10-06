@@ -51,12 +51,13 @@ def editable_fields(config):
             FieldSpec('Numerical / Simulation cell',('crystallography',),'depth_angstrom','Requested depth (Å)','real'),
             FieldSpec('Microscope',('experiment',),'gradient_option','Signal mode','signal')))
     for name,label,kind in (('method','Workflow','workflow'),('loops','Loops','int'),
-        ('maxfsimp','Stage iteration / soft evaluation budget','int'),('maxfpara','Coordinate-search budget','int'),('seed','Random seed','int'),
+        ('maxfsimp','Legacy stage budget (method-dependent; see help)','int'),('maxfpara','Coordinate-search budget','int'),('seed','Random seed','int'),
         ('maxtemp','ANNEAL maximum temperature','real'),('mintemp','ANNEAL minimum temperature','real'),
         ('coolrate','Cooling rate','real'),('ftol','Objective-spread tolerance','real'),('chimin','Minimum objective','real')):
         result.append(FieldSpec('Optimizer / Run',('refinement','optimizer'),name,label,kind))
     if config.crystallography is not None:
         result.extend((
+            FieldSpec('Execution',('run',),'max_stage_iterations','Maximum completed iterations per stage (blank: no additional cap)','optional_int'),
             FieldSpec('Execution',('run',),'max_total_evaluations','Maximum total evaluations (blank: unlimited)','optional_int'),
             FieldSpec('Execution',('run',),'max_wall_time_seconds','Maximum wall time (seconds; blank: unlimited)','optional_real')))
     return tuple(result)
@@ -236,7 +237,10 @@ class EditorDocument:
                 from qcbed.crystallography_refinement import physical_target_layout
                 import math
                 try:
-                    layout=physical_target_layout(compile_config_from_sources(candidate))
+                    compiled=compile_config_from_sources(candidate)
+                    from qcbed.projected_elastic import check_ready
+                    check_ready(compiled)
+                    layout=physical_target_layout(compiled)
                     if not layout:raise ValueError('Select at least one complete supported refinement binding.')
                     for row in layout:
                         lo,hi,value=row['lower'],row['upper'],row['initial_value']
@@ -407,12 +411,14 @@ class EditorDocument:
         from qcbed.crystallography_config import compile_config_from_sources
         try:compiled = compile_config_from_sources(self.config)
         except (OSError,ValueError,TypeError) as exc:return dict(configuration='Invalid',compile=str(exc),bounds=None)
+        from .resolved_layout import resolved_layout
+        layout_counts,layout_text=resolved_layout(compiled)
         effective=compiled.configuration
         execution_errors = any(i.severity == 'error' and (i.phase == ValidationPhase.EXECUTION or i.code == 'output_exists') for i in self.committed_issues)
         file_errors = any(i.severity == 'error' and i.phase == ValidationPhase.FILES for i in self.committed_issues)
         return dict(regions=len(effective.sample.regions),stored_slices=len(compiled.state.model.slices),
             tilts=self.config.scan.scan_rows*self.config.scan.scan_columns,
-            beams=len(compiled.experiment.beam_indices_hk),active_parameters=compiled.parameter_count,
+            beams=len(compiled.experiment.beam_indices_hk),**layout_counts,resolved_layout=layout_text,
             configuration='Valid (committed snapshot)',
             compile='Valid (committed snapshot)',
             execution='Blocked' if execution_errors else 'Preflight passed; numerical trials not evaluated',

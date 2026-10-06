@@ -15,7 +15,7 @@ def canonical_checkpoint_identity(compiled):
     identity = dict(format='qcbed-canonical-run', version=1,
         digest=hashlib.sha256(json.dumps(dict(state=asdict(compiled.state),
             runner=asdict(compiled.runner), layout=asdict(compiled.layout),
-            experiment=asdict(compiled.experiment), run=asdict(compiled.configuration.run)),
+            experiment=asdict(compiled.experiment), run={k:v for k,v in asdict(compiled.configuration.run).items() if k!='max_stage_iterations' or v is not None}),
             sort_keys=True,allow_nan=False).encode()).hexdigest())
     if compiled.crystallography is not None and compiled.crystallography.site_groups:
         # Opt-in ownership is part of identity even when numerical arrays match.
@@ -27,6 +27,9 @@ def canonical_checkpoint_identity(compiled):
             target_aliases=[(asdict(a),asdict(b)) for a,b in compiled.crystallography.target_aliases
                 if a.category.value == "debye_waller" or any(
                     p.category == a.category.value for p in compiled.layout.parameters)])
+        if compiled.source_configuration.crystallography.projected_elastic:
+            ownership['projected_elastic']=[{k:v for k,v in asdict(r).items() if k!='equality_group' or v is not None} for r in compiled.source_configuration.crystallography.projected_elastic]
+            ownership['projected_elastic_adapter']='slice-eg-v1'
         return dict(format='qcbed-canonical-run',version=2,
             digest=hashlib.sha256(json.dumps(dict(base=identity,ownership=ownership),
                 sort_keys=True,allow_nan=False).encode()).hexdigest())

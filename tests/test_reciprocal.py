@@ -148,7 +148,7 @@ def test_representations_and_buffers_are_immutable():
 
 
 def test_reference_input_geometry():
-    parsed = parse_for007(Path(__file__).parents[1] / 'reference_data' / 'FOR007.DAT')
+    parsed = parse_for007(Path(__file__).parents[1] / 'tests/fixtures/legacy_reference' / 'FOR007.DAT')
     geometry = parsed.slices[0]
     reciprocal = ReciprocalLattice2D(DirectLattice2D(
         geometry.cell_a_angstrom, geometry.cell_b_angstrom, geometry.lattice_gamma_degrees))

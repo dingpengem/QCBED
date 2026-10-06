@@ -67,6 +67,10 @@ def load_stage_checkpoint(path):
 class _Pause(Exception):pass
 
 
+class _IterationLimit(Exception):
+    pass
+
+
 def _run_stage(compiled,evaluate,path,*,optimizer,initial,seed,settings,identity,
                resume=False,stop_after=None,cancel_requested=None,local_budget=40,window=WINDOW,parameter_bounds=None,progress_hook=None,dynamic=False):
     if optimizer not in (('ANNEAL','AMOEBA','PARAMIN','SIMPARA') if dynamic else ('ANNEAL','AMOEBA')):raise ValueError('unsupported stage')
@@ -111,7 +115,7 @@ def _run_stage(compiled,evaluate,path,*,optimizer,initial,seed,settings,identity
     else:
         path.mkdir(parents=True,exist_ok=False)
         cp=dict(format='qcbed-b7d-replay',version=2 if dynamic else 1,identity=identity,status='running',
-            history=[],best=None,last_evaluated=None,optimizer_acceptance='not exposed by engine; best-so-far recorded')
+            history=[],best=None,last_evaluated=None,optimizer_iterations=0,optimizer_acceptance='not exposed by engine; best-so-far recorded')
         _save(path,cp)
     history=cp['history'];prefix=len(history);cursor=0;new=0
     rng=np.random.Generator(np.random.PCG64(seed))
@@ -158,19 +162,47 @@ def _run_stage(compiled,evaluate,path,*,optimizer,initial,seed,settings,identity
         _save(path,cp)
         if progress_hook is not None:progress_hook(cp)
         return row['objective'] if accepted else float('inf')
+    elastic_adapter = dynamic and any(p.category=='projected_elastic' for p in compiled.layout.parameters)
+    # Affine, zero-safe coordinates anchored to stage initial and physical bound widths.
+    # x=initial+(u-1)*width. Journals, bounds, and callbacks remain physical.
+    width = limits[:,1]-limits[:,0] if elastic_adapter else None
+    def physical(u): return initial+(u-1.)*width
+    def iteration_hook(count):
+        cp['optimizer_iterations']=count
+        limit=compiled.source_configuration.run.max_stage_iterations if dynamic else None
+        if limit is not None and count>=limit:raise _IterationLimit()
     try:
-        if optimizer=='ANNEAL':
-            result=anneal(initial,lambda v:v.copy(),visit,max_iterations=settings.maxfsimp,
+        if elastic_adapter and optimizer in ('AMOEBA','PARAMIN'):
+            start=np.ones_like(initial)
+            if optimizer=='AMOEBA':
+                simplex=np.tile(start,(len(start)+1,1))
+                for i,step in enumerate(compiled.plamda): simplex[i+1,i]+=step/width[i]
+                result=amoeba(simplex,lambda u:visit(physical(u)),ftol=settings.ftol,
+                    max_evaluations=local_budget,fmin=settings.chimin,allow_invalid=True,iteration_hook=iteration_hook)
+                retained=physical(result.best_vector)
+                detail=dict(iterations=result.iterations,evaluations=result.evaluations,
+                    search_evaluations=result.search_evaluations,stop_reason=result.stop_reason,converged=result.converged,coordinate_adapter='physical-bound-width-v1')
+            else:
+                from .paramin import _run as paramin
+                step=np.asarray(compiled.plamda,dtype=np.float64)/width
+                if np.any(step>=1): raise ValueError('PARAMIN physical steps must be smaller than bound widths')
+                result=paramin(start,1-step,1+step,lambda u:u.copy(),lambda u:visit(physical(u)),
+                    max_cycles=settings.maxfpara,tolerance=settings.ftol,random_order=bool(settings.paraopt),rng=rng,allow_invalid=True,iteration_hook=iteration_hook)
+                retained=physical(result.best_vector)
+                detail=dict(iterations=result.cycles,evaluations=result.evaluations,stop_reason='converged' if result.converged else 'max_cycles',convergence_metric=float(result.average_displacement),converged=result.converged,coordinate_adapter='physical-bound-width-v1')
+        elif optimizer=='ANNEAL':
+            result=anneal(np.ones_like(initial) if elastic_adapter else initial,lambda v:v.copy(),
+                (lambda u:visit(physical(u))) if elastic_adapter else visit,max_iterations=settings.maxfsimp,
                 maximum_temperature=settings.maxtemp,minimum_temperature=settings.mintemp,
-                cooling_rate=settings.coolrate,rng=rng,allow_invalid=True)
-            retained=result.best_vector
+                cooling_rate=settings.coolrate,rng=rng,allow_invalid=True,iteration_hook=iteration_hook)
+            retained=physical(result.best_vector) if elastic_adapter else result.best_vector
             detail=dict(iterations=result.iterations,evaluations=result.evaluations,
                 temperature=float(result.temperature),amplitudes=result.amplitudes.tolist(),
-                convergence='ANNEAL has no convergence flag')
+                stop_reason='max_iterations' if result.iterations>settings.maxfsimp else 'temperature_schedule',converged=False,convergence='ANNEAL has no convergence flag')
         elif optimizer=='AMOEBA':
             simplex=build_legacy_simplex(compiled.state,initial,np.asarray(compiled.plamda,dtype=np.float64))
             result=amoeba(simplex,lambda p:visit(_physical_vector(compiled.layout,p,'legacy_simplex')),
-                ftol=settings.ftol,max_evaluations=local_budget,fmin=settings.chimin,allow_invalid=True)
+                ftol=settings.ftol,max_evaluations=local_budget,fmin=settings.chimin,allow_invalid=True,iteration_hook=iteration_hook)
             retained=_physical_vector(compiled.layout,result.best_vector,'legacy_simplex')
             detail=dict(iterations=result.iterations,evaluations=result.evaluations,
                 stop_reason=result.stop_reason,converged=result.converged,
@@ -182,21 +214,24 @@ def _run_stage(compiled,evaluate,path,*,optimizer,initial,seed,settings,identity
                 return v.copy()  # Modern explicit bounds reject proposals before any physical folding.
             result=paramin(initial,np.array([p.range_factors[1] for p in compiled.layout.parameters]),
                 np.array([p.range_factors[0] for p in compiled.layout.parameters]),project,visit,
-                max_cycles=settings.maxfpara,tolerance=settings.ftol,random_order=bool(settings.paraopt),rng=rng,allow_invalid=True)
+                max_cycles=settings.maxfpara,tolerance=settings.ftol,random_order=bool(settings.paraopt),rng=rng,allow_invalid=True,iteration_hook=iteration_hook)
             retained=result.best_vector
-            detail=dict(evaluations=result.evaluations,converged=result.converged)
+            detail=dict(iterations=result.cycles,evaluations=result.evaluations,stop_reason='converged' if result.converged else 'max_cycles',convergence_metric=float(result.average_displacement),converged=result.converged)
         else:
             from .simpara import _run as simpara
             result=simpara(initial,np.asarray(compiled.plamda,dtype=np.float64),visit,
                 max_evaluations=settings.maxfsimp,high_temperature=settings.maxtemp,
                 low_temperature=settings.mintemp,cooling=settings.coolrate,
-                random_order=bool(settings.paraopt),rng=rng,allow_invalid=True)
+                random_order=bool(settings.paraopt),rng=rng,allow_invalid=True,iteration_hook=iteration_hook)
             retained=result.best_vector
-            detail=dict(evaluations=result.evaluations,stop_reason=result.stop_reason)
+            detail=dict(iterations=result.cycles,evaluations=result.evaluations,stop_reason=result.stop_reason,converged=False)
         if cursor!=len(history):raise ValueError('unreplayed history')
         matching=[r for r in history if (r['physical_active_vector'] if dynamic else [r['requested_depth'],r['B']])==retained.tolist() and r['objective'] is not None]
         if not matching:raise ValueError('retained state lacks recorded evaluation')
         cp.update(status='completed',retained_final=matching[-1].copy(),optimizer_result=detail)
+    except _IterationLimit:
+        cp.update(status='completed',retained_final=cp.get('best'),optimizer_result=dict(iterations=cp['optimizer_iterations'],evaluations=len(history),stop_reason='max_iterations',converged=False))
+        if cp['retained_final'] is None:raise ValueError('Iteration cap reached without a valid initialization')
     except _Pause:pass
     except Exception as exc:
         cp.update(status='failed',error=f'{type(exc).__name__}: {exc}');_save(path,cp);raise

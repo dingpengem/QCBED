@@ -30,7 +30,7 @@ def build(window,layout,form):
     layout.addWidget(window.recommended_optimizer)
     note=QLabel('Recommended per-parameter search metadata comes from the documented reference profiles. '
         'High-level workflow settings remain explicit below. Loaded overrides are preserved; selecting recommended settings replaces them.')
-    note.setWordWrap(True);layout.addWidget(note)
+    note.setWordWrap(True);window.recommended_optimizer.setToolTip(note.text());note.hide()
     from .sections import ExpandableSection
     expert=ExpandableSection('Expert / Legacy settings — per-target search metadata')
     window.advanced_optimizer_toggle=expert.toggle
@@ -53,7 +53,8 @@ def refresh(window):
     table=window.refinement_table;advanced=window.optimizer_metadata
     method=window.widgets[('refinement','optimizer','method')].currentText()
     amoeba='AMOEBA' in method;anneal='ANNEAL' in method;para=method=='PARAMIN';spar=method=='SIMPARA'
-    used=(amoeba or para,amoeba or para,amoeba or spar)
+    elastic=bool(window.document.config.crystallography and any(r.refine for r in window.document.config.crystallography.projected_elastic))
+    used=(False,False,amoeba or para or spar) if elastic else (amoeba or para,amoeba or para,amoeba or spar)
     advanced.blockSignals(True)
     rows=[r for r in range(table.rowCount()) if table.item(r,1).checkState()==Qt.CheckState.Checked]
     advanced.setRowCount(len(rows))
@@ -64,7 +65,7 @@ def refresh(window):
             if col and not used[col-1]:text='Not used by the current optimizer'
             item=QTableWidgetItem(text);item.setData(Qt.ItemDataRole.UserRole,target)
             if not col or not used[col-1] or window.recommended_optimizer.isChecked():item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            if col:item.setToolTip(TIPS[col-1])
+            if col:item.setToolTip(('With E_g targets: physical search step for AMOEBA/PARAMIN; absolute uncertainty width for SIMPARA. D1/D2 are retained but unused.' if elastic else TIPS[col-1]))
             advanced.setItem(dest,col,item)
     advanced.resizeColumnsToContents();advanced.blockSignals(False)
     enabled={'maxtemp':anneal or spar,'mintemp':anneal or spar,'coolrate':anneal or spar,
@@ -73,7 +74,7 @@ def refresh(window):
     for name,on in enabled.items():
         widget=window.widgets.get(('refinement','optimizer',name))
         if widget:
-            widget.setEnabled(on);widget.setToolTip('' if on else 'Not used by the current optimizer')
+            widget.setEnabled(on);widget.setToolTip(('AMOEBA: soft search-evaluation budget, excluding N+1 initialization vertices; checked with > at cycle boundaries, so total evaluations can exceed this number. ANNEAL: legacy iteration counter (up to budget+1). SIMPARA: soft evaluation budget. Use D Advanced maximum completed iterations for an exact additional iteration cap.' if name=='maxfsimp' else '') if on else 'Not used by the current optimizer')
 
 
 def recommend(window,on):

@@ -104,7 +104,7 @@ def main():
     root = Path(__file__).resolve().parents[1]
     destination = root / "tmp" / "refinement_execution" / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     destination.mkdir(parents=True, exist_ok=False)
-    source = root / "reference_data" / "FOR007.DAT"
+    source = root / "tests/fixtures/legacy_reference" / "FOR007.DAT"
     original, _ = parse_legacy_refinement(source, seed=2026)
     state, _ = thickness_only(original)
     baseline_state = repr(state)

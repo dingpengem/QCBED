@@ -165,7 +165,7 @@ def environment():
 
 
 def load_case():
-    source=ROOT/'reference_data/FOR007.DAT'
+    source=ROOT/'tests/fixtures/legacy_reference/FOR007.DAT'
     state,_=parse_legacy_refinement(source,seed=2026)
     state,_=thickness_only(state)
     records=_CaptureRecords(source);_parse_for007_records(records)

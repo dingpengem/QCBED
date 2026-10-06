@@ -26,12 +26,18 @@ def load_grouped_results(directory,*,evaluation=None):
         last_evaluated=valid[-1] if valid else None,retained_final=final,
         requested_depth=current.get('requested_depth'),effective_depth=current.get('effective_depth'),
         optimizer_result=cp.get('stage_result'),convergence=('Converged' if (cp.get('stage_result') or {}).get('converged') else 'Not converged')+' (optimizer criterion only; no physical convergence claim)')
-    parameters=tuple(dict(label=p.get('label',p['target_id']),target_id=p['target_id'],category=p['category'],units=p['units'],
+    from qcbed.termination import termination_summary
+    summary.update(termination_summary(directory,cp))
+    parameters=tuple(dict(label=p.get('label',p['target_id']).replace('Linked coefficient group ','Shared refinement parameter group '),target_id=p['target_id'],category=p['category'],units=p['units'],
         initial=p['initial_value'],final=v if selected else None,delta=v-p['initial_value'] if selected else None,
         latest=valid[-1]['physical_active_vector'][i] if valid else None,
         best=best['physical_active_vector'][i] if best else None,
         retained=(final.get('physical_active_vector', [final.get('requested_depth'),final.get('B')])[i] if final else None),
         bounds=dict(lower=p['lower'],upper=p['upper'])) for i,(p,v) in enumerate(zip(cp['layout'],vector)))
+    from qcbed.projected_elastic import results_coefficients
+    def vector_of(row):return row.get('physical_active_vector') if row else None
+    summary['projected_elastic']=results_coefficients(cp['layout'],cp['initial'],displayed=vector_of(selected),
+        latest=vector_of(valid[-1] if valid else None),best=vector_of(best),retained=vector_of(final))
     comparison=None;warnings=[]
     if current.get('pattern_file'):
         try:

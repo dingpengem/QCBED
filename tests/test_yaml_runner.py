@@ -108,7 +108,7 @@ def test_legacy_reference_vs_yaml(tmp_path,cheap_render):
     raw = example('reference_configuration').reference_configuration(legacy_header=True)
     # Explicit test-sized reference workload, identical on both entry paths.
     raw = replace(raw,sample=replace(raw.sample,regions=(replace(raw.sample.regions[0],depth_angstrom=4.),)),
-        experiment=replace(raw.experiment,path=str(root/'reference_data/in.dat')),
+        experiment=replace(raw.experiment,path=str(root/'tests/fixtures/legacy_reference/in.dat')),
         run=replace(raw.run,output_directory=str(tmp_path/'yaml'),output_filename=str(tmp_path/'output.dat')),
         legacy_export=replace(raw.legacy_export,experimental_filename_raw=None,output_filename_raw=None),
         refinement=replace(raw.refinement,bounds=BoundsConfig(),optimizer=replace(raw.refinement.optimizer,loops=0)))
@@ -119,7 +119,7 @@ def test_legacy_reference_vs_yaml(tmp_path,cheap_render):
         output_filename=state.model.output_filename,output_filename_raw=state.model.output_filename_raw,
         experimental_intensity_filename=state.model.experimental_intensity_filename,
         experimental_intensity_filename_raw=state.model.experimental_intensity_filename_raw)) == state
-    data = parse_experimental_intensities(root/'reference_data/in.dat',beam_indices_hk=raw.experiment.beam_indices_hk,scan=state.scan)
+    data = parse_experimental_intensities(root/'tests/fixtures/legacy_reference/in.dat',beam_indices_hk=raw.experiment.beam_indices_hk,scan=state.scan)
     legacy = run_full_refinement(state,data,c.runner,output_directory=tmp_path/'legacy')
     canonical = run_yaml_refinement(write(tmp_path,plain(asdict(raw))))
     assert canonical.summary['final_objective'] == legacy.summary['final_objective']

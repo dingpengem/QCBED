@@ -7,7 +7,7 @@ from qcbed.legacy_io import LegacyInputParseError, parse_for007
 from qcbed import AtomSite, SliceGeometry
 
 
-REFERENCE_FOR007 = Path(__file__).parents[1] / "reference_data" / "FOR007.DAT"
+REFERENCE_FOR007 = Path(__file__).parents[1] / "tests/fixtures/legacy_reference" / "FOR007.DAT"
 
 
 @pytest.fixture

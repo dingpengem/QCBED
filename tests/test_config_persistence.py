@@ -92,7 +92,7 @@ def test_canonical_to_yaml_resume_and_old_identity_formula(tmp_path,cheap_render
     compiled = snapshot.compiled
     old_identity = dict(format='qcbed-canonical-run',version=1,digest=hashlib.sha256(json.dumps(dict(
         state=asdict(compiled.state),runner=asdict(compiled.runner),layout=asdict(compiled.layout),
-        experiment=asdict(compiled.experiment),run=asdict(compiled.configuration.run)),
+        experiment=asdict(compiled.experiment),run={k:getattr(compiled.configuration.run,k) for k in ("output_directory","output_filename","snapshot_every","checkpoint_every","max_total_evaluations","max_wall_time_seconds")}),
         sort_keys=True,allow_nan=False).encode()).hexdigest())
     assert canonical_checkpoint_identity(compiled) == old_identity
     def stop(row):

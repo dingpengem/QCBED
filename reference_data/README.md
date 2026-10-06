@@ -1,14 +1,9 @@
-# Reference Data
+# Scientific inputs
 
-This folder contains files from a previous successful run of the legacy
-Fortran QCBED program.
+- `pattern.dat`: raw experimental FCC Al CBED pattern.
+- `Al_FCC.cif`: FCC Al crystallographic structure input.
 
-The files may include input data, intermediate or iterative data, and
-final output data. Their original filenames and directory structure are
-preserved.
-
-A Fortran compiler is not currently available.
-
-Codex should infer the role of each file from the Fortran source code
-and file contents. Do not modify, rename, move, or delete any files in
-this folder.
+Start with `examples/fcc_al.yml` or a new GUI project. Data Prep regenerates
+geometry, masks, variance and prepared descriptors from these inputs; no saved
+preparation cache is required. Historical derived numerical references live in
+`tests/fixtures/legacy_reference/`, solely for regression and developer comparisons.

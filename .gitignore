@@ -40,8 +40,14 @@ runs/
 
 # Local logs; keep intentional scientific/reference fixtures eligible for Git
 *.log
-!reference_data/**/*.log
 !tests/data/**/*.log
 
 # Private predecessor sources; never publish
 /legacy_fortran/
+
+# Permanent test references are intentional; new run artifacts belong in tmp/.
+!tests/fixtures/**/*.log
+/preparation-cache/
+/preparation_cache/
+*.app/
+/QCBED-arm64.zip

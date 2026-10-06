@@ -21,7 +21,8 @@ def populate_modern(window,forms):
         orientation = CrystalOrientation(lattice, ZoneAxis(config.crystallography.zone_axis))
         diagnostic = dict(lattice_lengths_angstrom=lattice.lengths.tolist(),
             lattice_angles_degrees=lattice.angles.tolist(), atom_count=len(structure.sites),
-            species=list(dict.fromkeys(site.symbol for site in structure.sites)))
+            species=list(dict.fromkeys(site.symbol for site in structure.sites)),
+            composition_site_counts={symbol:sum(site.symbol==symbol for site in structure.sites) for symbol in dict.fromkeys(site.symbol for site in structure.sites)})
         try:
             from .document import parse_text
             parse_text(', '.join(map(str,config.crystallography.slice_boundaries_fractional)),'boundaries')
@@ -38,7 +39,7 @@ def populate_modern(window,forms):
         window.atomic_expert=ExpandableSection('Expert / Legacy settings — model diagnostics')
         details=QLabel('\n'.join(f'{k}: {v}' for k,v in diagnostic.items()));details.setWordWrap(True)
         window.atomic_expert.content.addWidget(details);forms['Structure'].addRow(window.atomic_expert)
-        basic={k:v for k,v in diagnostic.items() if k in ('lattice_lengths_angstrom','lattice_angles_degrees','atom_count','species')}
+        basic={k:v for k,v in diagnostic.items() if k in ('lattice_lengths_angstrom','lattice_angles_degrees','atom_count','species','composition_site_counts')}
         window.modern_summary=QLabel('\n'.join(f'{k}: {v}' for k,v in basic.items()))
         window.modern_summary.setWordWrap(True);forms['Structure'].addRow(window.modern_summary)
         from qcbed.crystallography.projection import project_atomic_structure
@@ -85,11 +86,16 @@ def populate_modern(window,forms):
         ax.set(xlabel=labels[0],ylabel=labels[1],zlabel=labels[2],
                title='3D Atomic Model — 2 × 2 × 2 cells (visualization only)')
         ax.legend()
+        window.atomic_view_identity=(config.crystallography.structure.path,config.crystallography.zone_axis)
         canvas3=FigureCanvasQTAgg(figure3);canvas3.setMinimumSize(650,500)
         forms['Structure'].addRow(NavigationToolbar2QT(canvas3,window))
         forms['Structure'].addRow(canvas3)
     except (ValueError,OSError,TypeError) as exc:
         forms['Structure'].addRow(QLabel(str(exc)))
+    from .workflow_guidance import button as nav_button
+    window.next_site_groups=nav_button(window,'Next: Configure Site Groups',1,'Site groups');forms['Structure'].insertRow(0,window.next_site_groups)
+    forms['Site groups'].addRow(QLabel('B2. Site Groups — derived from the loaded structure; Apply edits before validating B.'))
+    window.site_group_status=QLabel('Applied');forms['Site groups'].addRow(window.site_group_status)
     groups=config.crystallography.site_groups
     table=window.site_group_table=QTableWidget(len(groups),8)
     table.setHorizontalHeaderLabels(['Stable group','Element','Original sites','Debye–Waller B (Å²)','Occupancy','Absorption (a,b,c; blank=disabled)','Refine Debye–Waller B?','Resolved Debye–Waller bounds'])
@@ -113,6 +119,7 @@ def populate_modern(window,forms):
     window.site_group_pending=False
     def draft_changed(*args):
         window.site_group_pending=True
+        window.site_group_status.setText('Modified — Apply Site-Group Parameters')
         window.workflow.invalidate(1);window.invalidate_readiness()
         window.statusBar().showMessage('Site-group drafts — select Apply Site-Group Parameters.')
     def apply_groups():
@@ -140,17 +147,25 @@ def populate_modern(window,forms):
         window.site_group_pending=False
         window.refresh()
         window.restore_field_drafts(drafts)
+        window.navigation.setCurrentItem(window.section_items['Site groups'])
     table.cellChanged.connect(draft_changed)
     window.apply_site_groups=QPushButton('Apply Site-Group Parameters')
     window.apply_site_groups.clicked.connect(apply_groups)
     forms['Site groups'].addRow(window.apply_site_groups)
+    window.validate_atomic_button=QPushButton('Validate Atomic Model');window.validate_atomic_button.clicked.connect(lambda:window.validate_stage(1));forms['Site groups'].addRow(window.validate_atomic_button)
+    forms['Site groups'].addRow(nav_button(window,'Back: Structure',1,'Structure'))
+    forms['Site groups'].addRow(nav_button(window,'Next: Simulation Setup',2,'Simulation Setup'))
     table.resizeColumnsToContents();forms['Site groups'].addRow(table)
     from .sections import ExpandableSection
     from PySide6.QtWidgets import QCheckBox
     window.group_advanced=ExpandableSection('Advanced settings / Site-group membership')
-    membership=QCheckBox('Show and edit member-site indices')
-    for column in (2,6,7):table.setColumnHidden(column,True)
-    membership.toggled.connect(lambda on:table.setColumnHidden(2,not on))
+    membership=QCheckBox('Edit member-site indices (Advanced)')
+    for column in (6,7):table.setColumnHidden(column,True)
+    def member_editing(on):
+        for row in range(table.rowCount()):
+            item=table.item(row,2);item.setFlags((item.flags() | Qt.ItemFlag.ItemIsEditable) if on else (item.flags() & ~Qt.ItemFlag.ItemIsEditable))
+    table.blockSignals(True);member_editing(False);table.blockSignals(False)
+    membership.toggled.connect(member_editing)
     window.group_advanced.content.addWidget(membership);forms['Site groups'].addRow(window.group_advanced)
     note=QLabel('Initial groups share element, source occupancy and source Debye–Waller B; they are not a symmetry-equivalence determination. Edit and review before validation.\n'
         'Use C → Refinement Targets to choose physical quantities and hard bounds.\n'

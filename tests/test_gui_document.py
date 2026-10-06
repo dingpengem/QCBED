@@ -23,7 +23,7 @@ def test_reference_unchanged_roundtrip(document, tmp_path):
     drafts = {s.key: display_value(getattr(get_object(original, s.path), s.name)) for s in editable_fields(original)}
     assert document.apply(drafts)
     assert document.config == original
-    assert document.summary()['active_parameters'] == 7
+    assert document.summary()['optimizer_parameters'] == 7
     destination = tmp_path / 'saved.yml'
     document.save(destination)
     assert load_yaml_config(destination) == original

@@ -40,7 +40,7 @@ def raw():
 
 def legacy_full():
     runner = example('run_full_refinement')
-    state, controls = parse_legacy_refinement(ROOT/'reference_data/FOR007.DAT', seed=2026)
+    state, controls = parse_legacy_refinement(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT', seed=2026)
     state, controls = select_refinement_categories(state, controls, runner.REFINEMENT_CATEGORIES)
     rules = RefinementBoundRules(runner.SPECIFIC_BOUNDS, runner.CATEGORY_BOUNDS,
         runner.CATEGORY_RELATIVE_BOUNDS, runner.CATEGORY_RELATIVE_FALLBACK)
@@ -63,7 +63,7 @@ def test_complete_reference_equivalence(raw):
     assert result.plamda == (.5,) + (.0005,)*6
     np.testing.assert_array_equal(result.packed_starting_vector, pack_refinement_parameters(state))
     np.testing.assert_array_equal(generate_scan_tilts(result.state.scan), generate_scan_tilts(state.scan))
-    data = parse_experimental_intensities(ROOT/'reference_data/in.dat',
+    data = parse_experimental_intensities(ROOT/'tests/fixtures/legacy_reference/in.dat',
         beam_indices_hk=result.experiment.beam_indices_hk, scan=result.state.scan)
     assert data.gradient_option == result.experiment.gradient_option == 1
     assert result.experiment.beam_indices_hk == ((0,0),(1,1),(1,-1),(-1,-1),(-1,1),(2,0),(0,-2),(-2,0),(0,2))
@@ -71,7 +71,7 @@ def test_complete_reference_equivalence(raw):
 
 
 def test_full_18_parameter_reference_and_binding_order(raw):
-    state, controls = parse_legacy_refinement(ROOT/'reference_data/FOR007.DAT', seed=2026)
+    state, controls = parse_legacy_refinement(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT', seed=2026)
     raw = replace(raw, refinement=replace(raw.refinement, active_categories=None))
     forward = compile_config(raw)
     backward = compile_config(replace(raw, refinement=replace(raw.refinement,

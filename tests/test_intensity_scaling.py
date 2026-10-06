@@ -147,7 +147,7 @@ def test_apply_ieee_outputs_and_invalid_types():
 @pytest.mark.parametrize("filename", ["in.dat", "startingin.dat", "bestin.dat"])
 def test_reference_file_regression(filename):
     beams = ((0, 0), (1, 1), (1, -1), (-1, -1), (-1, 1), (2, 0), (0, -2), (-2, 0), (0, 2))
-    d = parse_experimental_intensities(Path(__file__).parents[1]/"reference_data"/filename,
+    d = parse_experimental_intensities(Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/filename,
                                        beam_indices_hk=beams)
     # Synthetic theory deliberately isolates scaling from unresolved GRADIENT.
     c = np.ones((1521, 9), dtype=np.float64)

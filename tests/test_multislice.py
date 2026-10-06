@@ -123,7 +123,7 @@ def test_rectangular_signed_beam_mapping_and_duplicates(ordering, positions):
 
 
 def test_reference_input_beam_list_mapping_only():
-    lines = (Path(__file__).parents[1]/"reference_data"/"FOR007.DAT").read_text().splitlines()
+    lines = (Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT").read_text().splitlines()
     # Fixture's actual READ record location; no parser/configuration extension.
     start = next(i for i, line in enumerate(lines) if line.strip() == "out.dat")+1
     count = int(lines[start])

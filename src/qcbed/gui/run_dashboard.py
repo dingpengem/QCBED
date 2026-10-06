@@ -23,9 +23,12 @@ class RunDashboard(QWidget):
         self.status={}
         for key in ('Output directory','Run','Resume','A. Data Prep','B. Atomic Model',
                     'C Simulation Setup','Refinement Targets','Optimizer','External inputs',
-                    'Active parameters','Compile validity','Execution readiness'):
+                    'Active physical targets','Optimizer parameters','Compile validity','Execution readiness'):
             self.status[key]=QLabel('Invalid — validate configuration');self.status[key].setWordWrap(True)
             form.addRow(key,self.status[key])
+        from .workflow_guidance import button as nav_button
+        for title,stage,section in [('Go to Data Prep',0,None),('Go to Atomic Model',1,'Structure'),('Go to Simulation Setup',2,'Simulation Setup'),('Go to Refinement Targets',2,'Refinement Targets'),('Go to Optimizer',2,'Optimizer')]:
+            layout.addWidget(nav_button(window,title,stage,section))
         controls=QHBoxLayout();layout.addLayout(controls)
         self.run=QPushButton('Run QCBED');self.resume=QPushButton('Resume QCBED')
         self.cancel=QPushButton('Cancel');self.results=QPushButton('Open Results')
@@ -66,11 +69,14 @@ class RunDashboard(QWidget):
         if hasattr(self.window,'c_tabs'):self.window.c_tabs.setCurrentIndex(index)
 
     def update_state(self, *, check_external=False):
-        w=self.window;doc=w.document;flow=w.workflow
+        w=self.window
+        if hasattr(w,'guidance'):w.guidance.update_state();doc=w.document;flow=w.workflow
         if check_external and doc:
             from .execution_details import external_checks
             self.external=external_checks(doc)
-        def status(key,valid,reason):self.status[key].setText('Valid' if valid else 'Invalid — '+reason)
+        def status(key,valid,reason):
+            self.status[key].setText('✓ Valid' if valid else '○ Blocked — '+reason)
+            self.status[key].setStyleSheet('padding: 6px; border-left: 3px solid '+('#39805b' if valid else '#a77838')+';')
         status('A. Data Prep',flow.receipts[0] is not None,'Data Prep must be validated')
         status('B. Atomic Model',flow.receipts[1] is not None,'Atomic Model must be validated')
         modern=doc is not None and doc.config.crystallography is not None
@@ -91,11 +97,11 @@ class RunDashboard(QWidget):
         if self.output_editor:self.output_editor.setEnabled(not w.controller.active)
         self.readiness_button.setEnabled(bool(doc) and not w.controller.active)
         for section in getattr(w,'d_sections',{}).values():section.setEnabled(not w.controller.active)
-        count=0
-        if doc:
-            categories=doc.config.refinement.active_categories
-            count=sum(categories is None or b.target.category in categories for b in doc.config.refinement.parameters)
-        self.status['Active parameters'].setText(str(count)+' committed')
+        summary=doc.summary() if doc else {}
+        for key in ('Active physical targets','Optimizer parameters'):
+            value=summary.get(key.lower().replace(' ','_'))
+            self.status[key].setText(str(value)+' committed' if value is not None else 'Unavailable — validate configuration')
+        count=summary.get('optimizer_parameters',0)
         errors=[i.message for i in doc.issues if i.severity=='error'] if doc else []
         status('Compile validity',bool(doc and flow.ready and not errors),'Validate current committed configuration')
         self.run.setEnabled(w.run_action.isEnabled() and not w.controller.active)
@@ -138,4 +144,9 @@ class RunDashboard(QWidget):
                     resume_text='Not available — no previous run found'
             except (OSError,ValueError):pass
         self.status['Resume'].setText('Ready' if self.resume.isEnabled() else resume_text.removeprefix('Resume: '))
-        self.run_state.setText(w.run_status.text())
+        text=w.run_status.text()
+        result=w.results_view.results
+        if result and 'stop_reason' in result.summary:
+            summary=result.summary
+            text+=f"\nIterations: {summary['iterations'] if summary['iterations'] is not None else 'Not recorded'}\nObjective evaluations: {summary['objective_evaluations']}\nStop reason: {summary['stop_reason']}"
+        self.run_state.setText(text)

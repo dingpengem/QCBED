@@ -268,8 +268,8 @@ def main():
                     ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','VECLIB_MAXIMUM_THREADS')},
                   source_sha256={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest()
                     for p in [*sorted((root/'src/qcbed').glob('*.py')), Path(__file__),
-                              root/'examples/run_full_refinement.py', root/'reference_data/FOR007.DAT',
-                              root/'reference_data/in.dat']})
+                              root/'examples/run_full_refinement.py', root/'tests/fixtures/legacy_reference/FOR007.DAT',
+                              root/'tests/fixtures/legacy_reference/in.dat']})
     def save():
         (destination/'results.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(destination, flush=True)

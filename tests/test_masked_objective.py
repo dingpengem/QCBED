@@ -60,7 +60,7 @@ def test_empty_mask_and_singular_scaling_and_mode():
 def test_reference_mask_gives_finite_score_without_changing_legacy():
     from qcbed.experimental import parse_experimental_intensities
     # The objective does not depend on H/K identities, only preserved beam order.
-    p=Path(__file__).parents[1]/"reference_data"/"in.dat"
+    p=Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"in.dat"
     beams=((0,0),(1,1),(1,-1),(-1,-1),(-1,1),(2,0),(0,-2),(-2,0),(0,2))
     e=parse_experimental_intensities(p,beam_indices_hk=beams)
     assert e.intensities.shape==(1521,9)

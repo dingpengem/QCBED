@@ -141,7 +141,7 @@ def test_full_runner_invalid_json_and_summary(cheap_render, monkeypatch, tmp_pat
 
 
 def test_subset_preserves_excluded_reference_parameters():
-    state, cfg = parse_legacy_refinement(Path(__file__).parents[1] / "reference_data" / "FOR007.DAT", seed=2026)
+    state, cfg = parse_legacy_refinement(Path(__file__).parents[1] / "tests/fixtures/legacy_reference" / "FOR007.DAT", seed=2026)
     original = repr(state)
     subset, controls = select_refinement_categories(state, cfg, ("depth", "scan_coordinate"))
     layout = build_refinement_parameter_layout(subset)

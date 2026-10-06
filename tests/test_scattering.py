@@ -87,7 +87,8 @@ def test_option_type(option):
 def test_all_table_entries_preserve_source_order_and_sentinels():
     # Verify all copied data against readable source, including unused X-ray
     # rows and negative sentinels. This is a provenance check, not execution.
-    root = Path(__file__).parents[1] / "legacy_fortran"
+    from private_reference import private_reference_root
+    root = private_reference_root() / "legacy_fortran"
     providers = []
     for path in root.rglob("*"):
         if path.suffix.lower() not in (".f", ".for", ".ftn"):

@@ -128,7 +128,7 @@ def test_no_invented_all_time_archive(monkeypatch):
 
 
 def test_parsed_invalid_selector_has_context(tmp_path):
-    source=Path(__file__).parents[1]/"reference_data"/"FOR007.DAT"
+    source=Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT"
     text=source.read_text()
     text=text.replace("SPAR","SpAr").replace("spar","SpAr")
     path=tmp_path/"bad.dat"
@@ -151,7 +151,7 @@ def test_real_hybrid_and_seed_determinism():
 
 @pytest.mark.parametrize("filename",["FOR007.DAT","STARTINGFOR007.DAT"])
 def test_reference_controls_and_first_invocation(filename,monkeypatch):
-    path=Path(__file__).parents[1]/"reference_data"/filename
+    path=Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/filename
     s,c=driver.parse_legacy_refinement(path,seed=17)
     assert len(build_refinement_parameter_layout(s).parameters)==18
     assert c.stages==("SIMPARA",)

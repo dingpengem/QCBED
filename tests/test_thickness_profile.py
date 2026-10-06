@@ -14,7 +14,7 @@ def test_reference_thickness_only_layout_and_fixed_physics():
     root=Path(__file__).parents[1]
     spec=importlib.util.spec_from_file_location('thickness_profile',root/'benchmarks'/'profile_thickness_only.py')
     module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-    baseline,_=parse_legacy_refinement(root/'reference_data'/'FOR007.DAT',seed=2026)
+    baseline,_=parse_legacy_refinement(root/'tests/fixtures/legacy_reference'/'FOR007.DAT',seed=2026)
     before=repr(baseline)
     state,index=module.thickness_only(baseline)
     layout=build_refinement_parameter_layout(state).parameters

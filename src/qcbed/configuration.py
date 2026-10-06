@@ -271,6 +271,12 @@ class RunConfig(_Config):
     checkpoint_every: int = 25
     max_total_evaluations: int | None = 1000
     max_wall_time_seconds: float | None = 3600.
+    max_stage_iterations: int | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.max_stage_iterations is not None and self.max_stage_iterations < 0:
+            raise ValueError("Maximum stage iterations must be nonnegative")
 
 
 @dataclass(frozen=True)
@@ -336,6 +342,34 @@ class AtomicSiteGroup(_Config):
 
 
 @dataclass(frozen=True)
+class ProjectedElasticConfig(_Config):
+    """Physical slice interval and original hkl; a Friedel pair has one owner."""
+    hkl: tuple[int, int, int]
+    interval: tuple[float, float]
+    mode: Literal['real', 'complex', 'magnitude'] = 'real'
+    refine: bool = False
+    initial: tuple[float, float] | None = None
+    reference: str | None = None
+    lower: tuple[float | None, float | None] = (None, None)
+    upper: tuple[float | None, float | None] = (None, None)
+    step_size: float = 0.01
+    equality_group: str | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.hkl == (0, 0, 0):
+            raise ValueError('Elastic (000) is read-only: uniform phase is not an intensity target')
+        if next(v for v in self.hkl if v) < 0:
+            raise ValueError('Use the Friedel owner with first nonzero hkl component positive')
+        if not 0 <= self.interval[0] < self.interval[1] <= 1:
+            raise ValueError('Require a physical slice interval within [0, 1]')
+        if self.equality_group is not None and not self.equality_group.strip():
+            raise ValueError('Equality group name must not be empty')
+        if self.step_size <= 0:
+            raise ValueError('Projected elastic search step must be positive')
+
+
+@dataclass(frozen=True)
 class CrystallographyConfig(_Config):
     structure: StructureFileConfig
     zone_axis: tuple[int, int, int]
@@ -349,6 +383,7 @@ class CrystallographyConfig(_Config):
     scan_basis_transform: tuple[tuple[int, int], tuple[int, int]]
     absorption: AbsorptionConfig = AbsorptionConfig()
     site_groups: tuple[AtomicSiteGroup, ...] = ()
+    projected_elastic: tuple[ProjectedElasticConfig, ...] = ()
 
 
 @dataclass(frozen=True)

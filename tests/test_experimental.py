@@ -12,7 +12,7 @@ from qcbed.legacy_io import LegacyInputParseError
 BEAMS = ((2, -1), (-3, 0), (2, -1))
 REFERENCE_BEAMS = ((0, 0), (1, 1), (1, -1), (-1, -1), (-1, 1),
                    (2, 0), (0, -2), (-2, 0), (0, 2))
-REFERENCE = Path(__file__).parents[1]/"reference_data"
+REFERENCE = Path(__file__).parents[1]/"tests/fixtures/legacy_reference"
 
 
 def write_data(tmp_path):

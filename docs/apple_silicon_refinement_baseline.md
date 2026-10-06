@@ -88,7 +88,7 @@ benefits. This audit does not authorize Stage 2.
 
 ## Measurements: 2026-09-27
 
-Native arm64, macOS 26.3.1; `/opt/miniconda3/envs/qcbed-python/bin/python`,
+Native arm64, macOS 26.3.1; `python`,
 Python 3.11.16, NumPy 2.4.6. Thread environment variables in the command above
 were all 1. This records requested limits, not independent verification of every
 library's thread count. No test suite ran concurrently with these measurements.

@@ -58,7 +58,8 @@ These statuses describe the **modern** path; supported legacy bindings remain in
 | Absorption a/b/c | READY; physical site group; dimensionless weights | Explicit group coefficients and nonnegative rejection bounds | Independent coefficients map to the existing absorptive grating; modern linked-C bridge remains unsupported. |
 | Accelerating voltage | READY without absorption; kV | Committed microscope input and positive bounds | Existing energy-dependent sample rebuild; absorption-enabled voltage refinement remains unavailable. |
 | Scan A/B/C | READY; six signed reciprocal-basis coefficients | Committed scan corners and explicit bounds | Explicit opt-in fitting; A10 conventions and experimental arrays remain unchanged. |
-| Reflection multipliers | NOT APPROPRIATE for current modern path; reflection; dimensionless | Unity in strict B5, legacy ordered records otherwise | No validated original-hkl multiplier target bridge. Legacy duplicate/order semantics remain unchanged. |
+| Projected elastic coefficient E_g | READY; original hkl and physical slice interval | Complex IAM from the production atomic sum | Real, Complex and Magnitude modes; linked Friedel pair, separate A_g. See [E_g guide](projected_elastic_coefficients.md). |
+| Reflection-specific elastic/absorptive multipliers (`reflection_multiplier`) | Unavailable in modern refinement; dimensionless | Scale computed structure factors for fixed ordered reflection records in the pre-sliced compatibility workflow; unity in strict B5 | No original-hkl multiplier target bridge. See the [semantics audit](modern_refinement_catalogue.md#reflection-multipliers-exact-meaning-and-support). |
 | Atom x/y | NOT APPROPRIATE; original sites; fractional coordinates | Structure file; no symmetry-mode bounds | Independent occurrence coordinates are not symmetry-aware physical variables. Display structure only. |
 | Legacy DILATION | DEFERRED; vacancy coupling; dimensionless | Legacy coefficient; domain 0–1, not lattice bounds | Legacy `(1 - VAC*DILATION)^(1/3)` coupling in its supported domain; zero vacancy gives unit applied scale. Never label as strain or independent lattice constant. |
 
@@ -154,3 +155,34 @@ as A/B/C/D user inputs. Modern Save/Save As writes this schema automatically;
 The existing verbose example remains a compatibility input. No internal HK,
 compiled lattice, effective depth, YNORM, objective or optimizer history is dumped
 into the editable document. Compiled/run/checkpoint provenance is unchanged.
+
+
+### Shared refinement parameters in Results
+
+Optional coefficient **Parameter sharing** reduces independent optimizer variables
+by making selected physical targets use the same refinement coordinate throughout
+optimization. Results uses **Shared refinement parameter group** labels for these
+coordinates and retains member hkl/slice identities, per-member IAM references,
+initial/latest/best/retained values, bounds and histories. Individual beam/pattern
+diagnostics remain separate. Real-only shares Re with each Im fixed; Complex
+shares Re and Im; Magnitude-only shares magnitude with each IAM phase fixed.
+Mandatory Friedel partners are identified separately. Use **Make Independent** in
+Refinement Targets to remove optional sharing before a new run.
+
+
+### Resolved refinement parameter layout
+
+After **Validate Refinement Targets**, the **Resolved Refinement Parameter Layout**
+shows each shared group, its original hkl/slice members, mode, optimizer coordinates,
+starting values and intersected hard bounds. Independent targets and mandatory
+Friedel relationships are listed separately. The summary and D dashboard distinguish
+**Active physical targets** from **Optimizer parameters** using the compiled layout.
+Depth plus two shared Real-only coefficients therefore has three physical targets
+and two optimizer coordinates. Multiple groups remain separate; Complex groups
+contribute two coordinates each. Draft edits require revalidation.
+
+Coefficient-only selections are supported, including category-filtered configurations:
+the model preview may contain zero ordinary coordinates before elastic coordinates
+are appended. Sharing remains enforced in the optimizer layout and writeback, not
+by copying independently optimized results afterward. YAML and Resume use the
+existing physical identities and group representation.

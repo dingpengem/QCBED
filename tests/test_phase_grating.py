@@ -261,7 +261,7 @@ def test_invalid_grid_odd_legacy_mask_and_overflow():
 
 def test_saved_interaction_constant_only():
     # This is a scalar saved-output comparison, not a saved PGARRAY fixture.
-    lines = (Path(__file__).resolve().parents[1]/"reference_data"/"FOR0013.DAT").read_text().splitlines()
+    lines = (Path(__file__).resolve().parents[1]/"tests/fixtures/legacy_reference"/"FOR0013.DAT").read_text().splitlines()
     line = next(line for line in lines if "INTERACTION CONSTANT (SIGMA)" in line)
     recorded = float(line.split()[-1])
     assert electron_interaction_constant(200) == pytest.approx(recorded, abs=5e-9, rel=0)

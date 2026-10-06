@@ -90,7 +90,7 @@ def test_gradient_output_uses_objective_values_not_raw():
 
 
 def test_reference_dimensions_and_maps():
-    source=Path(__file__).parents[1]/"reference_data"/"FOR007.DAT"
+    source=Path(__file__).parents[1]/"tests/fixtures/legacy_reference"/"FOR007.DAT"
     s,config= parse_legacy_refinement(source,seed=0)
     records=_CaptureRecords(source)
     _parse_for007_records(records)

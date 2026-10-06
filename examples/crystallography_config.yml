@@ -20,7 +20,7 @@ scan:
   - 0.0
   - 0.0
 experiment:
-  path: b4b_demo_intensities.dat
+  path: ../tests/fixtures/synthetic/b4b_demo_intensities.dat
   gradient_option: 0
   header: absent
 refinement:

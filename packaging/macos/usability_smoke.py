@@ -44,11 +44,16 @@ def main(manifest):
         checks.append('live real-pattern A without Advanced')
         w.workflow_tabs.setCurrentIndex(1)
         assert w.load_structure_path(manifest['structure'])
+        if manifest.get('workflow_usability'):
+            assert w.navigation.currentItem().text(0)=='Structure'
+            app.processEvents();w.grab().save(str(out/'structure.png'))
+            w.next_site_groups.click();assert w.navigation.currentItem().text(0)=='Site groups'
         if not manifest.get('example_project'):
             assert w.site_group_table.item(0,3).text()==''
         w.widgets[('crystallography','cbed_basis','g1_hkl')].setText('2,0,0')
         w.widgets[('crystallography','cbed_basis','g2_hkl')].setText('0,2,0')
         w.site_group_table.item(0,3).setText('.86');w.apply_site_groups.click()
+        if manifest.get('workflow_usability'):assert w.navigation.currentItem().text(0)=='Site groups'
         assert w.validate_stage(1),w.stage_status[1].text()
         assert w.document.config.crystallography.cbed_basis.g1_hkl==(2,0,0)
         assert w.document.config.crystallography.cbed_basis.g2_hkl==(0,2,0)
@@ -67,6 +72,32 @@ def main(manifest):
         assert w.recommended_numerics.isChecked()
         assert not w.numerical_advanced.toggle.isChecked()
         w.c_tabs.setCurrentIndex(0);app.processEvents();w.grab().save(str(out/'simulation.png'))
+        if manifest.get('c_layout_cleanup'):
+            from workflow_smoke import run as workflow_run
+            from c_layout_smoke import run as layout_run
+            workflow_run(w,app,out)
+            return layout_run(w,app,out)
+        if manifest.get('workflow_usability'):
+            from workflow_smoke import run
+            return run(w,app,out)
+        if manifest.get('sharing_state_audit'):
+            from sharing_state_smoke import exercise
+            for mode in ('real','complex','magnitude'):
+                states=exercise(w,app,out,mode)
+                if manifest.get('assert_sharing_states'):
+                    n=2 if mode=='complex' else 1
+                    for state in states:
+                        shared=state['name'].startswith('shared')
+                        expected=1+n if shared else 1+2*n
+                        assert state['vector_length']==expected,state
+                        assert state['bounds_length']==expected,state
+                        assert state['displayed']==f'{expected} committed',state
+                        assert state['physical']=='3 committed',state
+                        if 'before_validation' in state['name']:
+                            assert state['receipt']=='None' and not state['run_enabled'],state
+                        if state['name'].endswith('validated'):assert state['receipt']!='None',state
+            (out/'result.json').write_text(json.dumps(dict(status='PASS' if manifest.get('assert_sharing_states') else 'RECORDED',frozen=bool(getattr(sys,'frozen',False)),optimizer_evaluations=0)))
+            return 0
         t=w.refinement_table
         for row in range(t.rowCount()):
             category=t.item(row,0).data(Qt.ItemDataRole.UserRole).category.value
@@ -74,8 +105,48 @@ def main(manifest):
             t.item(row,1).setCheckState(Qt.CheckState.Checked)
             t.item(row,8).setText('600' if category=='depth' else '.5')
             t.item(row,9).setText('1200' if category=='depth' else '1.5')
+        if manifest.get('projected_elastic'):
+            w.c_tabs.setCurrentIndex(1)
+            panel=w.elastic_panel
+            i=next(i for i,r in enumerate(panel.rows) if r['hkl']==(2,0,0) and r['interval']==(0.,1.))
+            assert abs(panel.rows[i]['iam'].imag)<1e-8
+            assert panel.table.cellWidget(i,4).currentData()=='real'
+            panel.table.item(i,0).setCheckState(Qt.CheckState.Checked)
+            panel.table.cellWidget(i,4).setCurrentIndex(1)
+            panel.table.item(i,5).setText('19.5 +0i')
+            panel.table.item(i,6).setText('0, -5');panel.table.item(i,7).setText('40, 5')
+            if manifest.get('coefficient_groups'):
+                j=next(j for j,r in enumerate(panel.rows) if r['hkl']==(0,2,0) and r['interval']==(0.,1.))
+                panel.table.cellWidget(j,4).setCurrentIndex(1)
+                panel.table.item(j,5).setText('19.5 +0i');panel.table.item(j,6).setText('0, -5');panel.table.item(j,7).setText('40, 5')
+                if manifest.get('parameter_sharing_ui'):
+                    from PySide6.QtWidgets import QPushButton
+                    buttons={b.text():b for b in panel.findChildren(QPushButton)}
+                    assert 'Share One Refinement Parameter' in buttons and 'Make Independent' in buttons
+                    assert panel.table.horizontalHeaderItem(10).text()=='Parameter sharing'
+                    panel.table.item(j,0).setCheckState(Qt.CheckState.Checked)
+                    assert panel.dimension_counts()==(4,6,6),panel.dimension_counts()
+                    candidate=panel.link_rows([i,j],'Teaching pair',preview=True)
+                    confirmation=panel.sharing_confirmation([i,j],candidate)
+                    assert '6 → 4' in confirmation and 'one real and one imaginary' in confirmation
+                panel.link_rows([i,j],'Teaching pair')
+                panel=w.elastic_panel
+                assert all(r.equality_group=='Teaching pair' for r in w.document.config.crystallography.projected_elastic)
+                if manifest.get('parameter_sharing_ui'):
+                    assert panel.dimension_counts()==(4,6,4),panel.dimension_counts()
+                    assert panel.table.item(i,10).text()=='Shared: Teaching pair'
+                    checks.append('parameter sharing controls, mode-specific confirmation and live dimensions: PASS')
+                checks.append('optional equality group via GUI: two members share two Complex coordinates')
+            assert panel.apply(refresh=False),panel.message.text()
+            checks.append('packaged E_g editor: IAM, hkl/slice, Real default, Complex selection and physical bounds')
         assert not w.advanced_optimizer_toggle.isChecked()
         assert w.validate_c_part('refinement'),w.stage_status[2].text()
+        if manifest.get('parameter_sharing_ui'):
+            assert 'Final optimizer-vector dimension: 4' in w.elastic_panel.resolved.toPlainText()
+            assert w.run_dashboard.status['Active physical targets'].text()=='4 committed'
+            assert w.run_dashboard.status['Optimizer parameters'].text()=='4 committed'
+            checks.append('compiled resolved layout: shared group, physical target count and optimizer dimension')
+
         assert len(w.document.config.refinement.parameters)==2
         assert w.c_tabs.count()==3
         w.c_tabs.setCurrentIndex(2);app.processEvents()
@@ -159,6 +230,19 @@ def main(manifest):
             (table.item(row,1).checkState(),table.item(row,8).text(),table.item(row,9).text())
             for row in range(table.rowCount())}
         assert restored_rows==saved_rows
+        if manifest.get('projected_elastic'):
+            p=next(r for r in w.document.config.crystallography.projected_elastic if r.hkl==(2,0,0))
+            assert p.hkl==(2,0,0) and p.interval==(0.,1.) and p.mode=='complex' and p.initial==(19.5,0.)
+            panel=w.elastic_panel
+            i=next(i for i,r in enumerate(panel.rows) if r['hkl']==p.hkl and r['interval']==p.interval)
+            assert panel.table.cellWidget(i,4).currentData()=='complex'
+            w.c_tabs.setCurrentIndex(1);app.processEvents()
+            from PySide6.QtWidgets import QScrollArea
+            for scroll in w.findChildren(QScrollArea):
+                if scroll.isAncestorOf(panel):scroll.ensureWidgetVisible(panel.table)
+            app.processEvents();assert panel.table.isVisible()
+            w.grab().save(str(out/'projected-elastic.png'))
+            checks.append('E_g Save As / reload preserves physical identity, complex start, mode and bounds')
         assert w.validate_c_part('refinement')
         assert w.validate_stage(2)
         assert not w.run_action.isEnabled()
@@ -178,6 +262,17 @@ def main(manifest):
         assert w.open_results(snapshot.compiled.configuration.run.output_directory)
         assert w.run_dashboard.results.isEnabled()
         assert w.results_view.results.summary['recorded_evaluations']==0
+        if manifest.get('projected_elastic'):
+            r=next(r for r in w.results_view.results.summary['projected_elastic'] if r['hkl']==(2,0,0))
+            assert r['hkl']==(2,0,0) and r['initial']==19.5+0j and r['latest'] is None
+            assert w.results_view.elastic.rowCount()==(2 if manifest.get('coefficient_groups') else 1)
+            if manifest.get('coefficient_groups'):
+                assert r['equality_group']=='Teaching pair'
+                assert snapshot.compiled.parameter_count==4
+                assert 'Objective evaluations: 0' in w.results_view.summary.toPlainText()
+                assert 'Stop reason: Cancelled by user' in w.results_view.summary.toPlainText()
+                checks.append('group YAML, shared vector, Results member rows, cancellation counts/reason and Resume')
+            checks.append('zero-evaluation E_g Results metadata and compatible Resume')
         w.run_dashboard.results.click();app.processEvents()
         assert w.workspace.currentWidget() is w.results_view
         checks.append('Open Results enabled for initialization checkpoint; zero completed evaluations')

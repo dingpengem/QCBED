@@ -92,7 +92,7 @@ def test_visible_zero_variance_location_and_diagnostic_maps():
 
 
 def test_reference_counts_and_spatial_overlap():
-    p=Path(__file__).parents[1]/'reference_data'/'FOR007.DAT'
+    p=Path(__file__).parents[1]/'tests/fixtures/legacy_reference'/'FOR007.DAT'
     state,_=parse_legacy_refinement(p,seed=0)
     records=_CaptureRecords(p); _parse_for007_records(records)
     row=records.values['output beam count and indices']

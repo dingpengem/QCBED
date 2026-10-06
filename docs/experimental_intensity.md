@@ -92,12 +92,12 @@ calibration or equality to later refined scan coordinates.
 ```python
 from qcbed import parse_for007_scan, generate_scan_tilts, parse_experimental_intensities
 
-scan = parse_for007_scan("reference_data/FOR007.DAT")
+scan = parse_for007_scan("tests/fixtures/legacy_reference/FOR007.DAT")
 tilts = generate_scan_tilts(scan)
 # Exact ordered HIN/KIN list from the supplied FOR007 file:
 beams = ((0, 0), (1, 1), (1, -1), (-1, -1), (-1, 1),
          (2, 0), (0, -2), (-2, 0), (0, 2))
-data = parse_experimental_intensities("reference_data/in.dat",
+data = parse_experimental_intensities("tests/fixtures/legacy_reference/in.dat",
                                     beam_indices_hk=beams, scan=scan)
 assert data.intensities.shape == (len(tilts), len(beams))
 ```

@@ -34,7 +34,7 @@ class ConfigWindow(QMainWindow):
         self.edit_actions = []
         for title, callback in [('Load Configuration…', self.choose_open), ('Save', self.save_current),
                 ('Save As', self.choose_save_as), ('Apply edits', self.apply_edits),
-                ('Validate', self.validate_document), ('Revert drafts', self.refresh),
+                ('Check Configuration (Expert)', self.validate_document), ('Revert drafts', self.revert_drafts),
                 ('Structure / Bounds', self.edit_structure), ('Undo', self.undo), ('Redo', self.redo)]:
             action = QAction(title, self)
             action.triggered.connect(lambda checked=False, cb=callback: cb())
@@ -72,7 +72,7 @@ class ConfigWindow(QMainWindow):
         for i,name in enumerate(('A. Data Prep','B. Atomic Model','C. Main QCBED Parameters')):
             page=QWidget();layout=QVBoxLayout(page)
             status=QLabel('Pending');status.setWordWrap(True);layout.addWidget(status)
-            button=QPushButton('Validate '+chr(65+i))
+            button=QPushButton(('Validate Data Prep','Validate Atomic Model','Validate Optimizer')[i])
             button.clicked.connect(lambda checked=False,index=i:self.validate_stage(index))
             layout.addWidget(button);self.stage_buttons.append(button);self.stage_status.append(status)
             self.workflow_tabs.addTab(page,name)
@@ -88,7 +88,10 @@ class ConfigWindow(QMainWindow):
         bottom.addWidget(self.summary)
         split = QSplitter(Qt.Orientation.Vertical)
         split.addWidget(self.workflow_tabs)
-        split.addWidget(bottom)
+        from .sections import ExpandableSection
+        self.diagnostics_section=ExpandableSection('Diagnostics and compiled summary')
+        self.diagnostics_section.content.addWidget(bottom)
+        split.addWidget(self.diagnostics_section)
         self.run_status = QLabel('Idle — Validate to check Run and Resume readiness')
         self.run_status.setWordWrap(True)
         self.run_log = QPlainTextEdit()
@@ -101,14 +104,18 @@ class ConfigWindow(QMainWindow):
         self.log_section=ExpandableSection('Expert / Legacy settings — execution log')
         self.log_section.content.addWidget(self.run_log);layout.addWidget(self.log_section)
         split.addWidget(run_panel)
-        split.setSizes([450, 220, 160])
+        split.setSizes([650, 35, 80])
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.poll_run)
         from .results_view import ResultsView
         self.results_view = ResultsView()
         self.workspace = QTabWidget()
-        self.workspace.addTab(split, 'Configuration')
+        from .workflow_guidance import WorkflowGuidance
+        self.guidance=WorkflowGuidance(self)
+        configuration_page=QWidget();configuration_layout=QVBoxLayout(configuration_page)
+        configuration_layout.addWidget(self.guidance);configuration_layout.addWidget(split)
+        self.workspace.addTab(configuration_page, 'Configuration')
         self.workspace.addTab(self.results_view, 'Results')
         self.setCentralWidget(self.workspace)
         self.results_directory = None
@@ -237,7 +244,7 @@ class ConfigWindow(QMainWindow):
         self.workflow=Workflow()
         self.refresh()
 
-    def mark_pending(self, *args):
+    def mark_pending(self, *args, stage_override=None):
         self.pending = True
         widget=self.widgets.get(('crystallography','depth_angstrom'))
         if widget is not None and self.document and self.document.config.crystallography:
@@ -260,7 +267,7 @@ class ConfigWindow(QMainWindow):
             sender=self.sender()
             setup_keys={s.key for s in editable_fields(self.document.config)
                         if s.section in ('Microscope','Numerical / Simulation cell')}
-            if any(self.widgets.get(k) is sender for k in setup_keys):
+            if sender is not None and any(self.widgets.get(k) is sender for k in setup_keys):
                 self.workflow.simulation_receipt=None
                 self.workflow.refinement_receipt=None
                 if hasattr(self,'c_tabs'):
@@ -275,15 +282,29 @@ class ConfigWindow(QMainWindow):
                 stage=1 if spec.section=='Structure' else 0 if spec.section in ('Scan','Experimental data') else 2
                 d_edit=bool(self.document.config.crystallography and spec.section in ('Project','Execution','Outputs'))
         if self.sender() is getattr(self,'refinement_table',None):stage=2
+        if stage_override is not None:stage=stage_override
         if not d_edit:self.workflow.invalidate(stage)
         self.update_stages()
         self.invalidate_readiness()
         self.statusBar().showMessage('Draft edits — Apply validates and commits an immutable configuration snapshot.')
 
+    def revert_drafts(self):
+        # Intentional discard is different from rebuilding after upstream edits.
+        self.pending=False;self._target_draft_cache=None
+        if getattr(self,'elastic_panel',None) is not None:self.elastic_panel.dirty=False
+        self.refresh()
+
     def refresh(self):
         if self.document is None: return
+        from .target_drafts import capture,restore
+        target_drafts=capture(self)
+        view_state=None
+        crystal=self.document.config.crystallography
+        if crystal and getattr(self,'atomic_view_identity',None)==(crystal.structure.path,crystal.zone_axis):
+            view_state=([(a.get_xlim(),a.get_ylim()) for a in self.atomic_axes],self.atomic_3d_axes.elev,self.atomic_3d_axes.azim)
         self.workflow.sync(self.document.config)
         self.invalidate_readiness()
+        c_index=self.c_tabs.currentIndex() if hasattr(self,'c_tabs') else 0
         section = self.navigation.currentItem().text(0) if self.navigation.currentItem() else 'Data Prep'
         self.navigation.clear()
         while self.pages.count():
@@ -395,6 +416,12 @@ class ConfigWindow(QMainWindow):
         self.update_stages()
         self.switch_stage(self.workflow_tabs.currentIndex())
         self.update_project_path()
+        if modern:
+            self.c_tabs.setCurrentIndex(c_index)
+            restore(self,target_drafts)
+            if view_state and hasattr(self,'atomic_axes'):
+                for ax,(x,y) in zip(self.atomic_axes,view_state[0]):ax.set_xlim(x);ax.set_ylim(y)
+                self.atomic_3d_axes.view_init(elev=view_state[1],azim=view_state[2])
         self.setWindowTitle(f'QCBED — {self.document.path.name}' + (' *' if self.document.dirty else ''))
 
     def field_drafts(self):
@@ -470,14 +497,14 @@ class ConfigWindow(QMainWindow):
         categories = config.refinement.active_categories
         label = QLabel(('Choose physical quantities and hard bounds. Current category filter: ' if config.crystallography else 'Binding selection and active refinement are distinct. Current category filter (read-only): ')
                        + (', '.join(str(getattr(c, 'value', c)) for c in categories) if categories is not None else 'all')
-                       + ('\nTable sorting changes display only.' if config.crystallography else '\nNew bindings require explicit D1, D2 and PLAMDA. Table sorting changes display only.'))
+                       + ('' if config.crystallography else '\nNew bindings require explicit D1, D2 and PLAMDA. Table sorting changes display only.'))
         label.setWordWrap(True)
         form.addRow(label)
         if config.crystallography:
             hint=QLabel('Select any nonempty subset of available physical targets; requested depth is optional. '
                 'Configured hard-bound rules are shown before selection. Where no canonical default exists, enter physical hard bounds. Recommended search settings are supplied automatically. '
                 'Starting values always come from the committed physical model.')
-            hint.setWordWrap(True);form.addRow(hint)
+            hint.setWordWrap(True);label.setToolTip(hint.text())
         try:catalogue = () if self.document.thermal_incomplete(config) or (config.crystallography and self.workflow.simulation_receipt is None) else available_refinement_targets(config)
         except (OSError,ValueError,TypeError):catalogue=()
         modern=config.crystallography is not None
@@ -524,14 +551,17 @@ class ConfigWindow(QMainWindow):
                 table.setItem(row, col, item)
         table.setSortingEnabled(True)
         table.resizeColumnsToContents()
-        table.setColumnWidth(0, 390)
-        table.setMinimumHeight(350)
+        table.setColumnWidth(0, 230 if modern else 390)
+        table.setMinimumHeight(230 if modern else 350)
         table.itemChanged.connect(self.refinement_draft_changed)
         form.addRow(table)
         if modern:
             for col in (4,5,6,7):table.setColumnHidden(col,True)
             table.horizontalHeaderItem(1).setText('Refine')
             table.horizontalHeaderItem(2).setText('Status')
+            from .projected_elastic import ProjectedElasticPanel
+            self.elastic_panel=ProjectedElasticPanel(self)
+            form.addRow(self.elastic_panel)
             return
         report=QPushButton('Execution readiness details')
         report.clicked.connect(self.execution_details)
@@ -541,6 +571,7 @@ class ConfigWindow(QMainWindow):
         """C owns physical/refinement/optimizer settings; D owns execution."""
         from .sections import ExpandableSection,move_form_row
         self.c_tabs=QTabWidget()
+        self.c_guidance={};self.c_next={}
         move_form_row(forms['Numerical / Simulation cell'],self.widgets[('crystallography','depth_angstrom')],forms['Microscope'])
         boundary=self.widgets[('crystallography','slice_boundaries_fractional')]
         move_form_row(forms['Numerical / Simulation cell'],boundary,forms['Microscope'])
@@ -549,7 +580,7 @@ class ConfigWindow(QMainWindow):
                        'Start at 0, end at 1, and use strictly increasing values.')
         boundary.setToolTip(boundary_help)
         self.slice_boundary_help=QLabel(boundary_help);self.slice_boundary_help.setWordWrap(True)
-        forms['Microscope'].addRow(self.slice_boundary_help)
+        self.slice_boundary_help.hide()  # Full convention is available in the field tooltip.
         mesh_help=('Number of numerical sampling points across the transverse periodic multislice '
                    'simulation cell perpendicular to the selected zone axis. Controls projected-potential/'
                    'wavefield sampling; not the CBED detector pixel count. Columns (X) sample P; rows (Y) '
@@ -569,7 +600,7 @@ class ConfigWindow(QMainWindow):
         optimizer_advanced=ExpandableSection('Advanced optimizer settings')
         body=QWidget();advanced_form=QFormLayout(body)
         for spec in editable_fields(self.document.config):
-            if spec.path==('refinement','optimizer') and spec.name!='method':
+            if spec.path==('refinement','optimizer') and spec.name not in ('method','ftol','maxfsimp','maxfpara'):
                 move_form_row(forms['Optimizer / Run'],self.widgets[spec.key],advanced_form)
         optimizer_advanced.content.addWidget(body);forms['Optimizer / Run'].addRow(optimizer_advanced)
         self.optimizer_advanced_settings=optimizer_advanced
@@ -590,14 +621,24 @@ class ConfigWindow(QMainWindow):
             if name=='Execution':self.execution_advanced=section
         for title,names in groups:
             body=QWidget();layout=QVBoxLayout(body)
+            key={'Simulation Setup':'simulation','Refinement Targets':'refinement','Optimizer':'optimizer'}[title]
+            self.c_guidance[key]=QLabel();self.c_guidance[key].setWordWrap(True)
             for name in names:
                 form=forms[name]
+                # Release the original section scroll area's ownership before
+                # moving its content; otherwise it still resizes the C content.
+                for i in range(self.pages.count()):
+                    old=self.pages.widget(i)
+                    if isinstance(old,QScrollArea) and old.widget() is form.parentWidget():
+                        old.takeWidget();break
+                form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+                form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
                 if name=='Numerical / Simulation cell':
                     self.recommended_numerics=QCheckBox('Use recommended numerical settings')
                     self.recommended_numerics.setChecked(True)
                     layout.addWidget(self.recommended_numerics)
                     note=self.numerical_profile_note=QLabel('Retains the current configured mesh/cutoff; check transverse mesh and slicing convergence for your specimen.')
-                    note.setWordWrap(True);layout.addWidget(note)
+                    note.setWordWrap(True);self.recommended_numerics.setToolTip(note.text());note.hide()
                     self.numerical_advanced=ExpandableSection('Advanced numerical settings')
                     self.numerical_advanced.content.addWidget(form.parentWidget());layout.addWidget(self.numerical_advanced)
                     self.recommended_numerics.toggled.connect(lambda on:self.numerical_advanced.set_expanded(not on))
@@ -606,14 +647,14 @@ class ConfigWindow(QMainWindow):
                     layout.addWidget(form.parentWidget())
             if title=='Simulation Setup':
                 button=QPushButton('Validate Simulation Setup');button.setObjectName('validateSimulationSetup')
-                button.clicked.connect(lambda:self.validate_c_part('simulation'));layout.addWidget(button)
+                button.clicked.connect(lambda:self.validate_c_part('simulation'))
             elif title=='Refinement Targets':
                 self.refinement_notice=QLabel(('Refinement validated.' if self.workflow.refinement_receipt is not None else 'Refinement requires re-validation.') if self.workflow.simulation_receipt is not None else
                     'Validate Simulation Setup to generate refinement targets.')
-                layout.addWidget(self.refinement_notice)
+                self.refinement_notice.setWordWrap(True);layout.addWidget(self.refinement_notice)
                 button=self.validate_refinement_button=QPushButton('Validate Refinement Targets');button.setObjectName('validateRefinement')
                 button.setEnabled(self.workflow.simulation_receipt is not None)
-                button.clicked.connect(lambda:self.validate_c_part('refinement'));layout.addWidget(button)
+                button.clicked.connect(lambda:self.validate_c_part('refinement'))
                 self.refinement_table.setVisible(self.workflow.simulation_receipt is not None)
                 header=self.refinement_table.horizontalHeader()
                 for visual,logical in enumerate((0,1,3,8,9,4,5,6,2,7)):
@@ -621,11 +662,27 @@ class ConfigWindow(QMainWindow):
             elif title=='Optimizer':
                 from .optimizer_panel import build
                 build(self,layout,forms['Optimizer / Run'])
-                button=QPushButton('Validate C')
-                button.clicked.connect(lambda:self.validate_stage(2));layout.addWidget(button)
+                button=QPushButton('Validate Optimizer')
+                button.clicked.connect(lambda:self.validate_stage(2))
+            from .workflow_guidance import button as nav_button
+            from .responsive_actions import ResponsiveActions
+            actions=[]
+            if key!='simulation':actions.append(nav_button(self,'Back: '+('Simulation Setup' if key=='refinement' else 'Refinement Targets'),2,'Simulation Setup' if key=='refinement' else 'Refinement Targets'))
+            next_title={'simulation':'Refinement Targets','refinement':'Optimizer','optimizer':'Run & Results'}[key]
+            self.c_next[key]=nav_button(self,'Next: '+next_title,3 if key=='optimizer' else 2,None if key=='optimizer' else next_title)
+            actions.extend((button,self.c_next[key]))
             layout.addStretch()
+            # The scrollable content owns its minimum height; actions never share
+            # that geometry or get covered by an expanding table/details panel.
+            from PySide6.QtWidgets import QLayout
+            layout.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
             scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(body)
-            self.c_tabs.addTab(scroll,title)
+            page=QWidget();page_layout=QVBoxLayout(page);page_layout.setContentsMargins(0,0,0,0)
+            page_layout.addWidget(scroll,1)
+            page_layout.addWidget(self.c_guidance[key])
+            footer=ResponsiveActions(actions);footer.setObjectName('cBottomActions')
+            page_layout.addWidget(footer)
+            self.c_tabs.addTab(page,title)
         page_index=self.pages.addWidget(self.c_tabs)
         root=self.navigation.topLevelItem(2)
         root.takeChildren()
@@ -638,7 +695,8 @@ class ConfigWindow(QMainWindow):
             self.section_items[title]=item
             for name in names:self.section_items[name]=item
         self.c_tabs.setTabEnabled(1,True)
-        self.stage_buttons[2].setText('Validate C')
+        self.stage_buttons[2].setText('Validate Optimizer')
+        self.stage_buttons[2].setVisible(False)
 
     def validate_c_part(self, part):
         from .workflow import simulation_key
@@ -648,6 +706,11 @@ class ConfigWindow(QMainWindow):
                 raise ValueError('Validate A and B. Atomic Model first.')
             if part=='refinement' and self.workflow.simulation_receipt is None:
                 raise ValueError('Validate Simulation Setup to generate refinement targets.')
+            if part=='refinement' and getattr(self,'elastic_panel',None) is not None:
+                if not self.elastic_panel.apply(refresh=False):
+                    self.stage_status[2].setText(self.elastic_panel.message.text())
+                    self.invalidate_readiness()
+                    return False
             texts, bindings, bounds=self.drafts()
             sections=('Microscope','Numerical / Simulation cell') if part=='simulation' else ()
             from .document import parse_text
@@ -661,6 +724,7 @@ class ConfigWindow(QMainWindow):
             if not self.document.apply(texts,bindings,bounds,stage=part):
                 self.show_diagnostics()
                 if part=='simulation' and hasattr(self,'numerical_advanced'):self.numerical_advanced.set_expanded(True)
+                if part=='refinement':self.refinement_notice.setText('Needs attention — '+ '; '.join(i.message for i in self.document.issues if i.severity=='error'))
                 self.stage_status[2].setText("; ".join(i.message for i in self.document.issues if i.severity=="error"))
                 return False
             self.workflow.sync(self.document.config)
@@ -675,9 +739,12 @@ class ConfigWindow(QMainWindow):
                 widget=self.widgets[key]
                 if isinstance(widget,QComboBox):widget.setCurrentText(text)
                 else:widget.setText(text)
-            self.c_tabs.setCurrentIndex(1 if part=='simulation' else 2)
+            self.c_tabs.setCurrentIndex(0 if part=='simulation' else 1)
+            self.guidance.update_state()
+            if part=='refinement':self.refinement_notice.setText('✓ Refinement Targets Valid — Next: Optimizer')
             self.stage_status[2].setText('Simulation Setup valid — validate refinement.' if part=='simulation' else
-                'Refinement valid — Validate C, then check D. Run & Results readiness.')
+                '✓ Refinement Targets Valid — Next: Optimizer.')
+            self.statusBar().showMessage(self.stage_status[2].text())
             return True
         except (ValueError,TypeError,OSError) as exc:
             self.stage_status[2].setText(str(exc));self.invalidate_readiness();return False
@@ -754,6 +821,8 @@ class ConfigWindow(QMainWindow):
         return text, refinement, bounds
 
     def apply_edits(self, *, stage=None):
+        if stage not in (0,1,'simulation','execution') and getattr(self,'elastic_panel',None) is not None:
+            if not self.elastic_panel.apply(refresh=False):return False
         if getattr(self,'site_group_pending',False):
             self.stage_status[1].setText('Apply Site-Group Parameters before validating or saving.')
             return False
@@ -788,7 +857,9 @@ class ConfigWindow(QMainWindow):
         labels = {'configuration': 'Configuration validity', 'compile': 'Compile validity',
                   'execution': 'Execution readiness', 'files': 'External file/output readiness'}
         lines = [f'{labels.get(key, key.replace("_", " ").capitalize())}: {value}'
-                 for key, value in summary.items() if key != 'bounds']
+                 for key, value in summary.items() if key not in ('bounds','resolved_layout')]
+        if summary.get('resolved_layout'):
+            lines.append('\n'+summary['resolved_layout'])
         lines.append('\nResolved hard bounds (committed snapshot):')
         from .structure import resolved_bound_rows
         try:rows = () if self.document.thermal_incomplete(self.document.config) else resolved_bound_rows(self.document.config)
@@ -850,8 +921,8 @@ class ConfigWindow(QMainWindow):
         self.refresh()
         self.restore_field_drafts(drafts)
         self.workflow_tabs.setCurrentIndex(1)
-        self.navigation.setCurrentItem(self.section_items['Site groups'])
-        self.statusBar().showMessage('Structure loaded. Enter Debye–Waller B and Apply Site-Group Parameters.')
+        self.navigation.setCurrentItem(self.section_items['Structure'])
+        self.statusBar().showMessage('Structure loaded. Confirm zone axis and g1/g2, then Next: Configure Site Groups.')
         return True
 
     def browse(self, widget, kind):
@@ -1101,12 +1172,13 @@ class ConfigWindow(QMainWindow):
         if root is None or self.navigation.indexOfTopLevelItem(root)!=index:
             root=self.navigation.topLevelItem(index)
             if root:
-                preferred=self.section_items.get('Numerical / Simulation cell') if index==2 else None
+                preferred=self.section_items.get(('Simulation Setup','Refinement Targets','Optimizer')[self.c_tabs.currentIndex()]) if index==2 and hasattr(self,'c_tabs') else None
                 self.navigation.setCurrentItem(preferred or root.child(0))
         # Reparented editor widgets must be explicitly shown on the selected tab.
         self.editor_split.show()
 
     def update_stages(self):
+        if hasattr(self,'guidance'):self.guidance.update_state()
         for i in range(3):
             valid=self.workflow.receipts[i] is not None
             if not valid or not self.stage_status[i].text().startswith(('B. Atomic Model: Valid' if i==1 else chr(65+i)+' validated')):

@@ -188,8 +188,8 @@ def test_supplied_pattern_sigma_empirical_model_consistency():
     # These files lack correction/mask/fit settings: this checks their numerical
     # association only, not recovery of the historical characterization pipeline.
     from pathlib import Path
-    root = Path(__file__).resolve().parents[1] / 'reference_data'
-    intensity = np.abs(np.loadtxt(root / 'pattern.dat')).ravel()
+    root = Path(__file__).resolve().parents[1] / 'tests/fixtures/legacy_reference'
+    intensity = np.abs(np.loadtxt(Path(__file__).resolve().parents[1] / 'reference_data/pattern.dat')).ravel()
     sigma = np.loadtxt(root / 'sigma.dat').ravel()
     assert intensity.shape == sigma.shape
     training = np.arange(intensity.size) % 2 == 0

@@ -17,7 +17,7 @@ Fourier signs, normalization, boundary conditions and parameter semantics.
 Normal Python/app use does not require the private implementation or a Fortran
 compiler. Most numerical, GUI and configuration tests use the shared Python code
 and recorded data. Five direct source-integrity/comparison checks retain their
-original requirements and are intentionally unchanged. They require maintainer
+original scientific assertions. They require maintainer
 access to the private sources; the inventory comparison also needs the private
 original inventory. A shared checkout alone cannot reproduce the earlier complete
 2,965-test acceptance result. That result remains a historical measurement.
@@ -32,3 +32,8 @@ The public JSON inventory is a provenance notice, not an embedded copy of privat
 source statements. Maintainers retain its original privately for integrity work.
 See [current architecture](ARCHITECTURE.md), [configuration](configuration.md), and
 [the refinement catalogue](modern_refinement_catalogue.md) for shared contracts.
+
+Maintainers may set `QCBED_PRIVATE_REFERENCE_ROOT` to an external evidence directory
+when running pytest. Private evidence is never copied into the shared tree or app.
+Without it, five optional source checks are explicitly skipped; public numerical
+regressions still run. A configured but invalid directory fails rather than skipping.

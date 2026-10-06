@@ -29,7 +29,10 @@ def check_grouped(compiled, experimental=None):
     from .config_targets import available_refinement_targets
     for info in available_refinement_targets(compiled):
         if info.active and not info.available: raise ValueError(info.reason)
+    from .projected_elastic import check_ready
+    check_ready(compiled)
     layout=physical_target_layout(compiled)
+    elastic_adapter=any(r['category']=='projected_elastic' for r in layout)
     if not layout: raise ValueError('Select at least one complete supported refinement binding.')
     if compiled.runner.objective_mode!='masked' or compiled.runner.bounds_policy!='reject':
         raise ValueError('Grouped execution requires masked objective and explicit reject bounds')
@@ -40,16 +43,16 @@ def check_grouped(compiled, experimental=None):
             raise ValueError(f"{row['target_id']}: explicit finite ordered lower/upper bounds required")
         if not row['lower']<=row['initial_value']<=row['upper']:
             raise ValueError(f"{row['target_id']}: starting value outside bounds; never clipped")
-        if row['category'] != 'scan_coordinate' and row['lower'] < 0:
+        if row['category'] not in ('scan_coordinate','projected_elastic') and row['lower'] < 0:
             raise ValueError(f"{row['target_id']}: lower bound must be nonnegative")
         if (row['category'] in ('depth','voltage') or (row['category']=='debye_waller' and compiled.state.model.absorption_enabled)) and row['lower'] <= 0:
             raise ValueError(f"{row['target_id']}: lower bound must be positive")
     if compiled.optimizer.loops < 1: raise ValueError('At least one optimizer loop is required')
-    if 'AMOEBA' in compiled.optimizer.stages:
+    if 'AMOEBA' in compiled.optimizer.stages and not elastic_adapter:
         if any(p['initial_value']==0 for p in layout): raise ValueError('AMOEBA scaling requires nonzero physical starting values')
         from .amoeba import build_legacy_simplex
         build_legacy_simplex(compiled.state,compiled.packed_starting_vector,np.asarray(compiled.plamda,dtype=np.float64))
-    if 'PARAMIN' in compiled.optimizer.stages:
+    if 'PARAMIN' in compiled.optimizer.stages and not elastic_adapter:
         if any(row['initial_value']==0 or 0 in p.range_factors for row,p in zip(layout,compiled.layout.parameters)):
             raise ValueError('PARAMIN requires nonzero starting values and D1/D2 divisors')
     if 'SIMPARA' in compiled.optimizer.stages and any(v < 0 for v in compiled.plamda):
@@ -137,12 +140,12 @@ def run_grouped(snapshot,*,resume=False,progress_hook=None,cancel_requested=None
     from .config_targets import available_refinement_targets
     from .modern_yaml import target_name
     labels={target_name(i.target):i.label for i in available_refinement_targets(c)}
-    stored_layout=tuple(dict(p,label=labels[p['target_id']]) for p in layout)
+    stored_layout=tuple(dict(p,label=p.get('label',labels.get(p['target_id'],p['target_id']))) for p in layout)
     out=Path(c.configuration.run.output_directory)
     export=Path(c.configuration.run.output_filename)
     root=Path(__file__).resolve().parents[2]
     if not out.is_absolute() or not export.is_absolute():raise ValueError('Resolve output paths against an explicit project base first')
-    if any(p.is_relative_to(root/n) for p in (out,export) for n in ('legacy_fortran','reference_data')):
+    if any(p.is_relative_to(root/n) for p in (out,export) for n in ('legacy_fortran','reference_data','tests/fixtures')):
         raise ValueError('Output is inside protected source/reference directories')
     if export in (out/'checkpoint_latest.json',out/'summary.json',out/'final_parameters.json',out/'report.html',out/'.run.lock') or export.is_relative_to(out/'checkpoints') or export.is_relative_to(out/'patterns'):
         raise ValueError('Output filename conflicts with internal run artifacts')
@@ -163,14 +166,14 @@ def run_grouped(snapshot,*,resume=False,progress_hook=None,cancel_requested=None
     with lock.open('x') as f:f.write(str(os.getpid()))
     started=time.monotonic();prior_elapsed=cp['elapsed_seconds'];new_count=0
     if resume:cp['restart_count']+=1
-    initial=cp['initial'];paused_reason=None
+    initial=cp['initial'];paused_reason=None;paused_stop=None
     def stop():
-        nonlocal paused_reason
-        if cancel_requested is not None and cancel_requested():paused_reason='cancelled';return True
+        nonlocal paused_reason,paused_stop
+        if cancel_requested is not None and cancel_requested():paused_reason='cancelled';paused_stop='cancelled';return True
         budget=c.configuration.run.max_total_evaluations
         seconds=c.configuration.run.max_wall_time_seconds
         if (budget is not None and new_count>=budget) or (seconds is not None and time.monotonic()-started>=seconds):
-            paused_reason='interrupted';return True
+            paused_reason='interrupted';paused_stop='execution_evaluations' if budget is not None and new_count>=budget else 'execution_time';return True
         return False
     def publish(child=None):
         nonlocal new_count
@@ -184,7 +187,9 @@ def run_grouped(snapshot,*,resume=False,progress_hook=None,cancel_requested=None
             event=history[-1].copy();event['elapsed_seconds']=cp['elapsed_seconds'];event['restart_count']=cp['restart_count']
             progress_hook(event)
     try:
-        cp['status']='running';_save(out,cp)
+        cp['status']='running';cp.pop('stop_reason',None)
+        cp['execution_limits']=dict(max_total_evaluations=c.configuration.run.max_total_evaluations,max_wall_time_seconds=c.configuration.run.max_wall_time_seconds,max_stage_iterations=c.configuration.run.max_stage_iterations)
+        _save(out,cp)
         for index,stage in enumerate(cp['plan']):
             path=out/'checkpoints'/f'{index:04d}_{stage}'
             def evaluate(*values):
@@ -206,7 +211,7 @@ def run_grouped(snapshot,*,resume=False,progress_hook=None,cancel_requested=None
                 parameter_bounds=tuple((p['lower'],p['upper']) for p in layout),progress_hook=publish,dynamic=cp['version']==2)
             cp['stage_result']=child.get('optimizer_result')
             if child['status']!='completed':
-                cp['status']=paused_reason or child['status'];publish();break
+                cp['status']=paused_reason or child['status'];cp['stop_reason']=paused_stop or child['status'];publish();break
             cp['retained_final']=child['retained_final']
             selected=child['best'] if stage=='ANNEAL' else child['retained_final']
             initial=selected['physical_active_vector'] if cp['version']==2 else [selected['requested_depth'],selected['B']]
@@ -217,7 +222,7 @@ def run_grouped(snapshot,*,resume=False,progress_hook=None,cancel_requested=None
             from .output_io import LegacySimulatedOutput,write_legacy_out_dat
             with np.load(out/cp['retained_final']['pattern_file'],allow_pickle=False) as a:
                 from .refinement import apply_refinement_parameters
-                retained_scan=(apply_refinement_parameters(c.state,np.asarray(cp['retained_final']['physical_active_vector'],dtype=np.float64)).scan
+                retained_scan=(apply_refinement_parameters(c.state,np.asarray([v for p,v in zip(c.layout.parameters,cp['retained_final']['physical_active_vector']) if p.category!='projected_elastic'],dtype=np.float64)).scan
                     if cp['version']==2 else c.state.scan)
                 output=LegacySimulatedOutput(retained_scan,snapshot.experimental.beam_indices_hk,a['scaled'])
             write_legacy_out_dat(out/'final_out.dat',output)
@@ -225,6 +230,8 @@ def run_grouped(snapshot,*,resume=False,progress_hook=None,cancel_requested=None
                 export.parent.mkdir(parents=True,exist_ok=True);write_legacy_out_dat(export,output)
         summary=dict(status=cp['status'],final_objective=(cp.get('retained_final') or cp.get('last_evaluated') or {}).get('objective'),
             output_directory=str(out),evaluations=cp.get('evaluations',0),runtime_seconds=cp['elapsed_seconds'])
+        from .termination import termination_summary
+        summary.update(termination_summary(out,cp))
         _atomic_json(out/'summary.json',summary)
         from html import escape
         (out/'report.html').write_text('<!doctype html><meta charset="utf-8"><title>QCBED grouped results</title><h1>QCBED grouped results</h1><pre>'+escape(json.dumps(dict(summary=summary,signal_mode=cp['signal_mode'],best=cp.get('best'),last_evaluated=cp.get('last_evaluated'),retained_final=cp.get('retained_final')),indent=2))+'</pre>')

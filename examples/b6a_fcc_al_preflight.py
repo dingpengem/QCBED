@@ -35,8 +35,8 @@ def real_inputs():
     report['physical_provenance'] = {
         'structure': 'examples/fcc_al_conventional.extxyz; user-confirmed four-site FCC motif, full occupancy',
         'a0_angstrom': 4.049,
-        'lattice_source': 'reference_data/FOR007.DAT record 4: 2 * layer thickness 2.0245; confirmed FCC [001] half-period layers',
-        'thermal_source': 'reference_data/FOR007.DAT B=0.86 angstrom squared',
+        'lattice_source': 'tests/fixtures/legacy_reference/FOR007.DAT record 4: 2 * layer thickness 2.0245; confirmed FCC [001] half-period layers',
+        'thermal_source': 'tests/fixtures/legacy_reference/FOR007.DAT B=0.86 angstrom squared',
         'occupancy': 'Four fully occupied conventional sites. Legacy projected half weights are not partial chemical occupancy.',
         'other_reference_settings': 'FOR007: 200 kV, mesh16x16, depth840 A, DSAP2.5 A^-1, absorption (0,1,1)',
         'experimental_source': 'pattern.dat and sigma.dat via unchanged A9 variance closure; archived A7/A8/A10',

@@ -32,8 +32,8 @@ def equal_state(a,b):
 
 
 def test_reference_roundtrip(tmp_path):
-    source = ROOT/'reference_data/FOR007.DAT'
-    exp = ROOT/'reference_data/in.dat'
+    source = ROOT/'tests/fixtures/legacy_reference/FOR007.DAT'
+    exp = ROOT/'tests/fixtures/legacy_reference/in.dat'
     old,controls,_,_ = _parse_refinement_input(source,experimental_header_path=exp)
     raw = import_legacy_config(source,experimental_path=exp,policy=policy(tmp_path))
     compiled = compile_config(raw)
@@ -123,13 +123,13 @@ def test_linked_empty_g_and_duplicate_beams(tmp_path):
 
 
 def test_standalone_limits_and_no_truncation(tmp_path):
-    raw = import_legacy_config(ROOT/'reference_data/FOR007.DAT',experimental_path=ROOT/'reference_data/in.dat',policy=policy(tmp_path))
+    raw = import_legacy_config(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT',experimental_path=ROOT/'tests/fixtures/legacy_reference/in.dat',policy=policy(tmp_path))
     with pytest.raises(ValueError,match='filename_limits'):
         export_for007(raw,tmp_path/'out')
     with pytest.raises(ValueError,match='exceed'):
         export_for007(raw,tmp_path/'out',filename_limits=(9,10))
     export_for007(raw,tmp_path/'out',experimental_filename='in.dat',output_filename='out.dat',filename_limits=(9,10))
-    parsed,_,_,_ = _parse_refinement_input(tmp_path/'out',experimental_header_path=ROOT/'reference_data/in.dat')
+    parsed,_,_,_ = _parse_refinement_input(tmp_path/'out',experimental_header_path=ROOT/'tests/fixtures/legacy_reference/in.dat')
     equal_state(parsed,compile_config(raw).state)
     for invalid in (replace(raw,scan=replace(raw.scan,basis_1=(.5,1.,0.))),
                     replace(raw,sample=replace(raw.sample,regions=(replace(raw.sample.regions[0],depth_angstrom=-1.),)))):
@@ -139,7 +139,7 @@ def test_standalone_limits_and_no_truncation(tmp_path):
 
 def test_full_parameter_categories(tmp_path):
     from qcbed.configuration import ParameterBinding,ParameterTarget,ParameterCategory as C,VacancyConfig,VacancyKind,SurfaceConfig,SurfaceKind
-    raw = import_legacy_config(ROOT/'reference_data/FOR007.DAT',experimental_path=ROOT/'reference_data/in.dat',policy=policy(tmp_path))
+    raw = import_legacy_config(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT',experimental_path=ROOT/'tests/fixtures/legacy_reference/in.dat',policy=policy(tmp_path))
     for flag in (0,2):
         region = replace(raw.sample.regions[0],vacancy=VacancyConfig(VacancyKind(flag),(-.2,) if flag == 0 else (-.2,.3)),
                          free_surface=SurfaceConfig(SurfaceKind.LEGACY_1,(.1,.2,.3)))
@@ -157,8 +157,8 @@ def test_full_parameter_categories(tmp_path):
 def test_cli_migration_and_export(tmp_path,capsys):
     from qcbed.legacy import main
     yaml = tmp_path/'migration.yml'
-    assert main(['import','--for007',str(ROOT/'reference_data/FOR007.DAT'),
-        '--experimental',str(ROOT/'reference_data/in.dat'),'--yaml',str(yaml),
+    assert main(['import','--for007',str(ROOT/'tests/fixtures/legacy_reference/FOR007.DAT'),
+        '--experimental',str(ROOT/'tests/fixtures/legacy_reference/in.dat'),'--yaml',str(yaml),
         '--seed','123','--execution','serial','--objective','masked','--invalid-trial-policy','reject',
         '--bounds','none','--output-directory',str(tmp_path/'run'),'--output-filename',str(tmp_path/'out.dat'),
         '--snapshot-every','0','--checkpoint-every','1','--max-evaluations','50','--max-seconds','60']) == 0
@@ -188,6 +188,6 @@ def test_variable_species_thermal_targets(tmp_path):
 
 def test_import_rejects_unknown_trailing_records(tmp_path):
     path = tmp_path/'legacy.dat'
-    path.write_text((ROOT/'reference_data/FOR007.DAT').read_text()+'unknown extension\n')
+    path.write_text((ROOT/'tests/fixtures/legacy_reference/FOR007.DAT').read_text()+'unknown extension\n')
     with pytest.raises(ValueError,match='trailing'):
-        import_legacy_config(path,experimental_path=ROOT/'reference_data/in.dat',policy=policy(tmp_path))
+        import_legacy_config(path,experimental_path=ROOT/'tests/fixtures/legacy_reference/in.dat',policy=policy(tmp_path))

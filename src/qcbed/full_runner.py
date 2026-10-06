@@ -172,11 +172,11 @@ def run_full_refinement(state, experimental, config: FullRefinementConfig, *,
         raise TypeError("config must be FullRefinementConfig")
     destination = Path(output_directory).resolve()
     root = Path(__file__).resolve().parents[2]
-    if any(destination.is_relative_to(root / p) for p in ("legacy_fortran", "reference_data")):
+    if any(destination.is_relative_to(root / p) for p in ("legacy_fortran", "reference_data", "tests/fixtures")):
         raise ValueError("output_directory is inside protected source/reference directories")
     export_path = None if final_output_path is None else Path(final_output_path).resolve()
     if export_path is not None:
-        if any(export_path.is_relative_to(root / p) for p in ("legacy_fortran", "reference_data")):
+        if any(export_path.is_relative_to(root / p) for p in ("legacy_fortran", "reference_data", "tests/fixtures")):
             raise ValueError("final_output_path is inside protected source/reference directories")
         if not resume and export_path.exists():
             raise FileExistsError(export_path)

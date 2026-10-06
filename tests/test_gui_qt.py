@@ -34,7 +34,7 @@ def window(app):
 def test_open_and_unchanged_apply(window):
     original = load_yaml_config(REFERENCE)
     assert window.document.config == original
-    assert 'Active parameters: 7' in window.summary.toPlainText()
+    assert 'Optimizer parameters: 7' in window.summary.toPlainText()
     assert window.refinement_table.rowCount() > 18
     window.mark_pending()
     assert window.apply_edits()

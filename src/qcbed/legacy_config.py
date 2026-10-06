@@ -111,7 +111,7 @@ def import_legacy_config(path, *, experimental_path, policy: MigrationPolicy) ->
 def _new_path(path):
     path = Path(path).resolve()
     root = Path(__file__).resolve().parents[2]
-    if any(path.is_relative_to(root/name) for name in ('legacy_fortran','reference_data')):
+    if any(path.is_relative_to(root/name) for name in ('legacy_fortran','reference_data','tests/fixtures')):
         raise ValueError('cannot write protected legacy/reference files')
     if path.exists():
         raise FileExistsError(path)

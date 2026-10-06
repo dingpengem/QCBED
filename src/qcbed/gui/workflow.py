@@ -1,5 +1,5 @@
 """Editor-only ordered validation receipts; never an alternative numerical model."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from .data_model import digest, provenance, read_data, restored_overview
 import numpy as np
@@ -31,12 +31,14 @@ def keys(config):
 
 def refinement_key(config):
     r=config.refinement
-    return (r.parameters,r.bounds,r.active_categories)
+    return (r.parameters,r.bounds,r.active_categories,
+            config.crystallography.projected_elastic if config.crystallography else ())
 
 
 def simulation_key(config):
     """Physical C inputs only; execution/binding edits do not change this receipt."""
-    return (keys(config)[:2], config.crystallography, config.microscope, config.scan,
+    crystal=replace(config.crystallography,projected_elastic=()) if config.crystallography else None
+    return (keys(config)[:2], crystal, config.microscope, config.scan,
             config.experiment, config.sample)
 
 

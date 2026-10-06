@@ -43,7 +43,7 @@ def test_each_direction_and_batch_against_scalar_sums(shape):
 def test_real_al_input_three_slices_against_nested_dft(h,k):
     # Real geometry/species/atoms/absorption and 16x16 mesh; short sequence
     # keeps the independent O(N^2) scalar DFT practical in the unit suite.
-    s,_=parse_legacy_refinement(Path(__file__).parents[1]/'reference_data'/'FOR007.DAT',seed=2026)
+    s,_=parse_legacy_refinement(Path(__file__).parents[1]/'tests/fixtures/legacy_reference'/'FOR007.DAT',seed=2026)
     applied,_,_,coefficients=_prepare_trial(s,original_voltage=s.model.energy_kv)
     beams=((0,0),(1,1),(1,-1),(-1,-1),(-1,1),(2,0),(0,-2),(-2,0),(0,2))
     p=SamplePreparationParameters(s.model.energy_kv,applied,s.dsap,coefficients,(0,)*3,

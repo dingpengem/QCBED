@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     root = Path(__file__).resolve().parents[1]
     config = compile_config(reference_configuration())
-    records = _Records(root/'reference_data/in.dat')
+    records = _Records(root/'tests/fixtures/legacy_reference/in.dat')
     header = records.read('experimental header')
     actual = tuple(header.integer(name) for name in ('NUMP', 'NUML', 'GRADIENTOPT'))
     expected = (config.state.scan.scan_columns, config.state.scan.scan_rows, config.experiment.gradient_option)

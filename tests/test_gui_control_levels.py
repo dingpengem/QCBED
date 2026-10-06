@@ -2,6 +2,7 @@ from dataclasses import replace
 import pytest
 pytest.importorskip('PySide6')
 from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
 from qcbed.gui.window import ConfigWindow
 from qcbed.gui.document import EditorDocument
 from test_modern_grouped_run import modern_config
@@ -16,7 +17,8 @@ def test_classified_sections_preserve_physical_inputs(tmp_path):
         assert w.preparation.binning.value()==2
         assert w.data_panel.mask_layer.count()==4
         assert not w.atomic_expert.toggle.isChecked()
-        assert w.site_group_table.isColumnHidden(2)
+        assert not w.site_group_table.isColumnHidden(2)
+        assert not w.site_group_table.item(0,2).flags() & Qt.ItemFlag.ItemIsEditable
         assert not w.site_group_table.isColumnHidden(3)
         assert not w.numerical_advanced.toggle.isChecked()
         assert w.recommended_numerics.isChecked()

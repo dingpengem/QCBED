@@ -71,7 +71,7 @@ def _order(n, random_order, rng):
 
 
 def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
-         random_order=False, rng=None, allow_invalid=False):
+         random_order=False, rng=None, allow_invalid=False, iteration_hook=None):
     bottom, top = bottom.copy(), top.copy()
     n = len(initial)
     uncertainty = abs(1-bottom)
@@ -99,6 +99,7 @@ def _run(initial, bottom, top, project, evaluate, *, max_cycles, tolerance,
     cycles = steps = 0
     average = np.float64(1)
     while average > tolerance and cycles <= max_cycles:
+        if iteration_hook is not None:iteration_hook(cycles)
         average = np.float64(0)
         cycles += 1
         trial = retained.copy()

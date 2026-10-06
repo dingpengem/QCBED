@@ -14,6 +14,15 @@ import traceback
 
 def main(manifest_path):
     manifest = json.loads(Path(manifest_path).read_text())
+    if manifest.get('startup_only'):
+        from PySide6.QtWidgets import QApplication
+        from qcbed.gui.window import ConfigWindow
+        app=QApplication.instance() or QApplication([])
+        window=ConfigWindow();window.show();app.processEvents()
+        assert window.workflow_tabs.count()==4 and window.document is None
+        window.close();app.processEvents()
+        Path(manifest['report']).write_text(json.dumps(dict(status='PASS',startup_only=True,optimizer_evaluations=0)))
+        return 0
     if manifest.get('usability'):
         from usability_smoke import main as usability_main
         return usability_main(manifest)

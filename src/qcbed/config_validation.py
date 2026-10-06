@@ -286,7 +286,7 @@ def validate_config(config, *, phases=(ValidationPhase.FIELD,ValidationPhase.COM
             root = Path(__file__).resolve().parents[2]
             for field,value in (('output_directory',resolved.configuration.run.output_directory),('output_filename',resolved.configuration.run.output_filename)):
                 path = Path(value)
-                if any(path.is_relative_to(root/n) for n in ('legacy_fortran','reference_data')):
+                if any(path.is_relative_to(root/n) for n in ('legacy_fortran','reference_data','tests/fixtures')):
                     add('protected_output',F,'run',('run',),field,'Output is inside a protected source/reference directory')
                 if not resume and path.exists():
                     add('output_exists',F,'run',('run',),field,'Fresh run requires a new output path')

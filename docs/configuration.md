@@ -79,6 +79,12 @@ order does not affect species association.
 | `scan_coordinate` | `("A" or "B" or "C", "first" or "second")` |
 | `reflection_multiplier` | `(region_id, reflection_id, "elastic" or "absorptive")` |
 
+`reflection_multiplier` is a dimensionless elastic or absorptive multiplier of a
+computed structure factor for a fixed region/reflection record, not an absolute
+structure factor or an h/k coordinate. This table describes the canonical pre-sliced
+configuration; reflection multipliers are **not selectable in the modern
+crystallographic GUI**. See the [reflection semantics and support audit](modern_refinement_catalogue.md#reflection-multipliers-exact-meaning-and-support).
+
 Use `ParameterCategory` enum members, not arbitrary strings. Each
 `ParameterBinding` supplies a target, a `(D1,D2)` pair and PLAMDA. Duplicate or
 unknown targets are rejected. Bindings set the existing masks; the existing
@@ -89,6 +95,15 @@ uses the existing subset function after this full source-order assembly.
 Changing the explicitly ordered physical species/region/slice/atom/reflection
 lists is different from changing binding declaration order: those lists define
 the scientific source order and are deliberately not sorted by ID or H/K.
+
+## Modern projected elastic records
+
+Modern `qcbed.refinement.projected_elastic` records store original `hkl`, physical
+`interval`, `mode`, `refine`, component `lower`/`upper`, and numerical `step_size`.
+An optional `initial` real/imaginary pair and `reference` fingerprint preserve an
+explicit starting override. These append physical E_g components to the dynamic
+layout; they do not use the legacy `reflection_multiplier` binding. See the
+[complete schema and convention](projected_elastic_coefficients.md#compact-yaml-and-resume).
 
 ## Numerical and policy boundaries
 
@@ -365,3 +380,9 @@ serialization boundary over the existing typed model, not a second configuration
 model. Compilers and immutable run snapshots retain derived runtime state; GUI
 Save writes only user inputs and a preparation-descriptor reference. Equivalent
 verbose and compact documents preserve checkpoint identity.
+
+## Equality groups and termination reporting
+
+Each `qcbed.refinement.projected_elastic` record may include `equality_group: group_1`. Original `hkl`, `interval`, and `mode` resolve membership. Omission means Independent; group bounds are the intersection of member bounds. See [the compact group example](projected_elastic_coefficients.md#optional-user-equality-groups). Optional `qcbed.output.max_stage_iterations` adds an exact completed-iteration cap per modern stage; omitted/null leaves legacy stage budgets unchanged. Resume validates this setting and group layout.
+
+The GUI calls this **Parameter sharing**. Renaming the controls does not change the compact `equality_group` schema or Resume identity.

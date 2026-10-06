@@ -148,7 +148,7 @@ Reference stencils, with table values in coordinate order:
 
 For Z=98 at zero, the independent expectation uses EFARRAY(98,1)=16.841
 and the explicit zero-coordinate branch. Aluminium (Z=13) is present in
-reference_data/FOR007.DAT. Hydrogen exercises missing entries and reflected
+tests/fixtures/legacy_reference/FOR007.DAT. Hydrogen exercises missing entries and reflected
 origin interpolation; Cf exercises the Mott branch and upper atomic bound.
 
 Tests use relative tolerance 2e-12 and absolute tolerance 1e-12, allowing

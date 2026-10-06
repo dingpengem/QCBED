@@ -77,7 +77,7 @@ def run_local_optimization(state, experimental, config, *, objective_mode="legac
     destination=Path(output_directory).resolve() if output_directory is not None else None
     if destination is not None:
         root=Path(__file__).resolve().parents[2]
-        if any(destination.is_relative_to(root/p) for p in ("legacy_fortran","reference_data")):
+        if any(destination.is_relative_to(root/p) for p in ("legacy_fortran","reference_data","tests/fixtures")):
             raise ValueError("output_directory must not be inside protected source/reference directories")
         destination.mkdir(parents=True,exist_ok=False)
     started=time.perf_counter()

@@ -29,7 +29,7 @@ def save_yaml_config(config, path, *, base_directory, overwrite=False):
     resolved = resolve_config_paths(config,base_directory=base_directory)
     destination = (Path(base_directory)/path).resolve()
     root = Path(__file__).resolve().parents[2]
-    if any(destination.is_relative_to(root/name) for name in ('legacy_fortran','reference_data')):
+    if any(destination.is_relative_to(root/name) for name in ('legacy_fortran','reference_data','tests/fixtures')):
         raise ValueError('cannot write protected legacy/reference files')
     if resolved.crystallography is not None and destination == Path(resolved.crystallography.structure.path):
         raise ValueError("configuration destination is the structure source file")

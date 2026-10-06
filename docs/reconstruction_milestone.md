@@ -57,8 +57,8 @@ Closure changes documentation only; no rebuild or numerical tests were needed.
 
 Final local artifacts (generated and intentionally not committed):
 
-- `/Users/dingpeng/EM_code/QCBED/dist/QCBED.app`
-- `/Users/dingpeng/EM_code/QCBED/dist/QCBED-arm64.zip`
+- `dist/QCBED.app`
+- `dist/QCBED-arm64.zip`
 
 The editable `examples/fcc_al.yml` replay example references locally generated
 `tmp/` preparation products; those products are not bundled as portable sample

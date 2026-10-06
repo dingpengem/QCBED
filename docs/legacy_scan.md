@@ -112,7 +112,7 @@ with C-order flattening; no axis swap is required.
 ```python
 from qcbed import parse_for007_scan, generate_scan_tilts
 
-scan = parse_for007_scan("reference_data/FOR007.DAT")
+scan = parse_for007_scan("tests/fixtures/legacy_reference/FOR007.DAT")
 tilts = generate_scan_tilts(scan)
 # Pass tilts unchanged to serial, batched or parallel tilt-series execution.
 ```

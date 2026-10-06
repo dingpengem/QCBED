@@ -104,7 +104,7 @@ def main(argv=None):
                 baseline_manifests={m:r['dataset'] for m,r in closure['modes'].items()},
                 input_kind='confirmed_real',physical_input_confirmation=args.physical_input_confirmation)
             report['experimental_reference']=dict(pattern='reference_data/pattern.dat',
-                sigma='reference_data/sigma.dat',variance_source='legacy_saved_sigma_map; sigma**2',
+                sigma='tests/fixtures/legacy_reference/sigma.dat',variance_source='legacy_saved_sigma_map; sigma**2',
                 geometry_source=closure['geometry_source'])
     except (ValueError,TypeError,OSError) as exc:
         report=dict(status='FAIL',code=getattr(exc,'code','configuration_or_input_error'),message=str(exc),
