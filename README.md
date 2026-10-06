@@ -84,3 +84,43 @@ Developer entry points: [architecture](docs/ARCHITECTURE.md),
 [project specification](PROJECT_SPEC.md), [repository audit](docs/REPOSITORY_AUDIT.md),
 and [source provenance](docs/source_provenance.md). A project-wide redistribution
 license has not yet been supplied; third-party bundle notices are retained.
+
+## References and scientific basis
+
+QCBED implements several experimental-data preparation and quantitative CBED methods based on the following work:
+
+1. **PSF / OTF characterization and detector deconvolution**
+
+   P. N. H. Nakashima and A. W. S. Johnson,  
+   “Measuring the PSF from aperture images of arbitrary shape—an algorithm,”  
+   *Ultramicroscopy* **94**(2), 135–148 (2003).  
+   DOI: `10.1016/S0304-3991(02)00250-4`
+
+   Used as the basis for aperture-image PSF characterization and PSF/OTF-based CBED correction.
+
+2. **Signal-dependent noise characterization**
+
+   P. N. H. Nakashima,  
+   “In situ quantification of noise as a function of signal in digital images,”  
+   *Optics Letters* **37**(6), 1023–1025 (2012).  
+   DOI: `10.1364/OL.37.001023`
+
+   Used as the basis for experimental noise-versus-signal characterization and construction of the uncertainty / variance model used in QCBED fitting.
+
+3. **Differential / gradient QCBED**
+
+   P. N. H. Nakashima and B. C. Muddle,  
+   “Differential convergent beam electron diffraction: Experiment and theory,”  
+   *Physical Review B* **81**, 115135 (2010).  
+   DOI: `10.1103/PhysRevB.81.115135`
+
+   Provides the scientific basis for the differential (gradient) QCBED analysis mode implemented alongside conventional intensity fitting.
+
+4. **QCBED measurement of bonding-sensitive scattering**
+
+   P. N. H. Nakashima, A. E. Smith, J. Etheridge, and B. C. Muddle,  
+   “The Bonding Electron Density in Aluminum,”  
+   *Science* **331**(6024), 1583–1586 (2011).  
+   DOI: `10.1126/science.1198543`
+
+   Demonstrates quantitative CBED measurement of bonding-sensitive electron scattering in aluminum and provides an important scientific reference for the FCC Al example and coefficient-refinement workflow.
